@@ -35,11 +35,6 @@ Based on the configured retention policy, the volumes are removed.
 Openstack API access policies are customized to make only the retention service be able to delete
 the backups and users not.
 
-### Scheduling
-
-Backup and retention processes are scheduled by Crontab. It will be completing this in batches.
-It can be scheduled at a specific time and also every specified period.
-
 ### Scaling
 
 Cinder backup service is running on the dedicated backup host and it can be scaled across multiple
