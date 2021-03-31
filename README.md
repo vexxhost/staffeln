@@ -47,8 +47,8 @@ whether it was successful or not (the email will be one digest of all backups).
 Backup result HTML Template
 - Backup time
 - Current quota usage(Quota/used number/percentage) with proper colors
-  - 50% > Quota usage : Green
-  - 80% > Quota 50% usage : Yellow
+  - 50% <= Quota usage : Green
+  - 80% > Quota > 50% usage : Yellow
   - Quota usage > 80% : Red
 - Volume list
 - Success/fail: true/false with proper colors
