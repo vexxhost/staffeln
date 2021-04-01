@@ -1,0 +1,6 @@
+[run]
+branch = True
+source = staffeln
+
+[report]
+ignore_errors = True
