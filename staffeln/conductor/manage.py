@@ -1,4 +1,5 @@
 import cotyledon
+from futurist import periodics
 from oslo_log import log
 import staffeln.conf
 import sys
@@ -21,6 +22,10 @@ class BackupService(cotyledon.Service):
     def run(self):
         LOG.error("%s run" % self.name)
         self._shutdown.wait()
+        interval = CONF.conductor.backup_period
+        @periodics.periodic(spacing=interval, run_immediately=True)
+        def backup_engine():
+            pass
 
     def terminate(self):
         LOG.error("%s terminate" % self.name)
