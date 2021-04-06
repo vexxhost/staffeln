@@ -1,19 +1,20 @@
 from oslo_config import cfg
 
-api_group = cfg.OptGroup('api',
+
+api_group = cfg.OptGroup(
+    'api',
     title='API options',
-    help="""
-Options under this group are used to define staffeln API.
-""")
+    help='Options under this group are used to define staffeln API.'
+)
 
 
 test_opts = [
-    cfg.StrOpt("api_test_option",
-        default="test",
-        deprecated_group="DEFAULT",
-        help="""
-test options
-"""),
+    cfg.StrOpt(
+        'api_test_option',
+        default='test',
+        deprecated_group='DEFAULT',
+        help='test options'
+    ),
 ]
 
 API_OPTS = (test_opts)

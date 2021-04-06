@@ -15,7 +15,6 @@ Contents:
    readme
    install/index
    library/index
-   contributor/index
    configuration/index
    cli/index
    user/index
