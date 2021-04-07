@@ -25,6 +25,7 @@ class BackupService(cotyledon.Service):
         interval = CONF.conductor.backup_period
         @periodics.periodic(spacing=interval, run_immediately=True)
         def backup_engine():
+            print("echo")
             pass
 
     def terminate(self):

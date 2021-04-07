@@ -7,17 +7,35 @@ api_group = cfg.OptGroup(
     help='Options under this group are used to define staffeln API.'
 )
 
-
-test_opts = [
+connection_opts = [
     cfg.StrOpt(
-        'api_test_option',
-        default='test',
-        deprecated_group='DEFAULT',
-        help='test options'
+        'host',
+        default="0.0.0.0",
+        help='IP address on which the staffeln API will listen.'
+    ),
+    cfg.PortOpt(
+        'port',
+        default=8774,
+        help='Staffeln API listens on this port number for incoming requests.'
+    ),
+    cfg.BoolOpt(
+        'enabled_ssl',
+        default=False,
+        help='ssl enabled'
+    ),
+    cfg.StrOpt(
+        'ssl_key_file',
+        default=False,
+        help='ssl key file path'
+    ),
+    cfg.StrOpt(
+        'ssl_cert_file',
+        default=False,
+        help='ssl cert file path'
     ),
 ]
 
-API_OPTS = (test_opts)
+API_OPTS = (connection_opts)
 
 
 def register_opts(conf):

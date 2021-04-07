@@ -10,6 +10,7 @@ conductor_group = cfg.OptGroup(
 backup_opts = [
     cfg.IntOpt(
         'workers',
+        default=1,
         help='The maximum number of conductor processes to '
              'fork and run. Default to number of CPUs on the host.'),
     cfg.IntOpt(
@@ -32,9 +33,10 @@ CONDUCTOR_OPTS = (backup_opts, rotation_opts)
 
 def register_opts(conf):
     conf.register_group(conductor_group)
-    conf.register_opts(CONDUCTOR_OPTS, group=conductor_group)
+    conf.register_opts(backup_opts, group=conductor_group)
+    conf.register_opts(rotation_opts)
 
 
 def list_opts():
-    return {"DEFAULT": backup_opts,
-            conductor_group: CONDUCTOR_OPTS}
+    return {"DEFAULT": rotation_opts,
+            conductor_group: backup_opts}

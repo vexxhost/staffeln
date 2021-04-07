@@ -3,7 +3,6 @@ import os
 import sys
 
 from oslo_log import log as logging
-from oslo_reports import guru_meditation_report as gmr
 
 from staffeln.api import app as api_app
 from staffeln.common import service
@@ -36,7 +35,6 @@ def _get_ssl_configs(use_ssl):
 
 def main():
     service.prepare_service(sys.argv)
-    gmr.TextGuruMeditation.setup_autorun(version, conf=CONF)
 
     # SSL configuration
     use_ssl = CONF.api.enabled_ssl
