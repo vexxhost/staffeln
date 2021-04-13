@@ -4,7 +4,7 @@ import cotyledon
 from cotyledon import oslo_config_glue
 
 from staffeln.common import service
-from staffeln import conductor
+from staffeln.conductor import manager
 import staffeln.conf
 
 
@@ -15,7 +15,9 @@ def main():
     service.prepare_service()
 
     sm = cotyledon.ServiceManager()
-    sm.add(conductor.BackupService,
-           workers=CONF.conductor.workers, args=(CONF,))
+    sm.add(manager.BackupManager,
+           workers=CONF.conductor.backup_workers, args=(CONF,))
+    # sm.add(manager.RotationManager,
+    #        workers=CONF.conductor.rotation_workers, args=(CONF,))
     oslo_config_glue.setup(sm, CONF)
     sm.run()

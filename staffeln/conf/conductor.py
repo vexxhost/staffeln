@@ -9,20 +9,29 @@ conductor_group = cfg.OptGroup(
 
 backup_opts = [
     cfg.IntOpt(
-        'workers',
+        'backup_workers',
         default=1,
-        help='The maximum number of conductor processes to '
+        help='The maximum number of backup processes to '
              'fork and run. Default to number of CPUs on the host.'),
     cfg.IntOpt(
         'backup_period',
-        default=1,
+        default=10,
         min=1,
         help='The time of bakup period, the unit is one minute.'),
+    cfg.StrOpt(
+        'backup_metadata_key',
+        default="test",
+        help='The key string of metadata the VM, which requres back up, has'),
 ]
 
 rotation_opts = [
     cfg.IntOpt(
-        'rotation_default_period',
+        'rotation_workers',
+        default=1,
+        help='The maximum number of rotation processes to '
+             'fork and run. Default to number of CPUs on the host.'),
+    cfg.IntOpt(
+        'rotation_period',
         default=1,
         min=1,
         help='The time of rotation period, the unit is one day.'),
@@ -34,7 +43,7 @@ CONDUCTOR_OPTS = (backup_opts, rotation_opts)
 def register_opts(conf):
     conf.register_group(conductor_group)
     conf.register_opts(backup_opts, group=conductor_group)
-    conf.register_opts(rotation_opts)
+    conf.register_opts(rotation_opts, group=conductor_group)
 
 
 def list_opts():

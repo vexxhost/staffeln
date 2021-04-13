@@ -15,7 +15,7 @@ connection_opts = [
     ),
     cfg.PortOpt(
         'port',
-        default=8774,
+        default=8808,
         help='Staffeln API listens on this port number for incoming requests.'
     ),
     cfg.BoolOpt(
