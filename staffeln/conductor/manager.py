@@ -50,7 +50,8 @@ class BackupManager(cotyledon.Service):
         for project in projects:
             print("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<Project>>>>>>>>>>>>>>>>>>>>>>>>>")
             print(project.id)
-            servers = conn.list_servers(all_projects=True, filters={"project_id": project.id})
+            servers = conn.list_servers(all_projects=True, filters={
+                                        "project_id": project.id})
             for server in servers:
                 if not backup.check_vm_backup_metadata(server.metadata):
                     continue
