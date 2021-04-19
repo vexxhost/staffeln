@@ -9,4 +9,8 @@ jobs:
       - uses: github/super-linter@v3
         env:
           DEFAULT_BRANCH: main
+          VALIDATE_ALL_CODEBASE: false
+          VALIDATE_PYTHON_PYLINT: True
+          VALIDATE_PYTHON: True
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
