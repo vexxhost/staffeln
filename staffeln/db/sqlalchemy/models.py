@@ -12,8 +12,8 @@ from sqlalchemy import Float
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import LargeBinary
-from sqlalchemy import Numeric
 from sqlalchemy import orm
+from sqlalchemy import Numeric
 from sqlalchemy import String
 from sqlalchemy import Text
 from sqlalchemy.types import TypeDecorator, TEXT
@@ -32,7 +32,7 @@ def table_args():
     return None
 
 
-class StaffelnBase(models.SoftDeleteMixin, models.TimestampMixin, models.ModelBase):
+class StaffelnBase(models.TimestampMixin, models.ModelBase):
     metadata = None
 
     def as_dict(self):
@@ -58,9 +58,26 @@ class Backup_data(Base):
 
     __tablename__ = 'backup_data'
     __table_args__ = (
-        UniqueConstraint('uuid', name='unique_backup0uuid'),
+        UniqueConstraint('backup_id', name='unique_backup0uuid'),
         table_args()
     )
     id = Column(Integer, primary_key=True, autoincrement=True)
-    uuid = Column(String(36))
-    volume_name = Column(String(36))
+    backup_id = Column(String(100))
+    volume_id = Column(String(100))
+    instance_id = Column(String(100))
+    backup_completed = Column(Integer())
+
+
+class Queue_data(Base):
+    """Represent the queue of the database"""
+
+    __tablename__ = 'queue_data'
+    __table_args__ = (
+        table_args()
+    )
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    backup_id = Column(String(100))
+    volume_id = Column(String(100))
+    backup_status = Column(Integer())
+    executed_at = Column(DateTime())
+    instance_id = Column(String(100))
