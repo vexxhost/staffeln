@@ -79,5 +79,4 @@ class Queue_data(Base):
     backup_id = Column(String(100))
     volume_id = Column(String(100))
     backup_status = Column(Integer())
-    executed_at = Column(DateTime())
     instance_id = Column(String(100))

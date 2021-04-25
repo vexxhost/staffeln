@@ -10,19 +10,34 @@ class Queue(base.StaffelnPersistentObject, base.StaffelnObject, base.StaffelnObj
 
     dbapi = db_api.get_instance()
 
-    feilds = {
+    fields = {
         'id': sfeild.IntegerField(),
         'backup_id': sfeild.StringField(),
         'volume_id': sfeild.UUIDField(),
         'instance_id': sfeild.StringField(),
-        'backup_status': sfeild.IntegerField(),
-        'executed_at': sfeild.DateTimeField()
+        'backup_status': sfeild.IntegerField()
     }
 
     @base.remotable_classmethod
     def list(cls, context, filters=None):
         db_queue = cls.dbapi.get_queue_list(context, filters=filters)
         return [cls._from_db_object(cls(context), obj) for obj in db_queue]
+
+    @base.remotable_classmethod
+    def get_by_backup_id(cls, context, backup_id):
+        """Find a backup based on backup_id
+        :param context: Security context. NOTE: This should only
+                        be used internally by the indirection_api.
+                        Unfortunately, RPC requires context as the first
+                        argument, even though we don't use it.
+                        A context should be set when instantiating the
+                        object, e.g.: Queue(context)
+        :param backup_id: the backup id of volume in queue.
+        :returns: a :class:`Queue` object.
+        """
+        db_queue = cls.dbapi.get_queue_by_backup_id(context, backup_id)
+        queue = cls._from_db_object(cls(context), db_queue)
+        return queue
 
     @base.remotable
     def create(self):
@@ -40,5 +55,5 @@ class Queue(base.StaffelnPersistentObject, base.StaffelnObject, base.StaffelnObj
 
     @base.remotable
     def refresh(self):
-        current = self.get_by_uuid(uuid=self.uuid)
+        current = self.get_by_backup_id(backup_id=self.backup_id)
         self.obj_refresh(current)

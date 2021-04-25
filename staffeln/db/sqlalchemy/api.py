@@ -74,7 +74,7 @@ def add_identity_filter(query, value):
     elif is_uuid_like(value):
         return query.filter_by(backup_id=value)
     else:
-        raise exception.InvalidIdentity(identity=value)
+        LOG.error("Invalid Identity")
 
 
 def _paginate_query(model, limit=None, marker=None, sort_key=None,
@@ -109,15 +109,16 @@ class Connection(api.BaseConnection):
     def _get_relationships(model):
         return inspect(model).relationships
 
-    def _add_backups_filters(self, query, filters):
+    def _add_backup_filters(self, query, filters):
         if filters is None:
             filters = {}
 
-        plain_fields = ['backup_id', 'volume_id', 'instance_id']
+        plain_fields = ['volume_id', 'backup_id',
+                        'backup_completed', 'instance_id']
 
         return self._add_filters(
-            query=query, model=models.Backup_data, filters=filters,
-            plain_fields=plain_fields)
+            query=query, model=models.Backup_data, filters=filters, plain_fields=plain_fields
+        )
 
     def _add_queues_filters(self, query, filters):
         if filters is None:
@@ -142,6 +143,16 @@ class Connection(api.BaseConnection):
 
         return query
 
+    def __add_simple_filter(self, query, model, fieldname, value, operator_):
+        field = getattr(model, fieldname)
+
+        if (fieldname != 'deleted' and value and
+                field.type.python_type is datetime.datetime):
+            if not isinstance(value, datetime.datetime):
+                value = timeutils.parse_isotime(value)
+
+        return query.filter(self.valid_operators[operator_](field, value))
+
     def __decompose_filter(self, raw_fieldname):
         """Decompose a filter name into it's two subparts"""
 
@@ -153,10 +164,25 @@ class Connection(api.BaseConnection):
 
         return fieldname, operator_
 
+    def _get(self, context, model, fieldname, value, eager):
+        query = model_query(model)
+
+        query = query.filter(getattr(model, fieldname) == value)
+        if not context.show_deleted:
+            query = query.filter(model.deleted_at.is_(None))
+
+        try:
+            obj = query.one()
+        except exc.NoResultFound:
+            LOG.error("ResourceNotFound")
+
+        return obj
+
     def _create(self, model, values):
         obj = model()
         cleaned_values = {k: v for k, v in values.items()
                           if k not in self._get_relationships(model)}
+        print(cleaned_values)
         obj.update(cleaned_values)
         obj.save()
         return obj
@@ -171,16 +197,6 @@ class Connection(api.BaseConnection):
                 ref = query.with_lockmode('update').one()
             except exc.NoResultFound:
                 LOG.error("Update backup failed. No result found.")
-
-    def _add_queues_filters(self, query, filters):
-        if filters is None:
-            filters = {}
-
-        plain_fields = ['volume_id', 'backup_status']
-
-        return self._add_filters(
-            query=query, model=models.Queue_data, filters=filters, plain_fields=plain_fields
-        )
 
     def _get_model_list(self, model, add_filter_func, context, filters=None, limit=None, marker=None, sort_key=None, sort_dir=None, eager=False):
         query = model_query(model)
@@ -236,3 +252,14 @@ class Connection(api.BaseConnection):
             return self._update(models.Queue_data, backup_id, values)
         except:
             LOG.error("backup resource not found.")
+
+    def get_queue_by_uuid(self, context, backup_id):
+        return self._get_queue(
+            context, fieldname="uuid", value=backup_id)
+
+    def _get_queue(self, context, fieldname, value):
+        try:
+            return self._get(context, model=models.Queue_data,
+                             fieldname=fieldname, value=value)
+        except:
+            LOG.error("Queue not found")

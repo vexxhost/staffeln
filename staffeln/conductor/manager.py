@@ -8,6 +8,7 @@ import time
 
 from staffeln.common import auth
 from staffeln.conductor import backup
+from staffeln.common import context
 
 
 LOG = log.getLogger(__name__)
@@ -21,6 +22,7 @@ class BackupManager(cotyledon.Service):
         super(BackupManager, self).__init__(worker_id)
         self._shutdown = threading.Event()
         self.conf = conf
+        self.ctx = context.make_context()
         LOG.info("%s init" % self.name)
 
     def run(self):
@@ -43,24 +45,28 @@ class BackupManager(cotyledon.Service):
 
     @periodics.periodic(spacing=CONF.conductor.backup_period, run_immediately=True)
     def backup_engine(self):
-        print("backing... %s" % str(time.time()))
+        LOG.info("backing... %s" % str(time.time()))
         LOG.info("%s periodics" % self.name)
-        conn = auth.create_connection()
-        projects = conn.list_projects()
-        for project in projects:
-            print("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<Project>>>>>>>>>>>>>>>>>>>>>>>>>")
-            print(project.id)
-            servers = conn.list_servers(all_projects=True, filters={
-                                        "project_id": project.id})
-            for server in servers:
-                if not backup.check_vm_backup_metadata(server.metadata):
-                    continue
-                for volume in server.volumes:
-                    print("<<<<<<<<<<<Volume>>>>>>>>>>")
-                    print(volume)
-                    # 1 backup volume
-                    conn.create_volume_backup(volume_id=volume.id, force=True)
-                    # 2 store backup_id in the database
+        queue = backup.Queue().get_queues()
+        queues_to_start = backup.Queue().get_queues(
+            filters={'backup_status': 0})
+        queues_started = backup.Queue().get_queues(
+            filters={'backup_status': 1})
+        queue_completed = backup.Queue().get_queues(
+            filters={'backup_status': 2})
+        if len(queue) == 0:
+            create_queue = backup.Queue().create_queue()
+        elif len(queues_started) != 0:
+            for queue in queues_started:
+                LOG.info("Waiting for backup of %s to be completed" %
+                         queue.volume_id)
+                backup_volume = backup.Backup_data().volume_backup(queue)
+        elif len(queues_to_start) != 0:
+            for queue in queues_to_start:
+                LOG.info("Started backup process for %s" % queue.volume_id)
+                backup_volume = backup.Backup_data().volume_backup(queue)
+        elif len(queue_completed) == len(queue):
+            pass
 
 
 class RotationManager(cotyledon.Service):

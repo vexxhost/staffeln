@@ -14,18 +14,19 @@ class Volume(base.StaffelnPersistentObject, base.StaffelnObject, base.StaffelnOb
         'id': sfeild.IntegerField(),
         'backup_id': sfeild.StringField(),
         'instance_id': sfeild.StringField(),
-        'volume_id': sfeild.UUIDField()
+        'volume_id': sfeild.UUIDField(),
+        'backup_completed': sfeild.IntegerField()
     }
 
-    @base.remotable
-    def list(cls, filters=None):
+    @base.remotable_classmethod
+    def list(cls, context, filters=None):
         """Return a list of :class:`Backup` objects.
 
         :param filters: dict mapping the filter to a value.
         """
-        db_backups = cls.dbapi.get_backup_list(filters=filters)
+        db_backups = cls.dbapi.get_backup_list(context, filters=filters)
 
-        return [cls._from_db_object(cls, obj) for obj in db_backups]
+        return [cls._from_db_object(cls(context), obj) for obj in db_backups]
 
     @base.remotable
     def create(self):
@@ -55,5 +56,5 @@ class Volume(base.StaffelnPersistentObject, base.StaffelnObject, base.StaffelnOb
         checks for updated attributes. Updates are applied from
         the loaded backup column by column, if there are any updates.
         """
-        current = self.get_by_uuid(uuid=self.uuid)
+        current = self.get_by_uuid(backup_id=self.backup_id)
         self.obj_refresh(current)
