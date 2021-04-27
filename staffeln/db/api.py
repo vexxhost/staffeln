@@ -4,9 +4,8 @@ import abc
 from oslo_config import cfg
 from oslo_db import api as db_api
 
-_BACKEND_MAPPING = {'sqlalchemy': 'staffeln.db.sqlalchemy.api'}
-IMPL = db_api.DBAPI.from_config(
-    cfg.CONF, backend_mapping=_BACKEND_MAPPING, lazy=True)
+_BACKEND_MAPPING = {"sqlalchemy": "staffeln.db.sqlalchemy.api"}
+IMPL = db_api.DBAPI.from_config(cfg.CONF, backend_mapping=_BACKEND_MAPPING, lazy=True)
 
 
 def get_instance():
@@ -63,7 +62,7 @@ class BaseConnection(object, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def create_queue(self, values):
         """Create entry in queue_data.
-        :param values: A dict containing several items used to add 
+        :param values: A dict containing several items used to add
                         the volume information for backup
 
                         ::

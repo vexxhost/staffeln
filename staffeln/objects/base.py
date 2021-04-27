@@ -15,7 +15,7 @@ def get_attrname(name):
     """Return the mangled name of the attribute's underlying storage."""
     # FIXME(danms): This is just until we use o.vo's class properties
     # and object base.
-    return '_obj_' + name
+    return "_obj_" + name
 
 
 class StaffelnObject(ovoo_base.VersionedObject):
@@ -27,13 +27,12 @@ class StaffelnObject(ovoo_base.VersionedObject):
     necessary "get" classmethod routines as well as "save" object methods
     as appropriate.
     """
-    OBJ_SERIAL_NAMESPACE = 'staffeln_object'
-    OBJ_PROJECT_NAMESPACE = 'staffeln'
+
+    OBJ_SERIAL_NAMESPACE = "staffeln_object"
+    OBJ_PROJECT_NAMESPACE = "staffeln"
 
     def as_dict(self):
-        return {k: getattr(self, k)
-                for k in self.fields
-                if self.obj_attr_is_set(k)}
+        return {k: getattr(self, k) for k in self.fields if self.obj_attr_is_set(k)}
 
 
 class StaffelnObjectSerializer(ovoo_base.VersionedObjectSerializer):
@@ -43,9 +42,9 @@ class StaffelnObjectSerializer(ovoo_base.VersionedObjectSerializer):
 
 class StaffelnPersistentObject(object):
     feilds = {
-        'created_at': ovoo_fields.DateTimeField(nullable=True),
-        'updated_at': ovoo_fields.DateTimeField(nullable=True),
-        'deleted_at': ovoo_fields.DateTimeField(nullable=True),
+        "created_at": ovoo_fields.DateTimeField(nullable=True),
+        "updated_at": ovoo_fields.DateTimeField(nullable=True),
+        "deleted_at": ovoo_fields.DateTimeField(nullable=True),
     }
 
     object_fields = {}
@@ -53,7 +52,7 @@ class StaffelnPersistentObject(object):
     def obj_refresh(self, loaded_object):
         fields = (field for field in self.feilds if field not in self.object_fields)
         for field in fields:
-            if (self.obj_attr_is_set(field) and self[field] != loaded_object[field]):
+            if self.obj_attr_is_set(field) and self[field] != loaded_object[field]:
                 self[field] = loaded_object[field]
 
     @staticmethod
@@ -76,7 +75,8 @@ class StaffelnObjectRegistry(ovoo_base.VersionedObjectRegistry):
             setattr(objects, cls.obj_name(), cls)
         else:
             cur_version = versionutils.convert_version_to_tuple(
-                getattr(objects, cls.obj_name()).VERSION)
+                getattr(objects, cls.obj_name()).VERSION
+            )
             if version >= cur_version:
                 setattr(objects, cls.obj_name(), cls)
 

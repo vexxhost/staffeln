@@ -26,9 +26,8 @@ CONF = conf.CONF
 
 def table_args():
     engine_name = urlparse.urlparse(CONF.database.connection).scheme
-    if engine_name == 'mysql':
-        return {'mysql_engine': CONF.database.mysql_engine,
-                'mysql_charset': "utf8"}
+    if engine_name == "mysql":
+        return {"mysql_engine": CONF.database.mysql_engine, "mysql_charset": "utf8"}
     return None
 
 
@@ -56,10 +55,10 @@ Base = declarative_base(cls=StaffelnBase)
 class Backup_data(Base):
     """Represent the backup_data"""
 
-    __tablename__ = 'backup_data'
+    __tablename__ = "backup_data"
     __table_args__ = (
-        UniqueConstraint('backup_id', name='unique_backup0uuid'),
-        table_args()
+        UniqueConstraint("backup_id", name="unique_backup0uuid"),
+        table_args(),
     )
     id = Column(Integer, primary_key=True, autoincrement=True)
     backup_id = Column(String(100))
@@ -71,10 +70,8 @@ class Backup_data(Base):
 class Queue_data(Base):
     """Represent the queue of the database"""
 
-    __tablename__ = 'queue_data'
-    __table_args__ = (
-        table_args()
-    )
+    __tablename__ = "queue_data"
+    __table_args__ = table_args()
     id = Column(Integer, primary_key=True, autoincrement=True)
     backup_id = Column(String(100))
     volume_id = Column(String(100))

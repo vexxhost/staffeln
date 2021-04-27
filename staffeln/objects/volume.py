@@ -5,17 +5,19 @@ from staffeln.objects import fields as sfeild
 
 
 @base.StaffelnObjectRegistry.register
-class Volume(base.StaffelnPersistentObject, base.StaffelnObject, base.StaffelnObjectDictCompat):
-    VERSION = '1.0'
+class Volume(
+    base.StaffelnPersistentObject, base.StaffelnObject, base.StaffelnObjectDictCompat
+):
+    VERSION = "1.0"
 
     dbapi = db_api.get_instance()
 
     fields = {
-        'id': sfeild.IntegerField(),
-        'backup_id': sfeild.StringField(),
-        'instance_id': sfeild.StringField(),
-        'volume_id': sfeild.UUIDField(),
-        'backup_completed': sfeild.IntegerField()
+        "id": sfeild.IntegerField(),
+        "backup_id": sfeild.StringField(),
+        "instance_id": sfeild.StringField(),
+        "volume_id": sfeild.UUIDField(),
+        "backup_completed": sfeild.IntegerField(),
     }
 
     @base.remotable_classmethod

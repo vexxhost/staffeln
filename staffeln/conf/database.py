@@ -1,19 +1,16 @@
 from oslo_config import cfg
 from oslo_db import options as oslo_db_options
 
-_DEFAULT_SQL_CONNECTION = 'mysql+pymysql://root:password@localhost:3306/staffeln'
+_DEFAULT_SQL_CONNECTION = "mysql+pymysql://root:password@localhost:3306/staffeln"
 
 database = cfg.OptGroup(
-    'database',
-    title='Database options',
-    help='Options under this group are used for defining database.'
+    "database",
+    title="Database options",
+    help="Options under this group are used for defining database.",
 )
 
 SQL_OPTS = [
-    cfg.StrOpt('mysql_engine',
-               default='InnoDB',
-               help='MySQL engine to use.'
-               ),
+    cfg.StrOpt("mysql_engine", default="InnoDB", help="MySQL engine to use."),
 ]
 
 

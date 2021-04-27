@@ -5,17 +5,19 @@ from staffeln.objects import fields as sfeild
 
 
 @base.StaffelnObjectRegistry.register
-class Queue(base.StaffelnPersistentObject, base.StaffelnObject, base.StaffelnObjectDictCompat):
-    VERSION = '1.0'
+class Queue(
+    base.StaffelnPersistentObject, base.StaffelnObject, base.StaffelnObjectDictCompat
+):
+    VERSION = "1.0"
 
     dbapi = db_api.get_instance()
 
     fields = {
-        'id': sfeild.IntegerField(),
-        'backup_id': sfeild.StringField(),
-        'volume_id': sfeild.UUIDField(),
-        'instance_id': sfeild.StringField(),
-        'backup_status': sfeild.IntegerField()
+        "id": sfeild.IntegerField(),
+        "backup_id": sfeild.StringField(),
+        "volume_id": sfeild.UUIDField(),
+        "instance_id": sfeild.StringField(),
+        "backup_status": sfeild.IntegerField(),
     }
 
     @base.remotable_classmethod
@@ -41,6 +43,7 @@ class Queue(base.StaffelnPersistentObject, base.StaffelnObject, base.StaffelnObj
 
     @base.remotable
     def create(self):
+        """Create a :class:`Backup_data` record in the DB"""
         values = self.obj_get_changes()
         db_queue = self.dbapi.create_queue(values)
         self._from_db_object(self, db_queue)

@@ -11,7 +11,7 @@ from staffeln.db.sqlalchemy import models
 
 
 def _alembic_config():
-    path = os.path.join(os.path.dirname(__file__), 'alembic.ini')
+    path = os.path.join(os.path.dirname(__file__), "alembic.ini")
     config = alembic_config.Config(path)
     return config
 

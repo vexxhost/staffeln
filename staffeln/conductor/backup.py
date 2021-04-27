@@ -4,7 +4,6 @@ import collections
 from oslo_log import log
 from staffeln.common import auth
 from staffeln.common import context
-# from staffeln.objects import backup as backup_api
 from staffeln import objects
 from staffeln.common import short_id
 
@@ -13,11 +12,11 @@ LOG = log.getLogger(__name__)
 
 
 BackupMapping = collections.namedtuple(
-    'BackupMapping', ['volume_id', 'backup_id', 'instance_id', 'backup_completed'])
+    "BackupMapping", ["volume_id", "backup_id", "instance_id", "backup_completed"]
+)
 
 QueueMapping = collections.namedtuple(
-    'QueueMapping', ['volume_id', 'backup_id',
-                     'instance_id', 'backup_status']
+    "QueueMapping", ["volume_id", "backup_id", "instance_id", "backup_status"]
 )
 
 conn = auth.create_connection()
@@ -26,7 +25,7 @@ conn = auth.create_connection()
 def check_vm_backup_metadata(metadata):
     if not CONF.conductor.backup_metadata_key in metadata:
         return False
-    return metadata[CONF.conductor.backup_metadata_key].lower() in ['true']
+    return metadata[CONF.conductor.backup_metadata_key].lower() in ["true"]
 
 
 def backup_volumes_in_project(conn, project_name):
@@ -36,10 +35,12 @@ def backup_volumes_in_project(conn, project_name):
 
 def get_projects_list():
     projects = conn.list_projects()
-    return(projects)
+    return projects
 
 
 class Queue(object):
+    """Implmentations of the queue with the sql."""
+
     def __init__(self):
         self.ctx = context.make_context()
         self.discovered_map = None
@@ -51,64 +52,70 @@ class Queue(object):
     def available_queues(self):
         """Queues loaded from DB"""
         if self._available_queues is None:
-            self._available_queues = objects.Queue.list(
-                self.ctx)
+            self._available_queues = objects.Queue.list(self.ctx)
         return self._available_queues
 
     @property
     def available_queues_map(self):
-        """Mapping of backup loaded from DB"""
+        """Mapping of backup queue loaded from DB"""
         if self._available_queues_map is None:
             self._available_queues_map = {
                 QueueMapping(
                     backup_id=g.backup_id,
                     volume_id=g.volume_id,
                     instance_id=g.instance_id,
-                    backup_status=g.backup_status): g
+                    backup_status=g.backup_status,
+                ): g
                 for g in self.available_queues
             }
         return self._available_queues_map
 
     def get_queues(self, filters=None):
+        """Get the list of volume queue columns from the queue_data table"""
         queues = objects.Queue.list(self.ctx, filters=filters)
         return queues
 
     def create_queue(self):
+        """Create the queue of all the volumes for backup"""
         self.discovered_map = self.check_instance_volumes()
         queues_map = self.discovered_map["queues"]
         for queue_name, queue_map in queues_map.items():
             self._volume_queue(queue_map)
 
     def check_instance_volumes(self):
+        """Get the list of all the volumes from the project using openstacksdk
+        Function first list all the servers in the project and get the volumes
+        that are attached to the instance.
+        """
         queues_map = {}
-        discovered_map = {
-            "queues": queues_map
-        }
+        discovered_map = {"queues": queues_map}
         projects = get_projects_list()
         for project in projects:
             servers = conn.compute.servers(
-                details=True, all_projects=True, project_id=project.id)
+                details=True, all_projects=True, project_id=project.id
+            )
             for server in servers:
                 server_id = server.host_id
                 volumes = server.attached_volumes
                 for volume in volumes:
-                    queues_map['queues'] = QueueMapping(
-                        volume_id=volume['id'],
+                    queues_map["queues"] = QueueMapping(
+                        volume_id=volume["id"],
                         backup_id=short_id.generate_id(),
                         instance_id=server_id,
-                        backup_status=1
+                        backup_status=1,
                     )
         return discovered_map
 
     def _volume_queue(self, queue_map):
-        # print(queue_map)
+        """Saves the queue data to the database."""
         volume_id = queue_map.volume_id
         backup_id = queue_map.backup_id
         instance_id = queue_map.instance_id
         backup_status = queue_map.backup_status
         backup_mapping = dict()
-        matching_backups = [g for g in self.available_queues
-                            if g.backup_id == backup_id]
+        matching_backups = [
+            g for g in self.available_queues if g.backup_id == backup_id
+        ]
         if not matching_backups:
             volume_queue = objects.Queue(self.ctx)
             volume_queue.backup_id = backup_id
@@ -119,6 +126,7 @@ class Queue(object):
 
 
 class Backup_data(object):
+    """Implementation for volumes backup"""
 
     def __init__(self):
         self.ctx = context.make_context()
@@ -143,7 +151,8 @@ class Backup_data(object):
                     backup_id=g.backup_id,
                     volume_id=g.volume_id,
                     instance_id=g.instance_id,
-                    backup_completed=g.backup_completed): g
+                    backup_completed=g.backup_completed,
+                ): g
                 for g in self.available_backups
             }
         return self._available_backups_map
@@ -152,15 +161,14 @@ class Backup_data(object):
         pass
 
     def _volume_backup(self, backup_map):
+        """Saves the backup data to database."""
         volume_id = backup_map.volume_id
         backup_id = backup_map.backup_id
         instance_id = backup_map.instance_id
         backup_mapping = dict()
-        for g in self.available_backups:
-            print(g)
-            print(g.volume_id)
-        matching_backups = [g for g in self.available_backups
-                            if g.backup_id == backup_id]
+        matching_backups = [
+            g for g in self.available_backups if g.backup_id == backup_id
+        ]
         if not matching_backups:
             volume = objects.Volume(self.ctx)
             volume.backup_id = backup_id

@@ -2,40 +2,28 @@ from oslo_config import cfg
 
 
 api_group = cfg.OptGroup(
-    'api',
-    title='API options',
-    help='Options under this group are used to define staffeln API.'
+    "api",
+    title="API options",
+    help="Options under this group are used to define staffeln API.",
 )
 
 connection_opts = [
     cfg.StrOpt(
-        'host',
+        "host",
         default="0.0.0.0",
-        help='IP address on which the staffeln API will listen.'
+        help="IP address on which the staffeln API will listen.",
     ),
     cfg.PortOpt(
-        'port',
+        "port",
         default=8808,
-        help='Staffeln API listens on this port number for incoming requests.'
+        help="Staffeln API listens on this port number for incoming requests.",
     ),
-    cfg.BoolOpt(
-        'enabled_ssl',
-        default=False,
-        help='ssl enabled'
-    ),
-    cfg.StrOpt(
-        'ssl_key_file',
-        default=False,
-        help='ssl key file path'
-    ),
-    cfg.StrOpt(
-        'ssl_cert_file',
-        default=False,
-        help='ssl cert file path'
-    ),
+    cfg.BoolOpt("enabled_ssl", default=False, help="ssl enabled"),
+    cfg.StrOpt("ssl_key_file", default=False, help="ssl key file path"),
+    cfg.StrOpt("ssl_cert_file", default=False, help="ssl cert file path"),
 ]
 
-API_OPTS = (connection_opts)
+API_OPTS = connection_opts
 
 
 def register_opts(conf):
