@@ -41,16 +41,16 @@ class StaffelnObjectSerializer(ovoo_base.VersionedObjectSerializer):
 
 
 class StaffelnPersistentObject(object):
-    feilds = {
+    fields = {
         "created_at": ovoo_fields.DateTimeField(nullable=True),
+        # "deleted_at": ovoo_fields.DateTimeField(nullable=True),
         "updated_at": ovoo_fields.DateTimeField(nullable=True),
-        "deleted_at": ovoo_fields.DateTimeField(nullable=True),
     }
 
     object_fields = {}
 
     def obj_refresh(self, loaded_object):
-        fields = (field for field in self.feilds if field not in self.object_fields)
+        fields = (field for field in self.fields if field not in self.object_fields)
         for field in fields:
             if self.obj_attr_is_set(field) and self[field] != loaded_object[field]:
                 self[field] = loaded_object[field]

@@ -1,7 +1,7 @@
 from oslo_config import cfg
 from oslo_db import options as oslo_db_options
 
-_DEFAULT_SQL_CONNECTION = "mysql+pymysql://root:password@localhost:3306/staffeln"
+_DEFAULT_SQL_CONNECTION = "mysql+pymysql://admin:123123@192.168.2.115:3306/staffeln"
 
 database = cfg.OptGroup(
     "database",

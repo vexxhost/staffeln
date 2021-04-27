@@ -6,7 +6,7 @@ import sys
 import threading
 import time
 
-from staffeln.common import auth
+from staffeln.common import constants
 from staffeln.conductor import backup
 from staffeln.common import context
 
@@ -49,11 +49,14 @@ class BackupManager(cotyledon.Service):
         LOG.info("%s periodics" % self.name)
         queue = backup.Queue().get_queues()
         queues_to_start = backup.Queue().get_queues(
-            filters={'backup_status': 0})
+            filters={'backup_status': constants.BACKUP_PLANNED})
+        print(queues_to_start)
         queues_started = backup.Queue().get_queues(
-            filters={'backup_status': 1})
+            filters={'backup_status': constants.BACKUP_WIP})
+        print(queues_started)
         queue_completed = backup.Queue().get_queues(
-            filters={'backup_status': 2})
+            filters={'backup_status': constants.BACKUP_COMPLETED})
+        print(queue_completed)
         if len(queue) == 0:
             create_queue = backup.Queue().create_queue()
         elif len(queues_started) != 0:

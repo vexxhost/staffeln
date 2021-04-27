@@ -1,6 +1,5 @@
 """SQLAlchemy storage backend."""
 
-import collections
 import datetime
 import operator
 
@@ -15,13 +14,9 @@ from oslo_utils import uuidutils
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm import exc
 
-
-from staffeln.i18n import _
-from staffeln.common import config
-from staffeln.db import api
 from staffeln.db.sqlalchemy import models
 from staffeln.common import short_id
-from staffeln import objects
+
 
 LOG = log.getLogger(__name__)
 
@@ -91,7 +86,7 @@ def _paginate_query(
     return query.all()
 
 
-class Connection(api.BaseConnection):
+class Connection(object):
     """SQLAlchemy connection."""
 
     valid_operators = {
@@ -186,8 +181,8 @@ class Connection(api.BaseConnection):
         query = model_query(model)
 
         query = query.filter(getattr(model, fieldname) == value)
-        if not context.show_deleted:
-            query = query.filter(model.deleted_at.is_(None))
+        # if not context.show_deleted:
+        #     query = query.filter(model.deleted_at.is_(None))
 
         try:
             obj = query.one()
