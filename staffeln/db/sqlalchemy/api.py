@@ -66,8 +66,6 @@ def add_identity_filter(query, value):
     """
     if is_int_like(value):
         return query.filter_by(id=value)
-    elif is_uuid_like(value):
-        return query.filter_by(backup_id=value)
     else:
         LOG.error("Invalid Identity")
 
@@ -177,12 +175,10 @@ class Connection(object):
 
         return fieldname, operator_
 
-    def _get(self, context, model, fieldname, value, eager):
+    def _get(self, context, model, fieldname, value):
         query = model_query(model)
 
         query = query.filter(getattr(model, fieldname) == value)
-        # if not context.show_deleted:
-        #     query = query.filter(model.deleted_at.is_(None))
 
         try:
             obj = query.one()
@@ -196,7 +192,6 @@ class Connection(object):
         cleaned_values = {
             k: v for k, v in values.items() if k not in self._get_relationships(model)
         }
-        print(cleaned_values)
         obj.update(cleaned_values)
         obj.save()
         return obj
@@ -208,9 +203,11 @@ class Connection(object):
             query = model_query(model, session=session)
             query = add_identity_filter(query, id_)
             try:
-                ref = query.with_lockmode("update").one()
+                ref = query.with_for_update().one()
             except exc.NoResultFound:
                 LOG.error("Update backup failed. No result found.")
+            ref.update(values)
+        return ref
 
     def _get_model_list(
         self,
@@ -267,22 +264,22 @@ class Connection(object):
             models.Queue_data, self._add_queues_filters, *args, **kwargs
         )
 
-    def update_queue(self, backup_id, values):
-        if "backup_id" in values:
-            LOG.error("Cannot override backup_id for existing backup queue.")
-
+    def update_queue(self, id, values):
+        print(self._update(models.Queue_data, id, values))
         try:
-            return self._update(models.Queue_data, backup_id, values)
+            return self._update(models.Queue_data, id, values)
         except:
-            LOG.error("backup resource not found.")
+            LOG.error("Queue resource not found.")
 
-    def get_queue_by_backup_id(self, context, backup_id):
+    def get_queue_by_id(self, context, id):
         """Get the column from queue_data with matching backup_id"""
-        return self._get_queue(context, fieldname="backup_id", value=backup_id)
+        return self._get_queue(context, fieldname="id", value=id)
 
     def _get_queue(self, context, fieldname, value):
         """Get the columns from queue_data table"""
+
         try:
+
             return self._get(
                 context, model=models.Queue_data, fieldname=fieldname, value=value
             )

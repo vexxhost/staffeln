@@ -1,7 +1,10 @@
 from oslo_config import cfg
 from oslo_db import options as oslo_db_options
+from staffeln.conf import paths
 
-_DEFAULT_SQL_CONNECTION = "mysql+pymysql://admin:123123@192.168.2.115:3306/staffeln"
+_DEFAULT_SQL_CONNECTION = "sqlite:///{0}".format(
+    paths.state_path_def("staffeln.sqlite")
+)
 
 database = cfg.OptGroup(
     "database",

@@ -1,6 +1,7 @@
 import staffeln.conf
 import collections
 
+from openstack.block_storage.v2 import backup
 from oslo_log import log
 from staffeln.common import auth
 from staffeln.common import context
@@ -38,7 +39,7 @@ def get_projects_list():
     return projects
 
 
-class Queue(object):
+class Backup(object):
     """Implmentations of the queue with the sql."""
 
     def __init__(self):
@@ -100,9 +101,9 @@ class Queue(object):
                 for volume in volumes:
                     queues_map["queues"] = QueueMapping(
                         volume_id=volume["id"],
-                        backup_id=short_id.generate_id(),
+                        backup_id="NULL",
                         instance_id=server_id,
-                        backup_status=1,
+                        backup_status=0,
                     )
         return discovered_map
 
@@ -124,54 +125,40 @@ class Queue(object):
             volume_queue.backup_status = backup_status
             volume_queue.create()
 
+    def volume_backup_initiate(self, queue):
+        """Initiate the backup of the volume
+        :params: queue: Provide the map of the volume that needs
+                  backup.
+        This function will call the backupup api and change the
+        backup_status and backup_id in the queue table.
+        """
+        volume_info = conn.get_volume(queue.volume_id)
+        backup_id = queue.backup_id
+        if backup_id == "NULL":
+            volume_backup = conn.block_storage.create_backup(
+                volume_id=queue.volume_id, force=True
+            )
+            update_queue = objects.Queue.get_by_id(self.ctx, queue.id)
+            update_queue.backup_id = volume_backup.id
+            update_queue.backup_status = 1
+            update_queue.save()
 
-class Backup_data(object):
-    """Implementation for volumes backup"""
-
-    def __init__(self):
-        self.ctx = context.make_context()
-        self.discovered_map = None
-        self.backup_mapping = dict()
-        self._available_backups = None
-        self._available_backups_map = None
-
-    @property
-    def available_backups(self):
-        """Backups loaded from DB"""
-        if self._available_backups is None:
-            self._available_backups = objects.Volume.list(self.ctx)
-        return self._available_backups
-
-    @property
-    def available_backups_map(self):
-        """Mapping of backup loaded from DB"""
-        if self._available_backups_map is None:
-            self._available_backups_map = {
-                BackupMapping(
-                    backup_id=g.backup_id,
-                    volume_id=g.volume_id,
-                    instance_id=g.instance_id,
-                    backup_completed=g.backup_completed,
-                ): g
-                for g in self.available_backups
-            }
-        return self._available_backups_map
-
-    def volume_backup(self, queue):
-        pass
-
-    def _volume_backup(self, backup_map):
-        """Saves the backup data to database."""
-        volume_id = backup_map.volume_id
-        backup_id = backup_map.backup_id
-        instance_id = backup_map.instance_id
-        backup_mapping = dict()
-        matching_backups = [
-            g for g in self.available_backups if g.backup_id == backup_id
-        ]
-        if not matching_backups:
-            volume = objects.Volume(self.ctx)
-            volume.backup_id = backup_id
-            volume.volume_id = volume_id
-            volume.instance_id = instance_id
-            volume.create()
+    def check_volume_backup_status(self, queue):
+        """Checks the backup status of the volume
+        :params: queue: Provide the map of the volume that needs backup
+                 status checked.
+        Call the backups api to see if the backup is successful.
+        """
+        for raw in conn.block_storage.backups(volume_id=queue.volume_id):
+            backup_info = raw.to_dict()
+            if backup_info.id == queue.id:
+                if backup_info.status == error:
+                    Log.error("Backup of the volume %s failed." % queue.id)
+                    ## Call db api to remove the queue object.
+                elif backup_info.status == "success":
+                    LOG.info("Backup of the volume %s is successful." % queue.volume_id)
+                    ## call db api to remove the queue object.
+                    ## Call db api to add the backup status in volume_backup table.
+                else:
+                    pass
+                    ## Wait for the backup to be completed.

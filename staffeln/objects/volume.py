@@ -20,14 +20,14 @@ class Volume(
     }
 
     @base.remotable_classmethod
-    def list(cls, context, filters=None):
+    def list(cls, filters=None):
         """Return a list of :class:`Backup` objects.
 
         :param filters: dict mapping the filter to a value.
         """
-        db_backups = cls.dbapi.get_backup_list(context, filters=filters)
+        db_backups = cls.dbapi.get_backup_list(filters=filters)
 
-        return [cls._from_db_object(cls(context), obj) for obj in db_backups]
+        return [cls._from_db_object(cls(), obj) for obj in db_backups]
 
     @base.remotable
     def create(self):

@@ -31,8 +31,7 @@ class BackupManager(cotyledon.Service):
             (self.backup_engine, (), {}),
         ]
         periodic_worker = periodics.PeriodicWorker(periodic_callables)
-        periodic_thread = threading.Thread(
-            target=periodic_worker.start)
+        periodic_thread = threading.Thread(target=periodic_worker.start)
         periodic_thread.daemon = True
         periodic_thread.start()
 
@@ -47,27 +46,26 @@ class BackupManager(cotyledon.Service):
     def backup_engine(self):
         LOG.info("backing... %s" % str(time.time()))
         LOG.info("%s periodics" % self.name)
-        queue = backup.Queue().get_queues()
-        queues_to_start = backup.Queue().get_queues(
-            filters={'backup_status': constants.BACKUP_PLANNED})
-        print(queues_to_start)
-        queues_started = backup.Queue().get_queues(
-            filters={'backup_status': constants.BACKUP_WIP})
-        print(queues_started)
-        queue_completed = backup.Queue().get_queues(
-            filters={'backup_status': constants.BACKUP_COMPLETED})
-        print(queue_completed)
+        queue = backup.Backup().get_queues()
+        queues_to_start = backup.Backup().get_queues(
+            filters={"backup_status": constants.BACKUP_PLANNED}
+        )
+        queues_started = backup.Backup().get_queues(
+            filters={"backup_status": constants.BACKUP_WIP}
+        )
+        queue_completed = backup.Backup().get_queues(
+            filters={"backup_status": constants.BACKUP_COMPLETED}
+        )
         if len(queue) == 0:
-            create_queue = backup.Queue().create_queue()
+            create_queue = backup.Backup().create_queue()
         elif len(queues_started) != 0:
             for queue in queues_started:
-                LOG.info("Waiting for backup of %s to be completed" %
-                         queue.volume_id)
-                backup_volume = backup.Backup_data().volume_backup(queue)
+                LOG.info("Waiting for backup of %s to be completed" % queue.volume_id)
+                backup_volume = backup.Backup().check_volume_backup_status(queue)
         elif len(queues_to_start) != 0:
             for queue in queues_to_start:
                 LOG.info("Started backup process for %s" % queue.volume_id)
-                backup_volume = backup.Backup_data().volume_backup(queue)
+                backup_volume = backup.Backup().volume_backup_initiate(queue)
         elif len(queue_completed) == len(queue):
             pass
 
@@ -89,8 +87,7 @@ class RotationManager(cotyledon.Service):
             (self.rotation_engine, (), {}),
         ]
         periodic_worker = periodics.PeriodicWorker(periodic_callables)
-        periodic_thread = threading.Thread(
-            target=periodic_worker.start)
+        periodic_thread = threading.Thread(target=periodic_worker.start)
         periodic_thread.daemon = True
         periodic_thread.start()
 
