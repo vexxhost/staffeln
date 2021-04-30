@@ -60,3 +60,8 @@ class Queue(
     def refresh(self):
         current = self.get_by_backup_id(backup_id=self.backup_id)
         self.obj_refresh(current)
+
+    @base.remotable
+    def delete_queue(self):
+        """Soft Delete the :class:`Queue_data` from the DB"""
+        db_obj = self.dbapi.soft_delete_queue(self.id)

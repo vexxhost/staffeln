@@ -53,9 +53,6 @@ class BackupManager(cotyledon.Service):
         queues_started = backup.Backup().get_queues(
             filters={"backup_status": constants.BACKUP_WIP}
         )
-        queue_completed = backup.Backup().get_queues(
-            filters={"backup_status": constants.BACKUP_COMPLETED}
-        )
         if len(queue) == 0:
             create_queue = backup.Backup().create_queue()
         elif len(queues_started) != 0:
@@ -66,8 +63,6 @@ class BackupManager(cotyledon.Service):
             for queue in queues_to_start:
                 LOG.info("Started backup process for %s" % queue.volume_id)
                 backup_volume = backup.Backup().volume_backup_initiate(queue)
-        elif len(queue_completed) == len(queue):
-            pass
 
 
 class RotationManager(cotyledon.Service):

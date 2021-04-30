@@ -4,11 +4,31 @@ import os
 
 PATH_OPTS = [
     cfg.StrOpt(
+        "pybasedir",
+        default=os.path.abspath(os.path.join(os.path.dirname(__file__), "../")),
+        help="Directory where the staffeln python module is installed.",
+    ),
+    cfg.StrOpt(
+        "bindir",
+        default="$pybasedir/bin",
+        help="Directory where staffeln binaries are installed.",
+    ),
+    cfg.StrOpt(
         "state_path",
         default="$pybasedir",
         help="Top-level directory for maintaining staffeln's state.",
     ),
 ]
+
+
+def basedir_def(*args):
+    """Return an uninterpolated path relative to $pybasedir."""
+    return os.path.join("$pybasedir", *args)
+
+
+def bindir_def(*args):
+    """Return an uninterpolated path relative to $bindir."""
+    return os.path.join("$bindir", *args)
 
 
 def state_path_def(*args):

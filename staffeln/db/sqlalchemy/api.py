@@ -209,6 +209,21 @@ class Connection(object):
             ref.update(values)
         return ref
 
+    @staticmethod
+    def _soft_delete(model, id_):
+        session = get_session()
+        with session.begin():
+            query = model_query(model, session=session)
+            query = add_identity_filter(query, id_)
+            try:
+                row = query.one()
+
+            except exc.NoResultFound:
+                LOG.error("Resource Not found.")
+
+            deleted_row = session.delete(row)
+            return row
+
     def _get_model_list(
         self,
         model,
@@ -285,3 +300,9 @@ class Connection(object):
             )
         except:
             LOG.error("Queue not found")
+
+    def soft_delete_queue(self, id):
+        try:
+            return self._soft_delete(models.Queue_data, id)
+        except:
+            LOG.error("Queue Not found.")

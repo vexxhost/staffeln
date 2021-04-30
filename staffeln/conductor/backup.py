@@ -44,8 +44,12 @@ class Backup(object):
 
     def __init__(self):
         self.ctx = context.make_context()
-        self.discovered_map = None
+        self.discovered_queue_map = None
+        self.discovered_backup_map = None
         self.queue_mapping = dict()
+        self.volume_mapping = dict()
+        self._available_backups = None
+        self._available_backups_map = None
         self._available_queues = None
         self._available_queues_map = None
 
@@ -71,6 +75,28 @@ class Backup(object):
             }
         return self._available_queues_map
 
+    @property
+    def available_backups(self):
+        """Backups loaded from DB"""
+        if self._available_backups is None:
+            self._available_backups = objects.Volume.list(self.ctx)
+        return self._available_backups
+
+    @property
+    def available_backups_map(self):
+        """Mapping of backup loaded from DB"""
+        if self._available_backups_map is None:
+            self._available_backups_map = {
+                QueueMapping(
+                    backup_id=g.backup_id,
+                    volume_id=g.volume_id,
+                    instance_id=g.instance_id,
+                    backup_completed=g.backup_completed,
+                ): g
+                for g in self.available_queues
+            }
+        return self._available_queues_map
+
     def get_queues(self, filters=None):
         """Get the list of volume queue columns from the queue_data table"""
         queues = objects.Queue.list(self.ctx, filters=filters)
@@ -78,8 +104,8 @@ class Backup(object):
 
     def create_queue(self):
         """Create the queue of all the volumes for backup"""
-        self.discovered_map = self.check_instance_volumes()
-        queues_map = self.discovered_map["queues"]
+        self.discovered_queue_map = self.check_instance_volumes()
+        queues_map = self.discovered_queue_map["queues"]
         for queue_name, queue_map in queues_map.items():
             self._volume_queue(queue_map)
 
@@ -89,7 +115,7 @@ class Backup(object):
         that are attached to the instance.
         """
         queues_map = {}
-        discovered_map = {"queues": queues_map}
+        discovered_queue_map = {"queues": queues_map}
         projects = get_projects_list()
         for project in projects:
             servers = conn.compute.servers(
@@ -105,7 +131,7 @@ class Backup(object):
                         instance_id=server_id,
                         backup_status=0,
                     )
-        return discovered_map
+        return discovered_queue_map
 
     def _volume_queue(self, queue_map):
         """Saves the queue data to the database."""
@@ -150,15 +176,46 @@ class Backup(object):
         Call the backups api to see if the backup is successful.
         """
         for raw in conn.block_storage.backups(volume_id=queue.volume_id):
-            backup_info = raw.to_dict()
-            if backup_info.id == queue.id:
-                if backup_info.status == error:
-                    Log.error("Backup of the volume %s failed." % queue.id)
-                    ## Call db api to remove the queue object.
+            backup_info = raw
+            if backup_info.id == queue.backup_id:
+                if backup_info.status == "error":
+                    LOG.error("Backup of the volume %s failed." % queue.id)
+                    queue_delete = objects.Queue.get_by_id(self.ctx, queue.id)
+                    queue_delete.delete_queue()
                 elif backup_info.status == "success":
+                    backups_map = {}
+                    discovered_backup_map = {"backups": backups_map}
                     LOG.info("Backup of the volume %s is successful." % queue.volume_id)
+                    backups_map["backups"] = BackupMapping(
+                        volume_id=queue.volume_id,
+                        backup_id=queue.backup_id,
+                        instance_id=queue.instance_id,
+                        backup_completed=1,
+                    )
+                    # Save volume backup success to backup_data table.
+                    self._volume_backup(discovered_backup_map)
                     ## call db api to remove the queue object.
-                    ## Call db api to add the backup status in volume_backup table.
+                    queue_delete = objects.Queue.get_by_id(self.ctx, queue.id)
+                    queue_delete.delete_queue()
                 else:
                     pass
                     ## Wait for the backup to be completed.
+
+    def _volume_backup(self, discovered_backup_map):
+        volumes_map = discovered_backup_map["backups"]
+        for volume_name, volume_map in volumes_map.items():
+            volume_id = volume_map.volume_id
+            backup_id = volume_map.backup_id
+            instance_id = volume_map.instance_id
+            backup_completed = volume_map.backup_completed
+            backup_mapping = dict()
+            matching_backups = [
+                g for g in self.available_backups if g.backup_id == backup_id
+            ]
+            if not matching_backups:
+                volume_backup = objects.Volume(self.ctx)
+                volume_backup.backup_id = backup_id
+                volume_backup.volume_id = volume_id
+                volume_backup.instance_id = instance_id
+                volume_backup.backup_completed = backup_completed
+                volume_backup.create()
