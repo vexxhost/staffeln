@@ -48,58 +48,6 @@ class Backup(object):
         self.discovered_backup_map = None
         self.queue_mapping = dict()
         self.volume_mapping = dict()
-        self._available_backups = None
-        self._available_backups_map = None
-        self._available_queues = None
-        self._available_queues_map = None
-
-    # TODO(Susanta): Can you explain what it's for
-    @property
-    def available_queues(self):
-        """Queues loaded from DB"""
-        if self._available_queues is None:
-            self._available_queues = objects.Queue.list(self.ctx)
-        return self._available_queues
-
-    # TODO(Susanta): Can you explain what it's for
-    @property
-    def available_queues_map(self):
-        """Mapping of backup queue loaded from DB"""
-        if self._available_queues_map is None:
-            self._available_queues_map = {
-                QueueMapping(
-                    backup_id=g.backup_id,
-                    volume_id=g.volume_id,
-                    instance_id=g.instance_id,
-                    backup_status=g.backup_status,
-                ): g
-                for g in self.available_queues
-            }
-        return self._available_queues_map
-
-    # TODO(Susanta): Can you explain what it's for
-    # @property
-    # def available_backups(self):
-    #     """Backups loaded from DB"""
-    #     if self._available_backups is None:
-    #         self._available_backups = objects.Volume.list(self.ctx)
-    #     return self._available_backups
-
-    # TODO(Susanta): Can you explain what it's for
-    @property
-    def available_backups_map(self):
-        """Mapping of backup loaded from DB"""
-        if self._available_backups_map is None:
-            self._available_backups_map = {
-                QueueMapping(
-                    backup_id=g.backup_id,
-                    volume_id=g.volume_id,
-                    instance_id=g.instance_id,
-                    backup_completed=g.backup_completed,
-                ): g
-                for g in self.available_queues
-            }
-        return self._available_queues_map
 
     def get_queues(self, filters=None):
         """Get the list of volume queue columns from the queue_data table"""
@@ -139,22 +87,18 @@ class Backup(object):
 
     def _volume_queue(self, task):
         """Saves the queue data to the database."""
-        # TODO(Susanta): Why does this need?
-        matching_backups = [
-            g for g in self.available_queues if g.backup_id == task.backup_id
-        ]
-        if not matching_backups:
-            volume_queue = objects.Queue(self.ctx)
-            volume_queue.backup_id = task.backup_id
-            volume_queue.volume_id = task.volume_id
-            volume_queue.instance_id = task.instance_id
-            volume_queue.backup_status = task.backup_status
-            volume_queue.create()
 
         # TODO(Alex): Need to escalate discussion
-        # When create the task list, need to check the WIP backup genenrator
+        # When create the task list, need to check the WIP backup generators
         # which are created in the past backup cycle.
         # Then skip to create new tasks for the volumes whose backup is WIP
+        volume_queue = objects.Queue(self.ctx)
+        volume_queue.backup_id = task.backup_id
+        volume_queue.volume_id = task.volume_id
+        volume_queue.instance_id = task.instance_id
+        volume_queue.backup_status = task.backup_status
+        volume_queue.create()
+
 
     def volume_backup_initiate(self, queue):
         """Initiate the backup of the volume
