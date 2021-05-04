@@ -1,6 +1,7 @@
 from oslo_config import cfg
 from oslo_db import options as oslo_db_options
 from staffeln.conf import paths
+from staffeln.i18n import _
 
 _DEFAULT_SQL_CONNECTION = "sqlite:///{0}".format(
     paths.state_path_def("staffeln.sqlite")
@@ -9,11 +10,11 @@ _DEFAULT_SQL_CONNECTION = "sqlite:///{0}".format(
 database = cfg.OptGroup(
     "database",
     title="Database options",
-    help="Options under this group are used for defining database.",
+    help=_("Options under this group are used for defining database."),
 )
 
 SQL_OPTS = [
-    cfg.StrOpt("mysql_engine", default="InnoDB", help="MySQL engine to use."),
+    cfg.StrOpt("mysql_engine", default="InnoDB", help=_("MySQL engine to use.")),
 ]
 
 

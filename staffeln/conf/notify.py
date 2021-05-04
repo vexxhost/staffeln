@@ -1,10 +1,11 @@
 from oslo_config import cfg
 from staffeln.i18n import _
 
+
 notify_group = cfg.OptGroup(
     "notification",
     title="Notification options",
-    help="Options under this group are used to define notification settings.",
+    help=_("Options under this group are used to define notification settings."),
 )
 
 email_opts = [
