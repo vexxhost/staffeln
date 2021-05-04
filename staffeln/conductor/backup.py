@@ -117,7 +117,7 @@ class Backup(object):
         Function first list all the servers in the project and get the volumes
         that are attached to the instance.
         """
-        queues_map = {}
+        queues_map = []
         projects = get_projects_list()
         for project in projects:
             servers = conn.compute.servers(
