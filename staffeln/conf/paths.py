@@ -1,4 +1,6 @@
 from oslo_config import cfg
+from staffeln.i18n import _
+
 
 import os
 
@@ -6,17 +8,17 @@ PATH_OPTS = [
     cfg.StrOpt(
         "pybasedir",
         default=os.path.abspath(os.path.join(os.path.dirname(__file__), "../")),
-        help="Directory where the staffeln python module is installed.",
+        help=_("Directory where the staffeln python module is installed."),
     ),
     cfg.StrOpt(
         "bindir",
         default="$pybasedir/bin",
-        help="Directory where staffeln binaries are installed.",
+        help=_("Directory where staffeln binaries are installed."),
     ),
     cfg.StrOpt(
         "state_path",
         default="$pybasedir",
-        help="Top-level directory for maintaining staffeln's state.",
+        help=_("Top-level directory for maintaining staffeln's state."),
     ),
 ]
 
