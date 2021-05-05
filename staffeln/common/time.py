@@ -2,6 +2,8 @@ import re
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
+DEFAULT_TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+
 regex = re.compile(
     r'((?P<years>\d+?)y)?((?P<months>\d+?)m)?((?P<weeks>\d+?)w)?((?P<days>\d+?)d)?'
 )
@@ -28,6 +30,11 @@ def parse_timedelta_string(time_str):
         return time_params
     except:
         return None
+
+
+def get_current_strtime():
+    now = datetime.datetime.now()
+    return now.strftime(DEFAULT_TIME_FORMAT)
 
 
 def timeago(years, months, weeks, days, from_date=None):

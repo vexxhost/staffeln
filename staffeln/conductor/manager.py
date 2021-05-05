@@ -9,6 +9,7 @@ import time
 from staffeln.common import constants
 from staffeln.conductor import backup
 from staffeln.common import context
+from staffeln.common import notify
 from staffeln.common import time as xtime
 from staffeln.i18n import _
 
@@ -58,6 +59,9 @@ class BackupManager(cotyledon.Service):
         return False
 
     # Manage active backup generators
+    # TODO(Alex): need to discuss
+    #  Need to wait until all backups are finished?
+    #  That is required to make the backup report
     def _process_wip_tasks(self):
         LOG.info(_("Processing WIP backup generators..."))
         queues_started = backup.Backup().get_queues(
@@ -82,17 +86,25 @@ class BackupManager(cotyledon.Service):
         current_tasks = backup.Backup().get_queues()
         backup.Backup().create_queue(current_tasks)
 
+    def _report_backup_result(self):
+        self.success_backup_list = []
+        self.failed_backup_list = []
+        notify.SendNotification(self.success_backup_list, self.failed_backup_list)
+
     @periodics.periodic(spacing=CONF.conductor.backup_service_period, run_immediately=True)
     def backup_engine(self):
         LOG.info("backing... %s" % str(time.time()))
         LOG.info("%s periodics" % self.name)
 
         if self._check_quota(): return
+        # NOTE(Alex): If _process_wip_tasks() waits tiil no WIP tasks
+        # exist, no need to repeat this function before and after queue update.
         self._process_wip_tasks()
-        self._process_todo_tasks()
         self._update_task_queue()
-        self._process_wip_tasks()
         self._process_todo_tasks()
+        self._process_wip_tasks()
+        self._report_backup_result()
+
 
 
 class RotationManager(cotyledon.Service):
@@ -157,4 +169,4 @@ class RotationManager(cotyledon.Service):
         if res == None: LOG.info(_("Retention time format is invalid. "
                                    "Follow <YEARS>y<MONTHS>m<WEEKS>w<DAYS>d."))
 
-        return res.strftime(constants.DEFAULT_TIME_FORMAT)
+        return res.strftime(xtime.DEFAULT_TIME_FORMAT)

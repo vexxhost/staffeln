@@ -4,6 +4,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import staffeln.conf
+from staffeln.common import time as xtime
 
 CONF = staffeln.conf.CONF
 
@@ -29,18 +30,22 @@ def sendEmail(src_email, src_pwd, dest_email, subject, content, smtp_server_doma
         print(str(e))
         return False
 
-def SendNotification(content, receiver=None):
+def SendBackupResultNotification(success_volume_list, failed_volume_list):
     subject = "Backup result"
 
-    html = "<h3>${CONTENT}</h3>"
-    html = html.replace("${CONTENT}", content)
+    html = "<h3>${TIME}</h3>" \
+           "<h3>Success List</h3>" \
+           "<h4>${SUCCESS_VOLUME_LIST}</h4>" \
+           "<h3>Failed List</h3>" \
+           "<h4>${FAILED_VOLUME_LIST}</h4>"
 
-    if receiver == None:
-        return
-    if len(receiver) == 0:
-        return
+    success_volumes = '<br>'.join([str(elem) for elem in success_volume_list])
+    failed_volumes = '<br>'.join([str(elem) for elem in failed_volume_list])
+    html = html.replace("${TIME}", xtime.get_current_strtime())
+    html = html.replace("${SUCCESS_VOLUME_LIST}", success_volumes)
+    html = html.replace("${FAILED_VOLUME_LIST}", failed_volumes)
 
-    res = sendEmail(src_email=CONF.notification.sender_email,
+    return sendEmail(src_email=CONF.notification.sender_email,
                         src_pwd=CONF.notification.sender_pwd,
                         dest_email=CONF.notification.receiver,
                         subject=subject,
