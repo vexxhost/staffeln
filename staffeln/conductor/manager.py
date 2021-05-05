@@ -67,7 +67,7 @@ class BackupManager(cotyledon.Service):
             for queue in queues_started: backup.Backup().check_volume_backup_status(queue)
 
     # Create backup generators
-    def _process_new_tasks(self):
+    def _process_todo_tasks(self):
         LOG.info(_("Creating new backup generators..."))
         queues_to_start = backup.Backup().get_queues(
             filters={"backup_status": constants.BACKUP_PLANNED}
@@ -77,16 +77,10 @@ class BackupManager(cotyledon.Service):
                 backup.Backup().create_volume_backup(queue)
 
     # Refresh the task queue
-    # TODO(Alex): need to escalate discussion
-    #  how to manage last backups not finished yet
     def _update_task_queue(self):
         LOG.info(_("Updating backup task queue..."))
-        all_tasks = backup.Backup().get_queues()
-        if len(all_tasks) == 0:
-            backup.Backup().create_queue()
-        else:
-            LOG.info(_("The last backup cycle is not finished yet."
-                       "So the new backup cycle is skipped."))
+        current_tasks = backup.Backup().get_queues()
+        backup.Backup().create_queue(current_tasks)
 
     @periodics.periodic(spacing=CONF.conductor.backup_service_period, run_immediately=True)
     def backup_engine(self):
@@ -94,9 +88,11 @@ class BackupManager(cotyledon.Service):
         LOG.info("%s periodics" % self.name)
 
         if self._check_quota(): return
+        self._process_wip_tasks()
+        self._process_todo_tasks()
         self._update_task_queue()
         self._process_wip_tasks()
-        self._process_new_tasks()
+        self._process_todo_tasks()
 
 
 class RotationManager(cotyledon.Service):

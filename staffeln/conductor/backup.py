@@ -2,7 +2,8 @@ import staffeln.conf
 import collections
 from staffeln.common import constants
 
-from openstack import exceptions
+from openstack.exceptions import ResourceNotFound as OpenstackResourceNotFound
+from openstack.exceptions import SDKException as OpenstackSDKException
 from oslo_log import log
 from staffeln.common import auth
 from staffeln.common import context
@@ -51,11 +52,19 @@ class Backup(object):
         queues = objects.Queue.list(self.ctx, filters=filters)
         return queues
 
-    def create_queue(self):
+    def create_queue(self, old_tasks):
         """Create the queue of all the volumes for backup"""
+        # 1. get the old task list, not finished in the last cycle
+        #  and keep till now
+        old_task_volume_list = []
+        for old_task in old_tasks:
+            old_task_volume_list.append(old_task.volume_id)
+
+        # 2. add new tasks in the queue which are not existing in the old task list
         queue_list = self.check_instance_volumes()
         for queue in queue_list:
-            self._volume_queue(queue)
+            if not queue.volume_id in old_task_volume_list:
+                self._volume_queue(queue)
 
     # Backup the volumes attached to which has a specific metadata
     def filter_server(self, metadata):
@@ -75,7 +84,7 @@ class Backup(object):
                 LOG.info(_("Volume %s is not backed because it is in %s status" % (volume_id, volume['status'])))
             return res
 
-        except exceptions.ResourceNotFound:
+        except OpenstackResourceNotFound:
             return False
 
     def remove_volume_backup(self, backup_object):
@@ -95,7 +104,7 @@ class Backup(object):
                 LOG.info(_("Rotation for the backup %s is skipped in this cycle "
                            "because it is in %s status") % (backup_object.backup_id, backup["status"]))
 
-        except exceptions.ResourceNotFound:
+        except OpenstackResourceNotFound:
             LOG.info(_("Backup %s is not existing in Openstack."
                        "Or cinder-backup is not existing in the cloud." % backup_object.backup_id))
             # remove from the backup table
@@ -157,7 +166,7 @@ class Backup(object):
                 queue.backup_id = volume_backup.id
                 queue.backup_status = constants.BACKUP_WIP
                 queue.save()
-            except exceptions as error:
+            except OpenstackSDKException as error:
                 LOG.info(_("Backup creation for the volume %s failled. %s"
                            % (queue.volume_id, str(error))))
         else:
@@ -219,7 +228,7 @@ class Backup(object):
                 LOG.info("Waiting for backup of %s to be completed" % queue.volume_id)
             else:  # "deleting", "restoring", "error_restoring" status
                 self.process_using_backup(queue)
-        except exceptions.ResourceNotFound as e:
+        except OpenstackResourceNotFound as e:
             self.process_failed_backup(queue)
 
     def _volume_backup(self, task):
