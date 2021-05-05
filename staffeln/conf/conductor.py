@@ -16,14 +16,19 @@ backup_opts = [
         "fork and run. Default to number of CPUs on the host."),
     ),
     cfg.IntOpt(
-        "backup_period",
+        "backup_service_period",
         default=60,
-        min=1,
+        min=10,
         help=_("The time of bakup period, the unit is one minute."),
     ),
     cfg.StrOpt(
         "backup_metadata_key",
         default="__automated_backup",
+        help=_("The key string of metadata the VM, which requres back up, has"),
+    ),
+    cfg.IntOpt(
+        "max_backup_count",
+        default=10,
         help=_("The key string of metadata the VM, which requres back up, has"),
     ),
 ]
@@ -36,9 +41,20 @@ rotation_opts = [
         "fork and run. Default to number of CPUs on the host."),
     ),
     cfg.IntOpt(
-        "rotation_period",
+        "retention_service_period",
+        default=20,
+        min=10,
+        help=_("The time of rotation period, the unit is one day."),
+    ),
+    cfg.IntOpt(
+        "rotation_workers",
         default=1,
-        min=1,
+        help=_("The maximum number of rotation processes to "
+        "fork and run. Default to number of CPUs on the host."),
+    ),
+    cfg.StrOpt(
+        "retention_time",
+        default="2021-05-05 14:56:00",
         help=_("The time of rotation period, the unit is one day."),
     ),
 ]
