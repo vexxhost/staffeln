@@ -151,14 +151,15 @@ class Backup(object):
         backup_id = queue.backup_id
         if backup_id == "NULL":
             try:
-                volume_backup = conn.block_storage.create_backup(
+                volume_backup = conn.create_volume_backup(
                     volume_id=queue.volume_id, force=True
                 )
                 queue.backup_id = volume_backup.id
                 queue.backup_status = constants.BACKUP_WIP
                 queue.save()
             except exceptions as error:
-                print(error)
+                LOG.info(_("Backup creation for the volume %s failled. %s"
+                           % (queue.volume_id, str(error))))
         else:
             pass
             # TODO(Alex): remove this task from the task list
@@ -199,20 +200,27 @@ class Backup(object):
                  status checked.
         Call the backups api to see if the backup is successful.
         """
-        for backup_gen in conn.block_storage.backups(volume_id=queue.volume_id):
-            if backup_gen.id == queue.backup_id:
-                if backup_gen.status == "error":
-                    self.process_failed_backup(queue)
-                elif backup_gen.status == "available":
-                    self.process_available_backup(queue)
-                elif backup_gen.status == "creating":
-                    # TODO(Alex): Need to escalate discussion
-                    # How to proceed WIP bakcup generators?
-                    # To make things worse, the last backup generator is in progress till
-                    # the new backup cycle
-                    LOG.info("Waiting for backup of %s to be completed" % queue.volume_id)
-                else:  # "deleting", "restoring", "error_restoring" status
-                    self.process_using_backup(queue)
+        # for backup_gen in conn.block_storage.backups(volume_id=queue.volume_id):
+        try:
+            backup_gen = conn.get_volume_backup(queue.backup_id)
+            if backup_gen == None:
+                # TODO(Alex): need to check when it is none
+                LOG.info(_("Backup status of %s is returning none."%(queue.backup_id)))
+                return
+            if backup_gen.status == "error":
+                self.process_failed_backup(queue)
+            elif backup_gen.status == "available":
+                self.process_available_backup(queue)
+            elif backup_gen.status == "creating":
+                # TODO(Alex): Need to escalate discussion
+                # How to proceed WIP bakcup generators?
+                # To make things worse, the last backup generator is in progress till
+                # the new backup cycle
+                LOG.info("Waiting for backup of %s to be completed" % queue.volume_id)
+            else:  # "deleting", "restoring", "error_restoring" status
+                self.process_using_backup(queue)
+        except exceptions.ResourceNotFound as e:
+            self.process_failed_backup(queue)
 
     def _volume_backup(self, task):
         # matching_backups = [

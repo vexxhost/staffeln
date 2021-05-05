@@ -46,7 +46,7 @@ class BackupManager(cotyledon.Service):
     # Check if the backup count is over the limit
     # TODO(Alex): how to count the backup number
     #  only available backups are calculated?
-    def _over_limitation(self):
+    def _check_quota(self):
         LOG.info(_("Checking the backup limitation..."))
         max_count = CONF.conductor.max_backup_count
         current_count = len(backup.Backup().get_backups())
@@ -93,7 +93,7 @@ class BackupManager(cotyledon.Service):
         LOG.info("backing... %s" % str(time.time()))
         LOG.info("%s periodics" % self.name)
 
-        if self._over_limitation(): return
+        if self._check_quota(): return
         self._update_task_queue()
         self._process_wip_tasks()
         self._process_new_tasks()
