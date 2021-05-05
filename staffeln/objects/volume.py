@@ -17,7 +17,6 @@ class Volume(
         "instance_id": sfeild.StringField(),
         "volume_id": sfeild.UUIDField(),
         "backup_completed": sfeild.IntegerField(),
-        "backup_metadata": sfeild.JsonField(),
     }
 
     @base.remotable_classmethod

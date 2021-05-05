@@ -25,35 +25,17 @@ def backup_id():
 
     backup_id = request.args["backup_id"]
     # Retrive the backup object from backup_data table with matching backup_id.
-    backup_info = objects.Volume.get_backup_by_backup_id(ctx, backup_id)
+    backup = objects.Volume.get_backup_by_backup_id(ctx, backup_id)
     # backup_info is None when there is no entry of the backup id in backup_table.
-    if backup_info is None:
-        LOG.info("No record of backup in storage. Checking cloud for backup")
-        try:
-            backup = conn.block_storage.get_backup(backup_id)
-        except exc.ResourceNotFound:
-            return Response(
-                "Backup Resource not found for the provided backup id.",
-                status=404,
-                mimetype="text/plain",
-            )
-        except:
-            return Response("Internal Server Error.", status=500, mimetype="text/plain")
-        metadata = backup.metadata
-        if metadata is not None:
-            if metadata["__automated_backup"] is True:
-                return Response("Deny", status=401, mimetype="text/plain")
-
+    # So the backup should not be the automated backup.
+    if backup is None:
         return Response(
             "True",
             status=200,
             mimetype="text/plain",
         )
-    metadata = backup_info.backup_metadata
-    if metadata["__automated_backup"] is True:
-        return Response("Deny", status=401, mimetype="text/plain")
     else:
-        return Response("True", status=200, mimetype="text/plain")
+        return Response("Deny", status=401, mimetype="text/plain")
 
 
 def run(host, port, ssl_context):
