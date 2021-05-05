@@ -9,7 +9,7 @@ import time
 from staffeln.common import constants
 from staffeln.conductor import backup
 from staffeln.common import context
-
+from staffeln.i18n import _
 
 LOG = log.getLogger(__name__)
 CONF = staffeln.conf.CONF
@@ -42,27 +42,44 @@ class BackupManager(cotyledon.Service):
     def reload(self):
         LOG.info("%s reload" % self.name)
 
+    # return the task(queue) list which are working in progress
+    def get_wip_tasks(self):
+        return backup.Backup().get_queues(
+            filters={"backup_status": constants.BACKUP_WIP}
+        )
+
+    # return the task(queue) list which needs to do
+    def get_todo_tasks(self):
+        return backup.Backup().get_queues(
+            filters={"backup_status": constants.BACKUP_PLANNED}
+        )
+
+    # return the task(queue) list which needs to do
+    def get_all_tasks(self):
+        return backup.Backup().get_queues()
+
     @periodics.periodic(spacing=CONF.conductor.backup_period, run_immediately=True)
     def backup_engine(self):
         LOG.info("backing... %s" % str(time.time()))
         LOG.info("%s periodics" % self.name)
-        queue = backup.Backup().get_queues()
-        queues_to_start = backup.Backup().get_queues(
-            filters={"backup_status": constants.BACKUP_PLANNED}
-        )
-        queues_started = backup.Backup().get_queues(
-            filters={"backup_status": constants.BACKUP_WIP}
-        )
-        if len(queue) == 0:
-            create_queue = backup.Backup().create_queue()
-        elif len(queues_started) != 0:
-            for queue in queues_started:
-                LOG.info("Waiting for backup of %s to be completed" % queue.volume_id)
-                backup_volume = backup.Backup().check_volume_backup_status(queue)
-        elif len(queues_to_start) != 0:
+
+        # TODO(Alex): need to escalate discussion
+        #  how to manage last backups not finished yet
+        if len(self.get_all_tasks()) == 0:
+            backup.Backup().create_queue()
+        else:
+            LOG.info(_("The last backup cycle is not finished yet."
+                       "So the new backup cycle is skipped."))
+
+        queues_started = self.get_wip_tasks()
+        if len(queues_started) != 0:
+            for queue in queues_started: backup.Backup().check_volume_backup_status(queue)
+
+        queues_to_start = self.get_todo_tasks()
+        print(queues_to_start)
+        if len(queues_to_start) != 0:
             for queue in queues_to_start:
-                LOG.info("Started backup process for %s" % queue.volume_id)
-                backup_volume = backup.Backup().volume_backup_initiate(queue)
+                backup.Backup().volume_backup_initiate(queue)
 
 
 class RotationManager(cotyledon.Service):
