@@ -67,27 +67,40 @@ class Backup(object):
 
     # Backup the volumes in in-use and available status
     def filter_volume(self, volume_id):
-        volume = conn.get_volume_by_id(volume_id)
-        res = volume['status'] in ("available", "in-use")
-        if not res:
-            LOG.info(_("Volume %s is not backed because it is in %s status" % (volume_id, volume['status'])))
-
-    def check_backup_status(self, backup_object):
         try:
-            backup = conn.get_volume_backup(backup_object.backup_id)
-            # TODO(Alex): "deleting", "restoring", "error_restoring", "error"
-            res = backup["status"] in ("available")
+            volume = conn.get_volume_by_id(volume_id)
+            if volume == None: return False
+            res = volume['status'] in ("available", "in-use")
             if not res:
-                LOG.info(_("Rotation for the backup %s is skipped "
-                           "because it is in %s status")%(backup_object.backup_id, backup["status"]))
+                LOG.info(_("Volume %s is not backed because it is in %s status" % (volume_id, volume['status'])))
             return res
-        except exceptions.ResourceNotFound:
-            LOG.info(_("Backup % is not existing." % backup_object.backup_id))
-            # remove from the backup table
-            backup_object.delete_backup()
 
+        except exceptions.ResourceNotFound:
             return False
 
+    def remove_volume_backup(self, backup_object):
+        try:
+            backup = conn.get_volume_backup(backup_object.backup_id)
+            if backup == None: return False
+            if backup["status"] in ("available"):
+                conn.delete_volume_backup(backup_object.backup_id)
+                backup_object.delete_backup()
+            elif backup["status"] in ("error", "error_restoring"):
+                # TODO(Alex): need to discuss
+                #  now if backup is in error status, then retention service
+                #  does not remove it from openstack but removes it from the
+                #  backup table so user can delete it on Horizon.
+                backup_object.delete_backup()
+            else:  # "deleting", "restoring"
+                LOG.info(_("Rotation for the backup %s is skipped in this cycle "
+                           "because it is in %s status") % (backup_object.backup_id, backup["status"]))
+
+        except exceptions.ResourceNotFound:
+            LOG.info(_("Backup %s is not existing in Openstack."
+                       "Or cinder-backup is not existing in the cloud." % backup_object.backup_id))
+            # remove from the backup table
+            backup_object.delete_backup()
+            return False
 
     def check_instance_volumes(self):
         """Get the list of all the volumes from the project using openstacksdk
@@ -128,7 +141,7 @@ class Backup(object):
         volume_queue.backup_status = task.backup_status
         volume_queue.create()
 
-    def volume_backup_initiate(self, queue):
+    def create_volume_backup(self, queue):
         """Initiate the backup of the volume
         :params: queue: Provide the map of the volume that needs
                   backup.

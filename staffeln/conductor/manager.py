@@ -74,7 +74,7 @@ class BackupManager(cotyledon.Service):
         )
         if len(queues_to_start) != 0:
             for queue in queues_to_start:
-                backup.Backup().volume_backup_initiate(queue)
+                backup.Backup().create_volume_backup(queue)
 
     # Refresh the task queue
     # TODO(Alex): need to escalate discussion
@@ -126,29 +126,26 @@ class RotationManager(cotyledon.Service):
     def reload(self):
         LOG.info("%s reload" % self.name)
 
+    def get_backup_list(self):
+        threshold_strtime = self.get_threshold_strtime()
+        if threshold_strtime == None: return False
+        self.backup_list = backup.Backup().get_backups(filters={"created_at__lt": threshold_strtime})
+        return True
+
+    def remove_backups(self):
+        print(self.backup_list)
+        for retention_backup in self.backup_list:
+            # 1. check the backup status and delete only available backups
+            backup.Backup().remove_volume_backup(retention_backup)
+
     @periodics.periodic(spacing=CONF.conductor.retention_service_period, run_immediately=True)
     def rotation_engine(self):
         LOG.info("%s rotation_engine" % self.name)
-        # TODO(Alex): No limitation for retention?
-        #  Even though, the backup count is over the limit, the retention service will
-        #  continue working?
-        #     filter based on backup status
-        #     filter based on backup creation time
-        # 2. delete the backups
-
-
         # 1. get the list of backups to remove based on the retention time
-        threshold_strtime = self.get_threshold_strtime()
-        if threshold_strtime == None: return
-        backups = backup.Backup().get_backups(filters={"created_at__lt", threshold_strtime})
+        if not self.get_backup_list(): return
 
         # 2. remove the backups
-        for retention_backup in backups:
-            # 1. check the backup status and delete only available backups
-            if not backup.Backup().check_backup_status(retention_backup): continue
-            # 2. remove backup
-
-            pass
+        self.remove_backups()
 
     # get the threshold time str
     def get_threshold_strtime(self):
@@ -156,13 +153,12 @@ class RotationManager(cotyledon.Service):
         if time_delta_dict == None: return None
 
         res = xtime.timeago(
-            years= time_delta_dict["years"],
-            months= time_delta_dict["months"],
-            weeks= time_delta_dict["weeks"],
-            days= time_delta_dict["days"],
+            years=time_delta_dict["years"],
+            months=time_delta_dict["months"],
+            weeks=time_delta_dict["weeks"],
+            days=time_delta_dict["days"],
         )
         if res == None: LOG.info(_("Retention time format is invalid. "
                                    "Follow <YEARS>y<MONTHS>m<WEEKS>w<DAYS>d."))
 
-        return datetime.datetime.strptime(res, constants.DEFAULT_TIME_FORMAT)
-
+        return res.strftime(constants.DEFAULT_TIME_FORMAT)
