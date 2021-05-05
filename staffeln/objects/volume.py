@@ -17,6 +17,7 @@ class Volume(
         "instance_id": sfeild.StringField(),
         "volume_id": sfeild.UUIDField(),
         "backup_completed": sfeild.IntegerField(),
+        "backup_metadata": sfeild.JsonField(),
     }
 
     @base.remotable_classmethod
@@ -33,7 +34,6 @@ class Volume(
     def create(self):
         """Create a :class:`Backup_data` record in the DB"""
         values = self.obj_get_changes()
-        print(values)
         db_backup = self.dbapi.create_backup(values)
         self._from_db_object(self, db_backup)
 
@@ -59,3 +59,22 @@ class Volume(
         """
         current = self.get_by_uuid(backup_id=self.backup_id)
         self.obj_refresh(current)
+
+    @base.remotable_classmethod
+    def get_backup_by_backup_id(cls, context, backup_id):
+        """Find a backup based on backup_id
+        :param context: Security context. NOTE: This should only
+                        be used internally by the indirection_api.
+                        Unfortunately, RPC requires context as the first
+                        argument, even though we don't use it.
+                        A context should be set when instantiating the
+                        object, e.g.: Queue(context)
+        :param backup_id: the backup id of volume in volume data.
+        :returns: a :class:`Backup` object.
+        """
+        db_backup = cls.dbapi.get_backup_by_backup_id(context, backup_id)
+        if db_backup is None:
+            return db_backup
+        else:
+            backup = cls._from_db_object(cls(context), db_backup)
+            return backup

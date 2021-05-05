@@ -4,18 +4,12 @@ SQLAlchemy models for staffeln service
 
 from oslo_db.sqlalchemy import models
 from oslo_serialization import jsonutils
-from sqlalchemy import Boolean
 from sqlalchemy import Column
 from sqlalchemy import DateTime
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Float
-from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
-from sqlalchemy import LargeBinary
-from sqlalchemy import orm
-from sqlalchemy import Numeric
 from sqlalchemy import String
-from sqlalchemy import Text
+from sqlalchemy import JSON
 from sqlalchemy.types import TypeDecorator, TEXT
 from sqlalchemy import UniqueConstraint
 import urllib.parse as urlparse
@@ -65,6 +59,7 @@ class Backup_data(Base):
     volume_id = Column(String(100))
     instance_id = Column(String(100))
     backup_completed = Column(Integer())
+    backup_metadata = Column(JSON(), nullable=True)
 
 
 class Queue_data(Base):
