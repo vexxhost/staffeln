@@ -33,7 +33,6 @@ class Volume(
     def create(self):
         """Create a :class:`Backup_data` record in the DB"""
         values = self.obj_get_changes()
-        print(values)
         db_backup = self.dbapi.create_backup(values)
         self._from_db_object(self, db_backup)
 
