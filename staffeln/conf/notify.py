@@ -11,7 +11,7 @@ notify_group = cfg.OptGroup(
 email_opts = [
     cfg.StrOpt(
         "template",
-        default="<h3>${CONTENT}</h3>",
+        default="<h3>\${CONTENT}</h3>",
         help=_("This html template is used to email the backup result."),
     ),
     cfg.ListOpt(

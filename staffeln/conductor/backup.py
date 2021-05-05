@@ -60,6 +60,14 @@ class Backup(object):
         for queue in queue_list:
             self._volume_queue(queue)
 
+    # Backup the volumes attached to which has a specific metadata
+    def filter_server(self, metadata):
+
+        if not CONF.conductor.backup_metadata_key in metadata:
+            return False
+
+        return metadata[CONF.conductor.backup_metadata_key].lower() == constants.BACKUP_ENABLED_KEY
+
     def check_instance_volumes(self):
         """Get the list of all the volumes from the project using openstacksdk
         Function first list all the servers in the project and get the volumes
@@ -72,7 +80,8 @@ class Backup(object):
                 details=True, all_projects=True, project_id=project.id
             )
             for server in servers:
-                server_id = server.host_id
+                if not self.filter_server(server.metadata): continue
+                server_id = server.id
                 volumes = server.attached_volumes
                 for volume in volumes:
                     queues_map.append(
@@ -112,16 +121,16 @@ class Backup(object):
             volume_backup = conn.block_storage.create_backup(
                 volume_id=queue.volume_id, force=True
             )
-            update_queue = objects.Queue.get_by_id(self.ctx, queue.id)
-            update_queue.backup_id = volume_backup.id
-            update_queue.backup_status = constants.BACKUP_WIP
-            update_queue.save()
+
+            queue.backup_id = volume_backup.id
+            queue.backup_status = constants.BACKUP_WIP
+            queue.save()
         else:
             pass
             # TODO(Alex): remove this task from the task list
-            # Backup planned task cannot have backup_id in the same cycle
-            # Reserve for now because it is related to the WIP backup genenrators which
-            # are not finished in the current cycle
+            #  Backup planned task cannot have backup_id in the same cycle
+            #  Reserve for now because it is related to the WIP backup genenrators which
+            #  are not finished in the current cycle
 
     def process_failed_task(self, task):
         LOG.error("Backup of the volume %s failed." % task.id)

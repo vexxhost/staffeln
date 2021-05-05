@@ -23,7 +23,7 @@ backup_opts = [
     ),
     cfg.StrOpt(
         "backup_metadata_key",
-        default="test",
+        default="__automated_backup",
         help=_("The key string of metadata the VM, which requres back up, has"),
     ),
 ]

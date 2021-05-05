@@ -9,6 +9,7 @@ import time
 from staffeln.common import constants
 from staffeln.conductor import backup
 from staffeln.common import context
+from staffeln.i18n import _
 
 LOG = log.getLogger(__name__)
 CONF = staffeln.conf.CONF
@@ -62,15 +63,20 @@ class BackupManager(cotyledon.Service):
         LOG.info("backing... %s" % str(time.time()))
         LOG.info("%s periodics" % self.name)
 
+        # TODO(Alex): need to escalate discussion
+        #  how to manage last backups not finished yet
         if len(self.get_all_tasks()) == 0:
             backup.Backup().create_queue()
-        #     TODO(Alex): reschedule the backup engine immediately
+        else:
+            LOG.info(_("The last backup cycle is not finished yet."
+                       "So the new backup cycle is skipped."))
 
         queues_started = self.get_wip_tasks()
         if len(queues_started) != 0:
             for queue in queues_started: backup.Backup().check_volume_backup_status(queue)
 
         queues_to_start = self.get_todo_tasks()
+        print(queues_to_start)
         if len(queues_to_start) != 0:
             for queue in queues_to_start:
                 backup.Backup().volume_backup_initiate(queue)
