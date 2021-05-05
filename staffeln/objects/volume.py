@@ -27,13 +27,12 @@ class Volume(
         """
         db_backups = cls.dbapi.get_backup_list(context, filters=filters)
 
-        return [cls._from_db_object(cls(), obj) for obj in db_backups]
+        return [cls._from_db_object(cls(context), obj) for obj in db_backups]
 
     @base.remotable
     def create(self):
         """Create a :class:`Backup_data` record in the DB"""
         values = self.obj_get_changes()
-        print(values)
         db_backup = self.dbapi.create_backup(values)
         self._from_db_object(self, db_backup)
 
