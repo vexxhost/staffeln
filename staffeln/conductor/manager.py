@@ -30,7 +30,7 @@ class BackupManager(cotyledon.Service):
         periodic_callables = [
             (self.backup_engine, (), {}),
         ]
-        periodic_worker = periodics.PeriodicWorker(periodic_callables)
+        periodic_worker = periodics.PeriodicWorker(periodic_callables, schedule_strategy="last_finished")
         periodic_thread = threading.Thread(target=periodic_worker.start)
         periodic_thread.daemon = True
         periodic_thread.start()
@@ -98,7 +98,7 @@ class RotationManager(cotyledon.Service):
         periodic_callables = [
             (self.rotation_engine, (), {}),
         ]
-        periodic_worker = periodics.PeriodicWorker(periodic_callables)
+        periodic_worker = periodics.PeriodicWorker(periodic_callables, schedule_strategy="last_finished")
         periodic_thread = threading.Thread(target=periodic_worker.start)
         periodic_thread.daemon = True
         periodic_thread.start()

@@ -132,7 +132,6 @@ class Backup(object):
                 queue.backup_status = constants.BACKUP_WIP
                 queue.save()
             except exceptions as error:
-                print("catch error")
                 print(error)
         else:
             pass
