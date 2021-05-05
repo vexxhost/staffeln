@@ -1,7 +1,6 @@
 from oslo_config import cfg
 from staffeln.i18n import _
 
-
 conductor_group = cfg.OptGroup(
     "conductor",
     title="Conductor Options",
@@ -13,12 +12,12 @@ backup_opts = [
         "backup_workers",
         default=1,
         help=_("The maximum number of backup processes to "
-        "fork and run. Default to number of CPUs on the host."),
+               "fork and run. Default to number of CPUs on the host."),
     ),
     cfg.IntOpt(
-        "backup_period",
+        "backup_service_period",
         default=60,
-        min=1,
+        min=10,
         help=_("The time of bakup period, the unit is one minute."),
     ),
     cfg.StrOpt(
@@ -38,13 +37,25 @@ rotation_opts = [
         "rotation_workers",
         default=1,
         help=_("The maximum number of rotation processes to "
-        "fork and run. Default to number of CPUs on the host."),
+               "fork and run. Default to number of CPUs on the host."),
     ),
     cfg.IntOpt(
-        "rotation_period",
+        "retention_service_period",
+        default=20,
+        min=10,
+        help=_("The period of the retention service, the unit is one second."),
+    ),
+    cfg.IntOpt(
+        "rotation_workers",
         default=1,
-        min=1,
-        help=_("The time of rotation period, the unit is one day."),
+        help=_("The maximum number of rotation processes to "
+               "fork and run. Default to number of CPUs on the host."),
+    ),
+    cfg.StrOpt(
+        "retention_time",
+        default="2w3d",
+        help=_("The time of retention period, the for mat is "
+               "<YEARS>y<MONTHS>m<WEEKS>w<DAYS>d."),
     ),
 ]
 

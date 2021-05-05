@@ -1,7 +1,6 @@
 from oslo_config import cfg
 from staffeln.i18n import _
 
-
 api_group = cfg.OptGroup(
     "api",
     title="API options",
