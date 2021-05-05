@@ -33,7 +33,7 @@ def parse_timedelta_string(time_str):
 
 
 def get_current_strtime():
-    now = datetime.datetime.now()
+    now = datetime.now()
     return now.strftime(DEFAULT_TIME_FORMAT)
 
 

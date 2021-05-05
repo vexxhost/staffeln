@@ -7,10 +7,10 @@ import threading
 import time
 
 from staffeln.common import constants
-from staffeln.conductor import backup
 from staffeln.common import context
-from staffeln.common import notify
 from staffeln.common import time as xtime
+from staffeln.conductor import backup
+from staffeln.conductor import notify
 from staffeln.i18n import _
 
 LOG = log.getLogger(__name__)
@@ -87,9 +87,11 @@ class BackupManager(cotyledon.Service):
         backup.Backup().create_queue(current_tasks)
 
     def _report_backup_result(self):
+        # TODO(Alex): Need to update these list
         self.success_backup_list = []
         self.failed_backup_list = []
-        notify.SendNotification(self.success_backup_list, self.failed_backup_list)
+        notify.SendBackupResultEmail(self.success_backup_list, self.failed_backup_list)
+
 
     @periodics.periodic(spacing=CONF.conductor.backup_service_period, run_immediately=True)
     def backup_engine(self):
