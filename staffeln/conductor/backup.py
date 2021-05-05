@@ -3,11 +3,12 @@ import collections
 from staffeln.common import constants
 
 from openstack import exceptions
+from openstack.block_storage.v2 import backup
 from oslo_log import log
 from staffeln.common import auth
 from staffeln.common import context
 from staffeln import objects
-from staffeln.i18n import _
+from staffeln.common import short_id
 
 CONF = staffeln.conf.CONF
 LOG = log.getLogger(__name__)
@@ -28,6 +29,12 @@ def check_vm_backup_metadata(metadata):
         return False
     return metadata[CONF.conductor.backup_metadata_key].lower() in ["true"]
 
+
+def backup_volumes_in_project(conn, project_name):
+    # conn.list_servers()
+    pass
+
+
 def get_projects_list():
     projects = conn.list_projects()
     return projects
@@ -41,9 +48,6 @@ class Backup(object):
         self.discovered_backup_map = None
         self.queue_mapping = dict()
         self.volume_mapping = dict()
-
-    def get_backups(self):
-        return objects.Volume.list(self.ctx)
 
     def get_queues(self, filters=None):
         """Get the list of volume queue columns from the queue_data table"""
@@ -67,9 +71,7 @@ class Backup(object):
     # Backup the volumes in in-use and available status
     def filter_volume(self, volume_id):
         volume = conn.get_volume_by_id(volume_id)
-        res = volume['status'] in ("available", "in-use")
-        if not res:
-            LOG.info(_("Volume %s is not backed because it is in %s status" % (volume_id, volume['status'])))
+        return volume['status'] in ("available", "in-use")
 
     def check_instance_volumes(self):
         """Get the list of all the volumes from the project using openstacksdk
@@ -84,13 +86,15 @@ class Backup(object):
             )
             for server in servers:
                 if not self.filter_server(server.metadata): continue
-                for volume in server.attached_volumes:
+                server_id = server.id
+                volumes = server.attached_volumes
+                for volume in volumes:
                     if not self.filter_volume(volume["id"]): continue
                     queues_map.append(
                         QueueMapping(
                             volume_id=volume["id"],
                             backup_id="NULL",
-                            instance_id=server.id,
+                            instance_id=server_id,
                             backup_status=constants.BACKUP_PLANNED,
                         )
                     )
@@ -123,6 +127,7 @@ class Backup(object):
                 volume_backup = conn.block_storage.create_backup(
                     volume_id=queue.volume_id, force=True
                 )
+                print(volume_backup)
                 queue.backup_id = volume_backup.id
                 queue.backup_status = constants.BACKUP_WIP
                 queue.save()
@@ -135,15 +140,15 @@ class Backup(object):
             #  Reserve for now because it is related to the WIP backup genenrators which
             #  are not finished in the current cycle
 
-    def process_failed_backup(self, task):
+    def process_failed_task(self, task):
+        LOG.error("Backup of the volume %s failed." % task.id)
         # 1. TODO(Alex): notify via email
-        LOG.error("Backup of the volume %s failed." % task.volume_id)
         # 2. TODO(Alex): remove failed backup instance from the openstack
-        #     then set the volume status in-use
         # 3. remove failed task from the task queue
-        task.delete_queue()
+        queue_delete = objects.Queue.get_by_id(self.ctx, task.id)
+        queue_delete.delete_queue()
 
-    def process_available_backup(self, task):
+    def process_success_backup(self, task):
         LOG.info("Backup of the volume %s is successful." % task.volume_id)
         # 1. save success backup in the backup table
         self._volume_backup(
@@ -155,12 +160,9 @@ class Backup(object):
             )
         )
         # 2. remove from the task list
-        task.delete_queue()
+        queue_delete = objects.Queue.get_by_id(self.ctx, task.id)
+        queue_delete.delete_queue()
         # 3. TODO(Alex): notify via email
-
-    def process_using_backup(self, task):
-        # remove from the task list
-        task.delete_queue()
 
     def check_volume_backup_status(self, queue):
         """Checks the backup status of the volume
@@ -171,17 +173,15 @@ class Backup(object):
         for backup_gen in conn.block_storage.backups(volume_id=queue.volume_id):
             if backup_gen.id == queue.backup_id:
                 if backup_gen.status == "error":
-                    self.process_failed_backup(queue)
-                elif backup_gen.status == "available":
-                    self.process_available_backup(queue)
-                elif backup_gen.status == "creating":
+                    self.process_failed_task(queue)
+                elif backup_gen.status == "success":
+                    self.process_success_backup(queue)
+                else:
                     # TODO(Alex): Need to escalate discussion
                     # How to proceed WIP bakcup generators?
                     # To make things worse, the last backup generator is in progress till
                     # the new backup cycle
                     LOG.info("Waiting for backup of %s to be completed" % queue.volume_id)
-                else:  # "deleting", "restoring", "error_restoring" status
-                    self.process_using_backup(queue)
 
     def _volume_backup(self, task):
         # matching_backups = [
