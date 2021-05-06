@@ -60,3 +60,12 @@ ChangeLog
 # Files created by releasenotes build
 releasenotes/build
 .idea/
+
+# sqlite file
+*.sqlite
+
+# log
+*.log
+
+# envvar openrc file
+*openrc.sh

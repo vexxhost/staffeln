@@ -109,13 +109,8 @@ class Connection(object):
         if filters is None:
             filters = {}
 
-        plain_fields = [
-            "volume_id",
-            "backup_id",
-            "backup_completed",
-            "instance_id",
-            "created_at",
-        ]
+
+        plain_fields = ["volume_id", "backup_id", "backup_completed", "instance_id", "created_at"]
 
         return self._add_filters(
             query=query,
@@ -314,6 +309,7 @@ class Connection(object):
         except:
             LOG.error("Queue Not found.")
 
+
     def get_backup_by_backup_id(self, context, backup_id):
         """Get the column from the backup_data with matching backup_id"""
 
@@ -331,6 +327,7 @@ class Connection(object):
             )
         except:
             LOG.error("Backup resource not found.")
+
 
     def soft_delete_backup(self, id):
         try:

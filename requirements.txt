@@ -13,5 +13,5 @@ oslo.log>=4.4.0 # Apache-2.0
 openstacksdk>0.28.0
 pymysql
 
-email
-smtplib
+# email
+# smtplib
