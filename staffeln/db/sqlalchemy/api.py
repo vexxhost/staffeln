@@ -110,7 +110,14 @@ class Connection(object):
             filters = {}
 
 
-        plain_fields = ["volume_id", "backup_id", "backup_completed", "instance_id", "created_at"]
+        plain_fields = [
+            "volume_id",
+            "backup_id",
+            "project_id",
+            "backup_completed",
+            "instance_id",
+            "created_at"
+        ]
 
         return self._add_filters(
             query=query,
@@ -126,6 +133,7 @@ class Connection(object):
 
         plain_fields = [
             "backup_id",
+            "project_id",
             "volume_id",
             "instance_id",
             "backup_status",

@@ -58,24 +58,26 @@ class BackupManager(cotyledon.Service):
         return False
 
     # Manage active backup generators
-    # TODO(Alex): need to discuss
-    #  Need to wait until all backups are finished?
-    #  That is required to make the backup report
     def _process_wip_tasks(self):
         LOG.info(_("Processing WIP backup generators..."))
         # TODO(Alex): Replace this infinite loop with finite time
         self.cycle_start_time = xtime.get_current_time()
 
-        # loop - take care of backup result
+        # loop - take care of backup result while timeout
         while(1):
             queues_started = backup.Backup().get_queues(
                 filters={"backup_status": constants.BACKUP_WIP}
             )
-            if len(queues_started) == 0: break
+            if len(queues_started) == 0:
+                LOG.info(_("task queue empty"))
+                break
             if not self._backup_cycle_timeout():# time in
+                LOG.info(_("cycle timein"))
                 for queue in queues_started: backup.Backup().check_volume_backup_status(queue)
             else: # time out
+                LOG.info(_("cycle timeout"))
                 for queue in queues_started: backup.Backup().hard_cancel_volume_backup(queue)
+                break
             time.sleep(constants.BACKUP_RESULT_CHECK_INTERVAL)
 
     # if the backup cycle timeout, then return True
@@ -133,7 +135,7 @@ class BackupManager(cotyledon.Service):
         self._update_task_queue()
         self._process_todo_tasks()
         self._process_wip_tasks()
-        self._report_backup_result()
+        # self._report_backup_result()
 
 
 class RotationManager(cotyledon.Service):

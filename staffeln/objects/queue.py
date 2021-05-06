@@ -15,6 +15,7 @@ class Queue(
     fields = {
         "id": sfeild.IntegerField(),
         "backup_id": sfeild.StringField(),
+        "project_id": sfeild.UUIDField(),
         "volume_id": sfeild.UUIDField(),
         "instance_id": sfeild.StringField(),
         "backup_status": sfeild.IntegerField(),

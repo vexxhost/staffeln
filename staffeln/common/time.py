@@ -31,6 +31,8 @@ def parse_timedelta_string(time_str):
     except:
         return None
 
+def get_current_time():
+    return datetime.now()
 
 def get_current_strtime():
     now = datetime.now()
