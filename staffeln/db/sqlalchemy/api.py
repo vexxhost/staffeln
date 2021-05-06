@@ -109,7 +109,13 @@ class Connection(object):
         if filters is None:
             filters = {}
 
-        plain_fields = ["volume_id", "backup_id", "backup_completed", "instance_id"]
+        plain_fields = [
+            "volume_id",
+            "backup_id",
+            "backup_completed",
+            "instance_id",
+            "created_at",
+        ]
 
         return self._add_filters(
             query=query,
@@ -144,6 +150,7 @@ class Connection(object):
 
         for raw_fieldname, value in filters.items():
             fieldname, operator_ = self.__decompose_filter(raw_fieldname)
+
             if fieldname in plain_fields:
                 query = self.__add_simple_filter(
                     query, model, fieldname, value, operator_
@@ -161,7 +168,6 @@ class Connection(object):
         ):
             if not isinstance(value, datetime.datetime):
                 value = timeutils.parse_isotime(value)
-
         return query.filter(self.valid_operators[operator_](field, value))
 
     def __decompose_filter(self, raw_fieldname):
@@ -181,6 +187,7 @@ class Connection(object):
         query = query.filter(getattr(model, fieldname) == value)
 
         try:
+            # To avoid exception if the no result found in table.
             obj = query.one_or_none()
         except exc.NoResultFound:
             LOG.error("ResourceNotFound")
@@ -324,3 +331,9 @@ class Connection(object):
             )
         except:
             LOG.error("Backup resource not found.")
+
+    def soft_delete_backup(self, id):
+        try:
+            return self._soft_delete(models.Backup_data, id)
+        except:
+            LOG.error("Backup Not found.")

@@ -27,7 +27,7 @@ class Volume(
         """
         db_backups = cls.dbapi.get_backup_list(context, filters=filters)
 
-        return [cls._from_db_object(cls(), obj) for obj in db_backups]
+        return [cls._from_db_object(cls(context), obj) for obj in db_backups]
 
     @base.remotable
     def create(self):
@@ -58,6 +58,11 @@ class Volume(
         """
         current = self.get_by_uuid(backup_id=self.backup_id)
         self.obj_refresh(current)
+
+    @base.remotable
+    def delete_backup(self):
+        """Soft Delete the :class:`Queue_data` from the DB"""
+        db_obj = self.dbapi.soft_delete_backup(self.id)
 
     @base.remotable_classmethod
     def get_backup_by_backup_id(cls, context, backup_id):
