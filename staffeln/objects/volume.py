@@ -63,3 +63,23 @@ class Volume(
     def delete_backup(self):
         """Soft Delete the :class:`Queue_data` from the DB"""
         db_obj = self.dbapi.soft_delete_backup(self.id)
+
+    @base.remotable_classmethod
+    def get_backup_by_backup_id(cls, context, backup_id):
+        """Find a backup based on backup_id
+        :param context: Security context. NOTE: This should only
+                        be used internally by the indirection_api.
+                        Unfortunately, RPC requires context as the first
+                        argument, even though we don't use it.
+                        A context should be set when instantiating the
+                        object, e.g.: Queue(context)
+        :param backup_id: the backup id of volume in volume data.
+        :returns: a :class:`Backup` object.
+        """
+        db_backup = cls.dbapi.get_backup_by_backup_id(context, backup_id)
+        if db_backup is None:
+            return db_backup
+        else:
+            backup = cls._from_db_object(cls(context), db_backup)
+            return backup
+          

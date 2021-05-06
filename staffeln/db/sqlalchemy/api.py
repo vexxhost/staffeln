@@ -109,6 +109,7 @@ class Connection(object):
         if filters is None:
             filters = {}
 
+
         plain_fields = ["volume_id", "backup_id", "backup_completed", "instance_id", "created_at"]
 
         return self._add_filters(
@@ -181,7 +182,8 @@ class Connection(object):
         query = query.filter(getattr(model, fieldname) == value)
 
         try:
-            obj = query.one()
+            # To avoid exception if the no result found in table.
+            obj = query.one_or_none()
         except exc.NoResultFound:
             LOG.error("ResourceNotFound")
 
@@ -280,7 +282,7 @@ class Connection(object):
         )
 
     def update_queue(self, id, values):
-        print(self._update(models.Queue_data, id, values))
+
         try:
             return self._update(models.Queue_data, id, values)
         except:
@@ -306,6 +308,26 @@ class Connection(object):
             return self._soft_delete(models.Queue_data, id)
         except:
             LOG.error("Queue Not found.")
+
+
+    def get_backup_by_backup_id(self, context, backup_id):
+        """Get the column from the backup_data with matching backup_id"""
+
+        try:
+            return self._get_backup(context, fieldname="backup_id", value=backup_id)
+        except:
+            LOG.error("Backup not found with backup_id %s." % backup_id)
+
+    def _get_backup(self, context, fieldname, value):
+        """Get the column from the volume_data table"""
+
+        try:
+            return self._get(
+                context, model=models.Backup_data, fieldname=fieldname, value=value
+            )
+        except:
+            LOG.error("Backup resource not found.")
+
 
     def soft_delete_backup(self, id):
         try:
