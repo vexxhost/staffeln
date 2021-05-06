@@ -104,6 +104,7 @@ class Backup(object):
             #     project_id=task.project_id, backup_id=task.backup_id,
             # )
             conn.delete_volume_backup(task.backup_id, force=True)
+            # TODO(Alex): After delete the backup generator, need to set the volume status again
             task.delete_queue()
 
         except OpenstackResourceNotFound:

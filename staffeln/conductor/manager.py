@@ -88,7 +88,6 @@ class BackupManager(cotyledon.Service):
             LOG.info(_("Recycle timeout format is invalid. "
                        "Follow <YEARS>y<MONTHS>m<WEEKS>w<DAYS>d<HOURS>h<MINUTES>min<SECONDS>s."))
             time_delta_dict = xtime.parse_timedelta_string(constants.DEFAULT_BACKUP_CYCLE_TIMEOUT)
-
         rto = xtime.timeago(
             years=time_delta_dict["years"],
             months=time_delta_dict["months"],
@@ -98,6 +97,9 @@ class BackupManager(cotyledon.Service):
             minutes=time_delta_dict["minutes"],
             seconds=time_delta_dict["seconds"],
         )
+        # print(rto.strftime(xtime.DEFAULT_TIME_FORMAT))
+        # print(self.cycle_start_time)
+        # print(self.cycle_start_time - rto)
         if rto >= self.cycle_start_time:
             return True
         return False

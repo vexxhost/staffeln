@@ -5,7 +5,7 @@ from dateutil.relativedelta import relativedelta
 DEFAULT_TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 regex = re.compile(
-    r'((?P<years>\d+?)y)?((?P<months>\d+?)m)?((?P<weeks>\d+?)w)?((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)min)?((?P<seconds>\d+?)s)?'
+    r'((?P<years>\d+?)y)?((?P<months>\d+?)mon)?((?P<weeks>\d+?)w)?((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)min)?((?P<seconds>\d+?)s)?'
 )
 
 
