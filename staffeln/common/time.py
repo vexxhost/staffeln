@@ -5,7 +5,7 @@ from dateutil.relativedelta import relativedelta
 DEFAULT_TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 regex = re.compile(
-    r'((?P<years>\d+?)y)?((?P<months>\d+?)m)?((?P<weeks>\d+?)w)?((?P<days>\d+?)d)?'
+    r'((?P<years>\d+?)y)?((?P<months>\d+?)m)?((?P<weeks>\d+?)w)?((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)min)?((?P<seconds>\d+?)s)?'
 )
 
 
@@ -37,10 +37,12 @@ def get_current_strtime():
     return now.strftime(DEFAULT_TIME_FORMAT)
 
 
-def timeago(years, months, weeks, days, from_date=None):
+def timeago(years=0, months=0, weeks=0, days=0, hours=0, minutes=0, seconds=0, from_date=None):
     if from_date is None:
         from_date = datetime.now()
-    return from_date - relativedelta(years=years, months=months, weeks=weeks, days=days)
+    return from_date - relativedelta(years=years, months=months,
+                                     weeks=weeks, days=days, hours=hours,
+                                     minutes=minutes, seconds=seconds)
 
 ## yearsago using Standard library
 # def yearsago(years, from_date=None):

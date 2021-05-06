@@ -1,4 +1,5 @@
 from oslo_config import cfg
+from staffeln.common import constants
 from staffeln.i18n import _
 
 conductor_group = cfg.OptGroup(
@@ -19,6 +20,13 @@ backup_opts = [
         default=60,
         min=10,
         help=_("The time of bakup period, the unit is one minute."),
+    ),
+    cfg.StrOpt(
+        "backup_cycle_timout",
+        regex=r'((?P<years>\d+?)y)?((?P<months>\d+?)m)?((?P<weeks>\d+?)w)?((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)min)?((?P<seconds>\d+?)s)?',
+        default=constants.DEFAULT_BACKUP_CYCLE_TIMEOUT,
+        help=_("The duration while the backup cycle waits backups."
+               "<YEARS>y<MONTHS>m<WEEKS>w<DAYS>d<HOURS>h<MINUTES>min<SECONDS>s."),
     ),
     cfg.StrOpt(
         "backup_metadata_key",
@@ -53,9 +61,10 @@ rotation_opts = [
     ),
     cfg.StrOpt(
         "retention_time",
+        regex=r'((?P<years>\d+?)y)?((?P<months>\d+?)m)?((?P<weeks>\d+?)w)?((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)min)?((?P<seconds>\d+?)s)?',
         default="2w3d",
         help=_("The time of retention period, the for mat is "
-               "<YEARS>y<MONTHS>m<WEEKS>w<DAYS>d."),
+               "<YEARS>y<MONTHS>m<WEEKS>w<DAYS>d<HOURS>h<MINUTES>min<SECONDS>s."),
     ),
 ]
 

@@ -54,4 +54,3 @@ def SendBackupResultEmail(success_backup_list, failed_backup_list):
         LOG.info(_("Backup result email sent"))
     except Exception as e:
         LOG.error(_("Backup result email send failed. Please check email configuration. %s" % (str(e))))
-

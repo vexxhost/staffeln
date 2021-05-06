@@ -1,5 +1,4 @@
 import cotyledon
-import datetime
 from futurist import periodics
 from oslo_log import log
 import staffeln.conf
@@ -64,11 +63,42 @@ class BackupManager(cotyledon.Service):
     #  That is required to make the backup report
     def _process_wip_tasks(self):
         LOG.info(_("Processing WIP backup generators..."))
-        queues_started = backup.Backup().get_queues(
-            filters={"backup_status": constants.BACKUP_WIP}
+        # TODO(Alex): Replace this infinite loop with finite time
+        self.cycle_start_time = xtime.get_current_time()
+
+        # loop - take care of backup result
+        while(1):
+            queues_started = backup.Backup().get_queues(
+                filters={"backup_status": constants.BACKUP_WIP}
+            )
+            if len(queues_started) == 0: break
+            if not self._backup_cycle_timeout():# time in
+                for queue in queues_started: backup.Backup().check_volume_backup_status(queue)
+            else: # time out
+                for queue in queues_started: backup.Backup().hard_cancel_volume_backup(queue)
+            time.sleep(constants.BACKUP_RESULT_CHECK_INTERVAL)
+
+    # if the backup cycle timeout, then return True
+    def _backup_cycle_timeout(self):
+        time_delta_dict = xtime.parse_timedelta_string(CONF.conductor.backup_cycle_timout)
+
+        if time_delta_dict == None:
+            LOG.info(_("Recycle timeout format is invalid. "
+                       "Follow <YEARS>y<MONTHS>m<WEEKS>w<DAYS>d<HOURS>h<MINUTES>min<SECONDS>s."))
+            time_delta_dict = xtime.parse_timedelta_string(constants.DEFAULT_BACKUP_CYCLE_TIMEOUT)
+
+        rto = xtime.timeago(
+            years=time_delta_dict["years"],
+            months=time_delta_dict["months"],
+            weeks=time_delta_dict["weeks"],
+            days=time_delta_dict["days"],
+            hours=time_delta_dict["hours"],
+            minutes=time_delta_dict["minutes"],
+            seconds=time_delta_dict["seconds"],
         )
-        if len(queues_started) != 0:
-            for queue in queues_started: backup.Backup().check_volume_backup_status(queue)
+        if rto >= self.cycle_start_time:
+            return True
+        return False
 
     # Create backup generators
     def _process_todo_tasks(self):
@@ -92,7 +122,6 @@ class BackupManager(cotyledon.Service):
         self.failed_backup_list = []
         notify.SendBackupResultEmail(self.success_backup_list, self.failed_backup_list)
 
-
     @periodics.periodic(spacing=CONF.conductor.backup_service_period, run_immediately=True)
     def backup_engine(self):
         LOG.info("backing... %s" % str(time.time()))
@@ -101,12 +130,10 @@ class BackupManager(cotyledon.Service):
         if self._check_quota(): return
         # NOTE(Alex): If _process_wip_tasks() waits tiil no WIP tasks
         # exist, no need to repeat this function before and after queue update.
-        self._process_wip_tasks()
         self._update_task_queue()
         self._process_todo_tasks()
         self._process_wip_tasks()
         self._report_backup_result()
-
 
 
 class RotationManager(cotyledon.Service):
@@ -145,8 +172,7 @@ class RotationManager(cotyledon.Service):
     def remove_backups(self):
         print(self.backup_list)
         for retention_backup in self.backup_list:
-            # 1. check the backup status and delete only available backups
-            backup.Backup().remove_volume_backup(retention_backup)
+            backup.Backup().hard_remove_volume_backup(retention_backup)
 
     @periodics.periodic(spacing=CONF.conductor.retention_service_period, run_immediately=True)
     def rotation_engine(self):
@@ -160,15 +186,18 @@ class RotationManager(cotyledon.Service):
     # get the threshold time str
     def get_threshold_strtime(self):
         time_delta_dict = xtime.parse_timedelta_string(CONF.conductor.retention_time)
-        if time_delta_dict == None: return None
+        if time_delta_dict == None:
+            LOG.info(_("Retention time format is invalid. "
+                       "Follow <YEARS>y<MONTHS>m<WEEKS>w<DAYS>d<HOURS>h<MINUTES>min<SECONDS>s."))
+            return None
 
         res = xtime.timeago(
             years=time_delta_dict["years"],
             months=time_delta_dict["months"],
             weeks=time_delta_dict["weeks"],
             days=time_delta_dict["days"],
+            hours=time_delta_dict["hours"],
+            minutes=time_delta_dict["minutes"],
+            seconds=time_delta_dict["seconds"],
         )
-        if res == None: LOG.info(_("Retention time format is invalid. "
-                                   "Follow <YEARS>y<MONTHS>m<WEEKS>w<DAYS>d."))
-
         return res.strftime(xtime.DEFAULT_TIME_FORMAT)
