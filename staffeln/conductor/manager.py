@@ -7,9 +7,10 @@ import threading
 import time
 
 from staffeln.common import constants
-from staffeln.conductor import backup
 from staffeln.common import context
 from staffeln.common import time as xtime
+from staffeln.conductor import backup
+from staffeln.conductor import notify
 from staffeln.i18n import _
 
 LOG = log.getLogger(__name__)
@@ -46,7 +47,7 @@ class BackupManager(cotyledon.Service):
     # Check if the backup count is over the limit
     # TODO(Alex): how to count the backup number
     #  only available backups are calculated?
-    def _over_limitation(self):
+    def _check_quota(self):
         LOG.info(_("Checking the backup limitation..."))
         max_count = CONF.conductor.max_backup_count
         current_count = len(backup.Backup().get_backups())
@@ -58,6 +59,9 @@ class BackupManager(cotyledon.Service):
         return False
 
     # Manage active backup generators
+    # TODO(Alex): need to discuss
+    #  Need to wait until all backups are finished?
+    #  That is required to make the backup report
     def _process_wip_tasks(self):
         LOG.info(_("Processing WIP backup generators..."))
         queues_started = backup.Backup().get_queues(
@@ -67,7 +71,7 @@ class BackupManager(cotyledon.Service):
             for queue in queues_started: backup.Backup().check_volume_backup_status(queue)
 
     # Create backup generators
-    def _process_new_tasks(self):
+    def _process_todo_tasks(self):
         LOG.info(_("Creating new backup generators..."))
         queues_to_start = backup.Backup().get_queues(
             filters={"backup_status": constants.BACKUP_PLANNED}
@@ -77,26 +81,32 @@ class BackupManager(cotyledon.Service):
                 backup.Backup().create_volume_backup(queue)
 
     # Refresh the task queue
-    # TODO(Alex): need to escalate discussion
-    #  how to manage last backups not finished yet
     def _update_task_queue(self):
         LOG.info(_("Updating backup task queue..."))
-        all_tasks = backup.Backup().get_queues()
-        if len(all_tasks) == 0:
-            backup.Backup().create_queue()
-        else:
-            LOG.info(_("The last backup cycle is not finished yet."
-                       "So the new backup cycle is skipped."))
+        current_tasks = backup.Backup().get_queues()
+        backup.Backup().create_queue(current_tasks)
+
+    def _report_backup_result(self):
+        # TODO(Alex): Need to update these list
+        self.success_backup_list = []
+        self.failed_backup_list = []
+        notify.SendBackupResultEmail(self.success_backup_list, self.failed_backup_list)
+
 
     @periodics.periodic(spacing=CONF.conductor.backup_service_period, run_immediately=True)
     def backup_engine(self):
         LOG.info("backing... %s" % str(time.time()))
         LOG.info("%s periodics" % self.name)
 
-        if self._over_limitation(): return
-        self._update_task_queue()
+        if self._check_quota(): return
+        # NOTE(Alex): If _process_wip_tasks() waits tiil no WIP tasks
+        # exist, no need to repeat this function before and after queue update.
         self._process_wip_tasks()
-        self._process_new_tasks()
+        self._update_task_queue()
+        self._process_todo_tasks()
+        self._process_wip_tasks()
+        self._report_backup_result()
+
 
 
 class RotationManager(cotyledon.Service):
@@ -161,4 +171,4 @@ class RotationManager(cotyledon.Service):
         if res == None: LOG.info(_("Retention time format is invalid. "
                                    "Follow <YEARS>y<MONTHS>m<WEEKS>w<DAYS>d."))
 
-        return res.strftime(constants.DEFAULT_TIME_FORMAT)
+        return res.strftime(xtime.DEFAULT_TIME_FORMAT)
