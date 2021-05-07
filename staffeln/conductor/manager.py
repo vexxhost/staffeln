@@ -43,20 +43,6 @@ class BackupManager(cotyledon.Service):
     def reload(self):
         LOG.info("%s reload" % self.name)
 
-    # Check if the backup count is over the limit
-    # TODO(Alex): how to count the backup number
-    #  only available backups are calculated?
-    def _check_quota(self):
-        LOG.info(_("Checking the backup limitation..."))
-        max_count = CONF.conductor.max_backup_count
-        current_count = len(backup.Backup().get_backups())
-        if max_count <= current_count:
-            # TODO(Alex): Send notification
-            LOG.info(_("The backup limit is over."))
-            return True
-        LOG.info(_("The max limit is %s, and current backup count is %s" % (max_count, current_count)))
-        return False
-
     # Manage active backup generators
     def _process_wip_tasks(self):
         LOG.info(_("Processing WIP backup generators..."))
@@ -121,23 +107,24 @@ class BackupManager(cotyledon.Service):
         backup.Backup().create_queue(current_tasks)
 
     def _report_backup_result(self):
-        # TODO(Alex): Need to update these list
+        # 1. get the quota usage
+        # 2. get the success backup list
+        # 3. get the failed backup list
+        # 4. send notification
+        quota = backup.Backup().get_backup_quota()
         self.success_backup_list = []
         self.failed_backup_list = []
-        notify.SendBackupResultEmail(self.success_backup_list, self.failed_backup_list)
+        notify.SendBackupResultEmail(quota, self.success_backup_list, self.failed_backup_list)
 
     @periodics.periodic(spacing=CONF.conductor.backup_service_period, run_immediately=True)
     def backup_engine(self):
         LOG.info("backing... %s" % str(time.time()))
         LOG.info("%s periodics" % self.name)
 
-        if self._check_quota(): return
-        # NOTE(Alex): If _process_wip_tasks() waits tiil no WIP tasks
-        # exist, no need to repeat this function before and after queue update.
         self._update_task_queue()
         self._process_todo_tasks()
         self._process_wip_tasks()
-        # self._report_backup_result()
+        self._report_backup_result()
 
 
 class RotationManager(cotyledon.Service):

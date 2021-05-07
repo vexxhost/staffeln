@@ -42,6 +42,9 @@ class Backup(object):
     def get_backups(self, filters=None):
         return objects.Volume.list(self.ctx, filters=filters)
 
+    def get_backup_quota(self, project_id):
+        return openstacksdk.get_backup_quota(project_id)
+
     def get_queues(self, filters=None):
         """Get the list of volume queue columns from the queue_data table"""
         queues = objects.Queue.list(self.ctx, filters=filters)
@@ -62,7 +65,7 @@ class Backup(object):
                 self._volume_queue(queue)
 
     # Backup the volumes attached to which has a specific metadata
-    def filter_server(self, metadata):
+    def filter_by_server_metadata(self, metadata):
 
         if not CONF.conductor.backup_metadata_key in metadata:
             return False
@@ -70,7 +73,7 @@ class Backup(object):
         return metadata[CONF.conductor.backup_metadata_key].lower() == constants.BACKUP_ENABLED_KEY
 
     # Backup the volumes in in-use and available status
-    def filter_volume(self, volume_id):
+    def filter_by_volume_status(self, volume_id):
         try:
             volume = openstacksdk.get_volume(volume_id)
             if volume == None: return False
@@ -169,9 +172,9 @@ class Backup(object):
         for project in projects:
             servers = openstacksdk.get_servers(project_id=project.id)
             for server in servers:
-                if not self.filter_server(server.metadata): continue
+                if not self.filter_by_server_metadata(server.metadata): continue
                 for volume in server.attached_volumes:
-                    if not self.filter_volume(volume["id"]): continue
+                    if not self.filter_by_volume_status(volume["id"]): continue
                     queues_map.append(
                         QueueMapping(
                             project_id=project.id,

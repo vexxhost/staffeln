@@ -33,11 +33,6 @@ backup_opts = [
         default="__automated_backup",
         help=_("The key string of metadata the VM, which requres back up, has"),
     ),
-    cfg.IntOpt(
-        "max_backup_count",
-        default=10,
-        help=_("The key string of metadata the VM, which requres back up, has"),
-    ),
 ]
 
 rotation_opts = [

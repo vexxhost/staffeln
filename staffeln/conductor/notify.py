@@ -8,6 +8,9 @@ import staffeln.conf
 from staffeln.common import time as xtime
 from staffeln.i18n import _
 
+__DEBUG__ = True
+
+
 CONF = staffeln.conf.CONF
 LOG = log.getLogger(__name__)
 
@@ -18,8 +21,10 @@ def _sendEmail(src_email, src_pwd, dest_email, subject, content, smtp_server_dom
     message["From"] = src_email
     message["To"] = dest_email
     part = MIMEText(content, "html")
+    print(part)
     message.attach(part)
-
+    if __DEBUG__:
+        return
     s = smtplib.SMTP(host=smtp_server_domain, port=smtp_server_port)
     s.ehlo()
     s.starttls()
@@ -29,18 +34,23 @@ def _sendEmail(src_email, src_pwd, dest_email, subject, content, smtp_server_dom
     s.close()
 
 
-def SendBackupResultEmail(success_backup_list, failed_backup_list):
+def SendBackupResultEmail(quota, success_backup_list, failed_backup_list):
     subject = "Backup result"
 
-    html = "<h3>${TIME}</h3>" \
-           "<h3>Success List</h3>" \
-           "<h4>${SUCCESS_VOLUME_LIST}</h4>" \
-           "<h3>Failed List</h3>" \
-           "<h4>${FAILED_VOLUME_LIST}</h4>"
+    html = "<h3>${TIME}</h3><br>" \
+           "<h3>Quota Usage</h3><br>" \
+           "<h4>Limit: ${QUOTA_LIMIT}, In Use: ${QUOTA_IN_USE}, Reserved: ${QUOTA_RESERVED}</h4><br>" \
+           "<h3>Success List</h3><br>" \
+           "<h4>${SUCCESS_VOLUME_LIST}</h4><br>" \
+           "<h3>Failed List</h3><br>" \
+           "<h4>${FAILED_VOLUME_LIST}</h4><br>"
 
     success_volumes = '<br>'.join([str(elem) for elem in success_backup_list])
     failed_volumes = '<br>'.join([str(elem) for elem in failed_backup_list])
     html = html.replace("${TIME}", xtime.get_current_strtime())
+    html = html.replace("${QUOTA_LIMIT}", quota["limit"])
+    html = html.replace("${QUOTA_IN_USE}", quota["in_use"])
+    html = html.replace("${QUOTA_RESERVED}", quota["reserved"])
     html = html.replace("${SUCCESS_VOLUME_LIST}", success_volumes)
     html = html.replace("${FAILED_VOLUME_LIST}", failed_volumes)
     try:

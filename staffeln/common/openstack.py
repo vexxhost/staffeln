@@ -1,3 +1,5 @@
+from openstack import exceptions
+from openstack import proxy
 from staffeln.common import auth
 
 conn = auth.create_connection()
@@ -51,3 +53,34 @@ def delete_backup(uuid, project_id=None, force=True):
     # )
     conn.delete_volume_backup(uuid, force=force)
     # TODO(Alex): After delete the backup generator, need to set the volume status again
+
+
+def get_backup_quota(project_id):
+    # quota = conn.get_volume_quotas(project_id)
+    quota = _get_volume_quotas(project_id)
+    return quota.backups
+
+
+# rewrite openstasdk._block_storage.get_volume_quotas
+# added usage flag
+# ref: https://docs.openstack.org/api-ref/block-storage/v3/?expanded=#show-quota-usage-for-a-project
+def _get_volume_quotas(project_id, usage=True):
+    """ Get volume quotas for a project
+
+    :param name_or_id: project name or id
+    :raises: OpenStackCloudException if it's not a valid project
+
+    :returns: Munch object with the quotas
+    """
+
+    if usage:
+        resp = conn.block_storage.get(
+            '/os-quota-sets/{project_id}?usage=True'.format(project_id=project_id))
+    else:
+        resp = conn.block_storage.get(
+            '/os-quota-sets/{project_id}'.format(project_id=project_id))
+    data = proxy._json_response(
+        resp,
+        error_message="cinder client call failed")
+    return conn._get_and_munchify('quota_set', data)
+
