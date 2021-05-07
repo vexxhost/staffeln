@@ -18,7 +18,15 @@ def backup_id():
 
     data = request.get_json()
 
-    if "backup_id" not in data or "user_id" not in data:
+    if data is None:
+        return Response(
+            "Error: backup_id or user_id is missing.", status=403, mimetype="text/plain"
+        )
+
+    backup_id = data["backup_id"]
+    user_id = data["user_id"]
+
+    if backup_id is None or user_id is None:
         # Return error if the backup_id argument is not provided.
         return Response(
             "Error: backup_id or user_id is missing.", status=403, mimetype="text/plain"
@@ -46,7 +54,7 @@ def backup_id():
             mimetype="text/plain",
         )
     else:
-        return Response("Deny", status=401, mimetype="text/plain")
+        return Response("False", status=401, mimetype="text/plain")
 
 
 def run(host, port, ssl_context):

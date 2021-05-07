@@ -25,6 +25,7 @@ email_opts = [
             "The user name to authenticate with."
         ),
     ),
+    # We can remove the sender password as we are using postfix to send mail and we won't be authenticating.
     cfg.StrOpt(
         "sender_pwd",
         help=_(
