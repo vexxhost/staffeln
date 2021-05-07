@@ -1,12 +1,10 @@
 from flask import Flask
 from flask import Response
-from flask import jsonify
 from flask import request
 from staffeln import objects
 from staffeln.common import context
-from staffeln.common import auth
+from staffeln.common import openstack
 from oslo_log import log
-from openstack import exceptions as exc
 
 
 ctx = context.make_context()
@@ -14,18 +12,23 @@ app = Flask(__name__)
 
 LOG = log.getLogger(__name__)
 
-conn = auth.create_connection()
 
-
-@app.route("/v1/backup", methods=["GET"])
+@app.route("/v1/backup", methods=["POST"])
 def backup_id():
-    if "backup_id" not in request.args:
-        # Return error if the backup_id argument is not provided.
-        return "Error: No backup_id field provided. Please specify backup_id."
 
-    backup_id = request.args["backup_id"]
+    current_user_id = openstack.get_user_id()
+    
+    if not "user_id" in request.args or not "backup_id" in request.args:
+        # Return error if the backup_id argument is not provided.
+        return Response(
+            "Error: backup_id or user_id is missing.", status=403, mimetype="text/plain"
+        )
+
+    if current_user_id != request.args["user_id"]:
+        return Response("False", status=401, mimetype="text/plain")
+
     # Retrive the backup object from backup_data table with matching backup_id.
-    backup = objects.Volume.get_backup_by_backup_id(ctx, backup_id)
+    backup = objects.Volume.get_backup_by_backup_id(ctx, request.args["backup_id"])
     # backup_info is None when there is no entry of the backup id in backup_table.
     # So the backup should not be the automated backup.
     if backup is None:
@@ -35,7 +38,7 @@ def backup_id():
             mimetype="text/plain",
         )
     else:
-        return Response("Deny", status=401, mimetype="text/plain")
+        return Response("False", status=401, mimetype="text/plain")
 
 
 def run(host, port, ssl_context):
