@@ -10,6 +10,7 @@ from staffeln.common import auth
 from staffeln.common import context
 from staffeln import objects
 from staffeln.i18n import _
+from staffeln.common import openstack as openstacksdk
 
 CONF = staffeln.conf.CONF
 LOG = log.getLogger(__name__)
@@ -22,18 +23,11 @@ QueueMapping = collections.namedtuple(
     "QueueMapping", ["volume_id", "backup_id", "project_id", "instance_id", "backup_status"]
 )
 
-conn = auth.create_connection()
-
 
 def check_vm_backup_metadata(metadata):
     if not CONF.conductor.backup_metadata_key in metadata:
         return False
     return metadata[CONF.conductor.backup_metadata_key].lower() in ["true"]
-
-
-def get_projects_list():
-    projects = conn.list_projects()
-    return projects
 
 
 class Backup(object):
@@ -78,8 +72,7 @@ class Backup(object):
     # Backup the volumes in in-use and available status
     def filter_volume(self, volume_id):
         try:
-            # volume = conn.block_storage.get_volume(volume_id)
-            volume = conn.get_volume_by_id(volume_id)
+            volume = openstacksdk.get_volume(volume_id)
             if volume == None: return False
             res = volume['status'] in ("available", "in-use")
             if not res:
@@ -90,21 +83,12 @@ class Backup(object):
             return False
 
     #  delete all backups forcily regardless of the status
-    def hard_cancel_volume_backup(self, task):
+    def hard_cancel_backup_task(self, task):
         try:
             LOG.info(_("Cancel backup %s" % task.backup_id))
-            # backup = conn.block_storage.get_backup(
-            #     project_id=task.project_id, backup_id=task.backup_id,
-            # )
-            backup = conn.get_volume_backup(task.backup_id)
+            backup = openstacksdk.get_backup(task.backup_id)
             if backup == None: return task.delete_queue()
-
-            # TODO(Alex): v3 is not supporting force delete?
-            # conn.block_storage.delete_backup(
-            #     project_id=task.project_id, backup_id=task.backup_id,
-            # )
-            conn.delete_volume_backup(task.backup_id, force=True)
-            # TODO(Alex): After delete the backup generator, need to set the volume status again
+            openstacksdk.delete_backup(task.backup_id)
             task.delete_queue()
 
         except OpenstackResourceNotFound:
@@ -120,16 +104,12 @@ class Backup(object):
             task.delete_queue()
 
     #  delete only available backups
-    def soft_remove_volume_backup(self, backup_object):
+    def soft_remove_backup_task(self, backup_object):
         try:
-
-            # backup = conn.block_storage.get_backup(
-            #     project_id=backup_object.project_id, backup_id=backup_object.backup_id,
-            # )
-            backup = conn.get_volume_backup(backup_object.backup_id)
+            backup = openstacksdk.get_backup(backup_object.backup_id)
             if backup == None: return backup_object.delete_backup()
             if backup["status"] in ("available"):
-                conn.delete_volume_backup(backup_object.backup_id, force=True)
+                openstacksdk.delete_backup(backup_object.backup_id)
                 backup_object.delete_backup()
             elif backup["status"] in ("error", "error_restoring"):
                 # TODO(Alex): need to discuss
@@ -159,14 +139,11 @@ class Backup(object):
     #  delete all backups forcily regardless of the status
     def hard_remove_volume_backup(self, backup_object):
         try:
-
-            # backup = conn.block_storage.get_backup(
-            #     project_id=backup_object.project_id, backup_id=backup_object.backup_id,
-            # )
-            backup = conn.get_volume_backup(backup_object.backup_id)
+            backup = openstacksdk.get_backup(uuid=backup_object.backup_id,
+                                             project_id=backup_object.project_id)
             if backup == None: return backup_object.delete_backup()
 
-            conn.delete_volume_backup(backup_object.backup_id, force=True)
+            openstacksdk.delete_backup(uuid=backup_object.backup_id)
             backup_object.delete_backup()
 
         except OpenstackResourceNotFound:
@@ -188,11 +165,9 @@ class Backup(object):
         that are attached to the instance.
         """
         queues_map = []
-        projects = get_projects_list()
+        projects = openstacksdk.get_projects()
         for project in projects:
-            servers = conn.compute.servers(
-                details=True, all_projects=True, project_id=project.id
-            )
+            servers = openstacksdk.get_servers(project_id=project.id)
             for server in servers:
                 if not self.filter_server(server.metadata): continue
                 for volume in server.attached_volumes:
@@ -233,13 +208,8 @@ class Backup(object):
         if backup_id == "NULL":
             try:
                 LOG.info(_("Backup for volume %s creating" % queue.volume_id))
-                # volume_backup = conn.block_storage.create_backup(
-                #     volume_id=queue.volume_id, force=True, project_id=queue.project_id,
-                # )
                 # NOTE(Alex): no need to wait because we have a cycle time out
-                volume_backup = conn.create_volume_backup(
-                    volume_id=queue.volume_id, force=True, wait=False,
-                )
+                volume_backup = openstacksdk.create_backup(volume_id=queue.volume_id)
                 queue.backup_id = volume_backup.id
                 queue.backup_status = constants.BACKUP_WIP
                 queue.save()
@@ -261,9 +231,8 @@ class Backup(object):
     def process_failed_backup(self, task):
         # 1. TODO(Alex): notify via email
         LOG.error("Backup of the volume %s failed." % task.volume_id)
-        # 2. TODO(Alex): remove failed backup instance from the openstack
-        #     then set the volume status in-use
-        self.hard_cancel_volume_backup(task)
+        # 2. cancel volume backup
+        self.hard_cancel_backup_task(task)
         # 3. remove failed task from the task queue
         task.delete_queue()
 
@@ -296,25 +265,18 @@ class Backup(object):
                  status checked.
         Call the backups api to see if the backup is successful.
         """
-        # for backup_gen in conn.block_storage.backups(volume_id=queue.volume_id):
         try:
-            # backup_gen = conn.block_storage.get_backup(
-            #     project_id=queue.project_id, backup_id=queue.backup_id,
-            # )
-            backup_gen = conn.get_volume_backup(queue.backup_id)
+            backup_gen = openstacksdk.get_backup(queue.backup_id)
             if backup_gen == None:
                 # TODO(Alex): need to check when it is none
                 LOG.info(_("[Beta] Backup status of %s is returning none." % (queue.backup_id)))
+                self.process_non_existing_backup(queue)
                 return
             if backup_gen.status == "error":
                 self.process_failed_backup(queue)
             elif backup_gen.status == "available":
                 self.process_available_backup(queue)
             elif backup_gen.status == "creating":
-                # TODO(Alex): Need to escalate discussion
-                # How to proceed WIP bakcup generators?
-                # To make things worse, the last backup generator is in progress till
-                # the new backup cycle
                 LOG.info("Waiting for backup of %s to be completed" % queue.volume_id)
             else:  # "deleting", "restoring", "error_restoring" status
                 self.process_using_backup(queue)
