@@ -23,8 +23,9 @@ def _sendEmail(
 ):
     message = MIMEMultipart("alternative")
     message["Subject"] = subject
-    message["From"] = src_email
-    message["To"] = dest_email
+    # This part is commented as it won't be able to parce the items in list.
+    # message["From"] = src_email
+    # message["To"] = dest_email
     part = MIMEText(content, "html")
     message.attach(part)
 
