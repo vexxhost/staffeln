@@ -15,6 +15,7 @@ class Volume(
         "id": sfeild.IntegerField(),
         "backup_id": sfeild.StringField(),
         "instance_id": sfeild.StringField(),
+        "project_id": sfeild.UUIDField(),
         "volume_id": sfeild.UUIDField(),
         "backup_completed": sfeild.IntegerField(),
     }
