@@ -76,7 +76,7 @@ class BackupManager(cotyledon.Service):
                 for queue in queues_started: backup.Backup().check_volume_backup_status(queue)
             else: # time out
                 LOG.info(_("cycle timeout"))
-                for queue in queues_started: backup.Backup().hard_cancel_volume_backup(queue)
+                for queue in queues_started: backup.Backup().hard_cancel_backup_task(queue)
                 break
             time.sleep(constants.BACKUP_RESULT_CHECK_INTERVAL)
 
