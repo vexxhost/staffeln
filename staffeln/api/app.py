@@ -1,9 +1,9 @@
 from flask import Flask
 from flask import Response
-import os
 from flask import request
 from staffeln import objects
 from staffeln.common import context
+from staffeln.common import openstack
 from oslo_log import log
 
 
@@ -16,15 +16,10 @@ LOG = log.getLogger(__name__)
 @app.route("/v1/backup", methods=["POST"])
 def backup_id():
 
-    data = request.get_json()
+    current_user_id = openstack.get_user_id()
 
-    if data is None:
-        return Response(
-            "Error: backup_id or user_id is missing.", status=403, mimetype="text/plain"
-        )
-
-    backup_id = data["backup_id"]
-    user_id = data["user_id"]
+    backup_id = request.args["backup_id"]
+    user_id = request.args["user_id"]
 
     if backup_id is None or user_id is None:
         # Return error if the backup_id argument is not provided.
@@ -32,15 +27,7 @@ def backup_id():
             "Error: backup_id or user_id is missing.", status=403, mimetype="text/plain"
         )
 
-    try:
-        user_to_validate = os.environ["OS_USERNAME"]
-    except:
-        LOG.error("No cloud envvars provided.")
-        return Response(
-            "Error: Something Went wrong.", status=500, mimetype="text/plain"
-        )
-
-    if user_to_validate != data["user_id"]:
+    if current_user_id != user_id:
         return Response("False", status=401, mimetype="text/plain")
 
     # Retrive the backup object from backup_data table with matching backup_id.
