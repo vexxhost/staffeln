@@ -1,12 +1,10 @@
 from flask import Flask
 from flask import Response
-from flask import jsonify
+import os
 from flask import request
 from staffeln import objects
 from staffeln.common import context
-from staffeln.common import auth
 from oslo_log import log
-from openstack import exceptions as exc
 
 
 ctx = context.make_context()
@@ -14,16 +12,29 @@ app = Flask(__name__)
 
 LOG = log.getLogger(__name__)
 
-conn = auth.create_connection()
 
-
-@app.route("/v1/backup", methods=["GET"])
+@app.route("/v1/backup", methods=["POST"])
 def backup_id():
-    if "backup_id" not in request.args:
-        # Return error if the backup_id argument is not provided.
-        return "Error: No backup_id field provided. Please specify backup_id."
 
-    backup_id = request.args["backup_id"]
+    data = request.get_json()
+
+    if "backup_id" not in data or "user_id" not in data:
+        # Return error if the backup_id argument is not provided.
+        return Response(
+            "Error: backup_id or user_id is missing.", status=403, mimetype="text/plain"
+        )
+
+    try:
+        user_to_validate = os.environ["OS_USERNAME"]
+    except:
+        LOG.error("No cloud envvars provided.")
+        return Response(
+            "Error: Something Went wrong.", status=500, mimetype="text/plain"
+        )
+
+    if user_to_validate != data["user_id"]:
+        return Response("False", status=401, mimetype="text/plain")
+
     # Retrive the backup object from backup_data table with matching backup_id.
     backup = objects.Volume.get_backup_by_backup_id(ctx, backup_id)
     # backup_info is None when there is no entry of the backup id in backup_table.
