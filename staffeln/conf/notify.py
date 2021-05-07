@@ -12,30 +12,35 @@ email_opts = [
     cfg.ListOpt(
         "receiver",
         default=[],
-        help=_("The receivers of the bakcup result by email."
-               "A list of addresses to receive backup result emails to.  A bare"
-               " string will be treated as a list with 1 address."),
+        help=_(
+            "The receivers of the bakcup result by email."
+            "A list of addresses to receive backup result emails to.  A bare"
+            " string will be treated as a list with 1 address."
+        ),
     ),
     cfg.StrOpt(
         "sender_email",
-        help=_("Log in on an SMTP server that requires authentication."
-               "The user name to authenticate with."
-               ),
+        help=_(
+            "Log in on an SMTP server that requires authentication."
+            "The user name to authenticate with."
+        ),
     ),
+    # We can remove the sender password as we are using postfix to send mail and we won't be authenticating.
     cfg.StrOpt(
         "sender_pwd",
-        help=_("Log in on an SMTP server that requires authentication."
-               "The password for the authentication."
-               ),
+        help=_(
+            "Log in on an SMTP server that requires authentication."
+            "The password for the authentication."
+        ),
     ),
     cfg.StrOpt(
         "smtp_server_domain",
-        default="smtp.gmail.com",
+        default="localhost",
         help=_("the name of the remote host to which to connect"),
     ),
     cfg.StrOpt(
         "smtp_server_port",
-        default="587",
+        default="25",
         help=_("the port to which to connect"),
     ),
 ]
