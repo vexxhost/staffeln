@@ -5,7 +5,9 @@ from staffeln.objects import fields as sfeild
 
 @base.StaffelnObjectRegistry.register
 class Volume(
-    base.StaffelnPersistentObject, base.StaffelnObject, base.StaffelnObjectDictCompat
+    base.StaffelnPersistentObject,
+    base.StaffelnObject,
+    base.StaffelnObjectDictCompat
 ):
     VERSION = "1.0"
 
@@ -21,7 +23,7 @@ class Volume(
     }
 
     @base.remotable_classmethod
-    def list(cls, context, filters=None):
+    def list(cls, context, filters=None):  # pylint: disable=E0213
         """Return a list of :class:`Backup` objects.
 
         :param filters: dict mapping the filter to a value.
@@ -66,7 +68,7 @@ class Volume(
         self.dbapi.soft_delete_backup(self.id)
 
     @base.remotable_classmethod
-    def get_backup_by_backup_id(cls, context, backup_id):
+    def get_backup_by_backup_id(cls, context, backup_id):  # pylint: disable=E0213
         """Find a backup based on backup_id
         :param context: Security context. NOTE: This should only
                         be used internally by the indirection_api.

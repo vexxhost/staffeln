@@ -1,3 +1,4 @@
+# pylint: disable=E501
 import collections
 
 import parse
@@ -42,14 +43,14 @@ class Backup(object):
         self.result.publish()
 
     def get_backups(self, filters=None):
-        return objects.Volume.list(self.ctx, filters=filters)
+        return objects.Volume().list(self.ctx, filters=filters)
 
     def get_backup_quota(self, project_id):
         return openstacksdk.get_backup_quota(project_id)
 
     def get_queues(self, filters=None):
         """Get the list of volume queue columns from the queue_data table"""
-        queues = objects.Queue.list(self.ctx, filters=filters)
+        queues = objects.Queue().list(self.ctx, filters=filters)
         return queues
 
     def create_queue(self, old_tasks):
@@ -73,8 +74,8 @@ class Backup(object):
             return False
 
         return (
-            metadata[CONF.conductor.backup_metadata_key].lower()
-            == constants.BACKUP_ENABLED_KEY
+                metadata[CONF.conductor.backup_metadata_key].lower()
+                == constants.BACKUP_ENABLED_KEY
         )
 
     # Backup the volumes in in-use and available status

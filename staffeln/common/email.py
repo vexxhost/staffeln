@@ -29,7 +29,8 @@ def send(
     s = smtplib.SMTP(host=smtp_server_domain, port=smtp_server_port)
     # s.ehlo()
     # s.starttls()
-    # we can comment this auth func when use the trusted ip without authentication against the smtp server
+    # we can comment this auth func when use the trusted ip without
+    # authentication against the smtp server
     # s.login(src_email, src_pwd)
     s.sendmail(src_email, dest_email, message.as_string())
     s.close()

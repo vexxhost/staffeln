@@ -67,7 +67,7 @@ def add_identity_filter(query, value):
 
 
 def _paginate_query(
-    model, limit=None, marker=None, sort_key=None, sort_dir=None, query=None
+        model, limit=None, marker=None, sort_key=None, sort_dir=None, query=None
 ):
     if not query:
         query = model_query(model)
@@ -159,11 +159,8 @@ class Connection(object):
     def __add_simple_filter(self, query, model, fieldname, value, operator_):
         field = getattr(model, fieldname)
 
-        if (
-            fieldname != "deleted"
-            and value
-            and field.type.python_type is datetime.datetime
-        ):
+        if (fieldname != "deleted" and value and field.type.python_type is
+                datetime.datetime):
             if not isinstance(value, datetime.datetime):
                 value = timeutils.parse_isotime(value)
         return query.filter(self.valid_operators[operator_](field, value))
@@ -195,7 +192,8 @@ class Connection(object):
     def _create(self, model, values):
         obj = model()
         cleaned_values = {
-            k: v for k, v in values.items() if k not in self._get_relationships(model)
+            k: v for k, v in values.items()
+            if k not in self._get_relationships(model)
         }
         obj.update(cleaned_values)
         obj.save()
@@ -230,20 +228,21 @@ class Connection(object):
             return row
 
     def _get_model_list(
-        self,
-        model,
-        add_filter_func,
-        context,
-        filters=None,
-        limit=None,
-        marker=None,
-        sort_key=None,
-        sort_dir=None,
+            self,
+            model,
+            add_filter_func,
+            context,
+            filters=None,
+            limit=None,
+            marker=None,
+            sort_key=None,
+            sort_dir=None,
     ):
         query = model_query(model)
 
         query = add_filter_func(query, filters)
-        return _paginate_query(model, limit, marker, sort_key, sort_dir, query)
+        return _paginate_query(model, limit, marker,
+                               sort_key, sort_dir, query)
 
     def create_backup(self, values):
         if not values.get("backup_id"):
@@ -301,7 +300,8 @@ class Connection(object):
         try:
 
             return self._get(
-                context, model=models.Queue_data, fieldname=fieldname, value=value
+                context, model=models.Queue_data,
+                fieldname=fieldname, value=value
             )
         except:
             LOG.error("Queue not found")
@@ -316,7 +316,8 @@ class Connection(object):
         """Get the column from the backup_data with matching backup_id"""
 
         try:
-            return self._get_backup(context, fieldname="backup_id", value=backup_id)
+            return self._get_backup(context, fieldname="backup_id",
+                                    value=backup_id)
         except:
             LOG.error("Backup not found with backup_id %s." % backup_id)
 
@@ -325,7 +326,8 @@ class Connection(object):
 
         try:
             return self._get(
-                context, model=models.Backup_data, fieldname=fieldname, value=value
+                context, model=models.Backup_data,
+                fieldname=fieldname, value=value
             )
         except:
             LOG.error("Backup resource not found.")

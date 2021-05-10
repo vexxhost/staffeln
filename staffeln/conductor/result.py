@@ -26,7 +26,8 @@ class BackupResult(object):
 
     def add_success_backup(self, project_id, volume_id, backup_id):
         if project_id not in self.success_backup_list:
-            LOG.error(_("Not registered project is reported for backup result."))
+            LOG.error(_("Not registered project is reported for backup "
+                        "result."))
             return
         self.success_backup_list[project_id].append(
             {
@@ -37,7 +38,8 @@ class BackupResult(object):
 
     def add_failed_backup(self, project_id, volume_id, reason):
         if project_id not in self.failed_backup_list:
-            LOG.error(_("Not registered project is reported for backup result."))
+            LOG.error(_("Not registered project is reported for backup "
+                        "result."))
             return
         self.failed_backup_list[project_id].append(
             {
@@ -62,7 +64,8 @@ class BackupResult(object):
         except Exception as e:
             LOG.error(
                 _(
-                    "Backup result email send failed. Please check email configuration. %s"
+                    "Backup result email send failed. Please check email"
+                    " configuration. %s"
                     % (str(e))
                 )
             )
@@ -78,7 +81,8 @@ class BackupResult(object):
             html += (
                 "<h3>Project: ${PROJECT}</h3><br>"
                 "<h3>Quota Usage</h3><br>"
-                "<h4>Limit: ${QUOTA_LIMIT}, In Use: ${QUOTA_IN_USE}, Reserved: ${QUOTA_RESERVED}</h4><br>"
+                "<h4>Limit: ${QUOTA_LIMIT}, In Use: ${QUOTA_IN_USE}, Reserved:"
+                " ${QUOTA_RESERVED}</h4><br>"
                 "<h3>Success List</h3><br>"
                 "<h4>${SUCCESS_VOLUME_LIST}</h4><br>"
                 "<h3>Failed List</h3><br>"

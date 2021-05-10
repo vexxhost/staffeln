@@ -5,7 +5,8 @@ LOG = log.getLogger(__name__)
 
 
 class RequestContext(context.RequestContext):
-    """Added security context with request parameters from openstack common library"""
+    """Added security context with request parameters
+    from openstack common library"""
 
     def __init__(
         self,

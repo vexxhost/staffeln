@@ -79,7 +79,8 @@ class BackupManager(cotyledon.Service):
             LOG.info(
                 _(
                     "Recycle timeout format is invalid. "
-                    "Follow <YEARS>y<MONTHS>m<WEEKS>w<DAYS>d<HOURS>h<MINUTES>min<SECONDS>s."
+                    "Follow <YEARS>y<MONTHS>m<WEEKS>w<DAYS>d"
+                    "<HOURS>h<MINUTES>min<SECONDS>s."
                 )
             )
             time_delta_dict = xtime.parse_timedelta_string(
@@ -121,7 +122,8 @@ class BackupManager(cotyledon.Service):
         self.controller.publish_backup_result()
 
     @periodics.periodic(
-        spacing=CONF.conductor.backup_service_period, run_immediately=True
+        spacing=CONF.conductor.backup_service_period,
+        run_immediately=True
     )
     def backup_engine(self):
         LOG.info("backing... %s" % str(time.time()))
@@ -178,7 +180,8 @@ class RotationManager(cotyledon.Service):
             self.controller.hard_remove_volume_backup(retention_backup)
 
     @periodics.periodic(
-        spacing=CONF.conductor.retention_service_period, run_immediately=True
+        spacing=CONF.conductor.retention_service_period,
+        run_immediately=True
     )
     def rotation_engine(self):
         LOG.info("%s rotation_engine" % self.name)
@@ -191,12 +194,15 @@ class RotationManager(cotyledon.Service):
 
     # get the threshold time str
     def get_threshold_strtime(self):
-        time_delta_dict = xtime.parse_timedelta_string(CONF.conductor.retention_time)
+        time_delta_dict = xtime.parse_timedelta_string(
+            CONF.conductor.retention_time
+        )
         if time_delta_dict is None:
             LOG.info(
                 _(
                     "Retention time format is invalid. "
-                    "Follow <YEARS>y<MONTHS>m<WEEKS>w<DAYS>d<HOURS>h<MINUTES>min<SECONDS>s."
+                    "Follow <YEARS>y<MONTHS>m<WEEKS>w<DAYS>d"
+                    "<HOURS>h<MINUTES>min<SECONDS>s."
                 )
             )
             return None

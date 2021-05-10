@@ -5,7 +5,8 @@ from staffeln.i18n import _
 conductor_group = cfg.OptGroup(
     "conductor",
     title="Conductor Options",
-    help=_("Options under this group are used " "to define Conductor's configuration."),
+    help=_("Options under this group are used " "to define Conductor's"
+           " configuration."),
 )
 
 backup_opts = [
@@ -25,17 +26,21 @@ backup_opts = [
     ),
     cfg.StrOpt(
         "backup_cycle_timout",
-        regex=r'((?P<years>\d+?)y)?((?P<months>\d+?)mon)?((?P<weeks>\d+?)w)?((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)min)?((?P<seconds>\d+?)s)?',
+        regex=r'((?P<years>\d+?)y)?((?P<months>\d+?)mon)?((?P<weeks>\d+?)w)?'
+              r'((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)min)?'
+              r'((?P<seconds>\d+?)s)?',
         default=constants.DEFAULT_BACKUP_CYCLE_TIMEOUT,
         help=_(
             "The duration while the backup cycle waits backups."
-            "<YEARS>y<MONTHS>mon<WEEKS>w<DAYS>d<HOURS>h<MINUTES>min<SECONDS>s."
+            "<YEARS>y<MONTHS>mon<WEEKS>w<DAYS>d<HOURS>h<MINUTES>min"
+            "<SECONDS>s."
         ),
     ),
     cfg.StrOpt(
         "backup_metadata_key",
         default="__automated_backup",
-        help=_("The key string of metadata the VM, which requres back up, has"),
+        help=_("The key string of metadata the VM, "
+               "which requres back up, has"),
     ),
 ]
 
@@ -52,7 +57,8 @@ rotation_opts = [
         "retention_service_period",
         default=20,
         min=10,
-        help=_("The period of the retention service, the unit is one second."),
+        help=_("The period of the retention service, the unit is "
+               "one second."),
     ),
     cfg.IntOpt(
         "rotation_workers",
@@ -64,11 +70,14 @@ rotation_opts = [
     ),
     cfg.StrOpt(
         "retention_time",
-        regex=r'((?P<years>\d+?)y)?((?P<months>\d+?)mon)?((?P<weeks>\d+?)w)?((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)min)?((?P<seconds>\d+?)s)?',
+        regex=r'((?P<years>\d+?)y)?((?P<months>\d+?)mon)?((?P<weeks>\d+?)w)?'
+              r'((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)min)?'
+              r'((?P<seconds>\d+?)s)?',
         default="2w3d",
         help=_(
             "The time of retention period, the for mat is "
-            "<YEARS>y<MONTHS>mon<WEEKS>w<DAYS>d<HOURS>h<MINUTES>min<SECONDS>s."
+            "<YEARS>y<MONTHS>mon<WEEKS>w<DAYS>d<HOURS>h<MINUTES>min"
+            "<SECONDS>s."
         ),
     ),
 ]
