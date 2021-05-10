@@ -2,11 +2,10 @@
 import os
 import sys
 
+import staffeln.conf
 from oslo_log import log as logging
-
 from staffeln.api import app as api_app
 from staffeln.common import service
-import staffeln.conf
 from staffeln.i18n import _
 
 CONF = staffeln.conf.CONF

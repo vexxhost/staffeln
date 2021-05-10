@@ -1,10 +1,10 @@
 # Backup result
-from oslo_log import log
 import staffeln.conf
-from staffeln.common import time as xtime
+from oslo_log import log
 from staffeln.common import email
-from staffeln.i18n import _
+from staffeln.common import time as xtime
 from staffeln.conductor import backup
+from staffeln.i18n import _
 
 CONF = staffeln.conf.CONF
 LOG = log.getLogger(__name__)

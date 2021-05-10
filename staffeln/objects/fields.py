@@ -3,7 +3,6 @@
 from oslo_serialization import jsonutils
 from oslo_versionedobjects import fields
 
-
 BooleanField = fields.BooleanField
 StringField = fields.StringField
 DateTimeField = fields.DateTimeField

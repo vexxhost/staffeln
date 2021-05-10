@@ -3,9 +3,7 @@
 from oslo_utils import versionutils
 from oslo_versionedobjects import base as ovoo_base
 from oslo_versionedobjects import fields as ovoo_fields
-
 from staffeln import objects
-
 
 remotable_classmethod = ovoo_base.remotable_classmethod
 remotable = ovoo_base.remotable
@@ -40,7 +38,7 @@ class StaffelnObjectSerializer(ovoo_base.VersionedObjectSerializer):
     OBJ_BASE_CLASS = StaffelnObject
 
 
-class StaffelnPersistentObject(object):
+class StaffelnPersistentObject(ovoo_base.VersionedObject):
     fields = {
         "created_at": ovoo_fields.DateTimeField(nullable=True),
         # "deleted_at": ovoo_fields.DateTimeField(nullable=True),

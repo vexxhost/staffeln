@@ -1,7 +1,6 @@
 from oslo_config import cfg
 from staffeln.i18n import _
 
-
 notify_group = cfg.OptGroup(
     "notification",
     title="Notification options",

@@ -19,7 +19,6 @@ Based on pecan.middleware.errordocument
 """
 
 from oslo_serialization import jsonutils
-
 from staffeln.i18n import _
 
 

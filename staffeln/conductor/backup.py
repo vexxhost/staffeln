@@ -1,15 +1,15 @@
+import collections
+
 import parse
 import staffeln.conf
-import collections
-from staffeln.common import constants
-from staffeln.conductor import result
 from openstack.exceptions import ResourceNotFound as OpenstackResourceNotFound
 from openstack.exceptions import SDKException as OpenstackSDKException
 from oslo_log import log
-from staffeln.common import context
 from staffeln import objects
-from staffeln.i18n import _
+from staffeln.common import constants, context
 from staffeln.common import openstack as openstacksdk
+from staffeln.conductor import result
+from staffeln.i18n import _
 
 CONF = staffeln.conf.CONF
 LOG = log.getLogger(__name__)

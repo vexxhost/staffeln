@@ -1,8 +1,7 @@
+import os
+
 from oslo_config import cfg
 from staffeln.i18n import _
-
-
-import os
 
 PATH_OPTS = [
     cfg.StrOpt(

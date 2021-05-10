@@ -1,12 +1,11 @@
-import cotyledon
-from futurist import periodics
-from oslo_log import log
-import staffeln.conf
 import threading
 import time
 
-from staffeln.common import constants
-from staffeln.common import context
+import cotyledon
+import staffeln.conf
+from futurist import periodics
+from oslo_log import log
+from staffeln.common import constants, context
 from staffeln.common import time as xtime
 from staffeln.conductor import backup
 from staffeln.i18n import _

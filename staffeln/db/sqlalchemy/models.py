@@ -2,13 +2,11 @@
 SQLAlchemy models for staffeln service
 """
 
-from oslo_db.sqlalchemy import models
-from sqlalchemy import Column
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Integer
-from sqlalchemy import String
-from sqlalchemy import UniqueConstraint
 import urllib.parse as urlparse
+
+from oslo_db.sqlalchemy import models
+from sqlalchemy import Column, Integer, String, UniqueConstraint
+from sqlalchemy.ext.declarative import declarative_base
 from staffeln import conf
 
 CONF = conf.CONF

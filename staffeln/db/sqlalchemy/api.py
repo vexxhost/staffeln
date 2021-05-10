@@ -4,19 +4,15 @@ import datetime
 import operator
 
 from oslo_config import cfg
-from oslo_log import log
 from oslo_db import exception as db_exc
 from oslo_db.sqlalchemy import session as db_session
 from oslo_db.sqlalchemy import utils as db_utils
-from oslo_utils import timeutils
-from oslo_utils import strutils
-from oslo_utils import uuidutils
+from oslo_log import log
+from oslo_utils import strutils, timeutils, uuidutils
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm import exc
-
-from staffeln.db.sqlalchemy import models
 from staffeln.common import short_id
-
+from staffeln.db.sqlalchemy import models
 
 LOG = log.getLogger(__name__)
 

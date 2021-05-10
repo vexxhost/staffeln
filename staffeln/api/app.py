@@ -1,11 +1,7 @@
-from flask import Flask
-from flask import Response
-from flask import request
-from staffeln import objects
-from staffeln.common import context
-from staffeln.common import openstack
+from flask import Flask, Response, request
 from oslo_log import log
-
+from staffeln import objects
+from staffeln.common import context, openstack
 
 ctx = context.make_context()
 app = Flask(__name__)
