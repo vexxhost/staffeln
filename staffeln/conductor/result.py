@@ -94,7 +94,7 @@ class BackupResult(object):
                 [
                     "Volume ID: %s, Reason: %s"
                     % (str(e["volume_id"]), str(e["reason"]))
-                    for e in self.failed_backup_list[[project["id"]]]
+                    for e in self.failed_backup_list[project["id"]]
                 ]
             )
 
