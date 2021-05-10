@@ -43,8 +43,7 @@ copyright = u'2017, OpenStack Developers'
 # openstackdocstheme options
 openstackdocs_repo_name = 'openstack/staffeln'
 openstackdocs_bug_project = (
-    'replace with the name of the project on Launchpad'
-    ' or the ID from Storyboard'
+    'replace with the name of the project on Launchpad' ' or the ID from Storyboard'
 )
 openstackdocs_bug_tag = ''
 

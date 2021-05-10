@@ -74,8 +74,8 @@ class Backup(object):
             return False
 
         return (
-                metadata[CONF.conductor.backup_metadata_key].lower()
-                == constants.BACKUP_ENABLED_KEY
+            metadata[CONF.conductor.backup_metadata_key].lower()
+            == constants.BACKUP_ENABLED_KEY
         )
 
     # Backup the volumes in in-use and available status

@@ -45,9 +45,9 @@ def get_current_strtime():
     return now.strftime(DEFAULT_TIME_FORMAT)
 
 
-def timeago(years=0, months=0, weeks=0,
-            days=0, hours=0, minutes=0,
-            seconds=0, from_date=None):
+def timeago(
+    years=0, months=0, weeks=0, days=0, hours=0, minutes=0, seconds=0, from_date=None
+):
     if from_date is None:
         from_date = datetime.now()
     return from_date - relativedelta(

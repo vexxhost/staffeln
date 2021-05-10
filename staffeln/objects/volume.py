@@ -5,9 +5,7 @@ from staffeln.objects import fields as sfeild
 
 @base.StaffelnObjectRegistry.register
 class Volume(
-    base.StaffelnPersistentObject,
-    base.StaffelnObject,
-    base.StaffelnObjectDictCompat
+    base.StaffelnPersistentObject, base.StaffelnObject, base.StaffelnObjectDictCompat
 ):
     VERSION = "1.0"
 
