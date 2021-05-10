@@ -14,7 +14,7 @@ def backup_id():
 
     current_user_id = openstack.get_user_id()
 
-    if "user_id" not in request.args or not "backup_id" in request.args:
+    if "user_id" not in request.args or "backup_id" not in request.args:
         # Return error if the backup_id argument is not provided.
         return Response(
             "Error: backup_id or user_id is missing.", status=403, mimetype="text/plain"

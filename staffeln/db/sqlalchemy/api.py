@@ -159,11 +159,8 @@ class Connection(object):
     def __add_simple_filter(self, query, model, fieldname, value, operator_):
         field = getattr(model, fieldname)
 
-        if (
-            fieldname != "deleted"
-            and value
-            and field.type.python_type is datetime.datetime
-        ):
+        if fieldname != "deleted" and value and field.type.python_type is \
+                datetime.datetime:
             if not isinstance(value, datetime.datetime):
                 value = timeutils.parse_isotime(value)
         return query.filter(self.valid_operators[operator_](field, value))
