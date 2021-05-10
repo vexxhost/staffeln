@@ -83,11 +83,21 @@ class BackupResult(object):
                     "<h4>${FAILED_VOLUME_LIST}</h4><br>"
 
             success_volumes = "<br>".join(
-                ["Volume ID: %s, Backup ID: %s" % (str(e["volume_id"]), str(e["backup_id"]))
-                 for e in self.success_backup_list])
+
+                [
+                    "Volume ID: %s, Backup ID: %s"
+                    % (str(e["volume_id"]), str(e["backup_id"]))
+                    for e in self.success_backup_list[project["id"]]
+                ]
+            )
             failed_volumes = "<br>".join(
-                ["Volume ID: %s, Reason: %s" % (str(e["volume_id"]), str(e["reason"]))
-                 for e in self.failed_backup_list])
+                [
+                    "Volume ID: %s, Reason: %s"
+                    % (str(e["volume_id"]), str(e["reason"]))
+                    for e in self.failed_backup_list[[project["id"]]]
+                ]
+            )
+
             html = html.replace("${QUOTA_LIMIT}", str(quota["limit"]))
             html = html.replace("${QUOTA_IN_USE}", str(quota["in_use"]))
             html = html.replace("${QUOTA_RESERVED}", str(quota["reserved"]))
