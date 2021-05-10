@@ -12,8 +12,10 @@ backup_opts = [
     cfg.IntOpt(
         "backup_workers",
         default=1,
-        help=_("The maximum number of backup processes to "
-               "fork and run. Default to number of CPUs on the host."),
+        help=_(
+            "The maximum number of backup processes to "
+            "fork and run. Default to number of CPUs on the host."
+        ),
     ),
     cfg.IntOpt(
         "backup_service_period",
@@ -25,8 +27,10 @@ backup_opts = [
         "backup_cycle_timout",
         regex=r'((?P<years>\d+?)y)?((?P<months>\d+?)mon)?((?P<weeks>\d+?)w)?((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)min)?((?P<seconds>\d+?)s)?',
         default=constants.DEFAULT_BACKUP_CYCLE_TIMEOUT,
-        help=_("The duration while the backup cycle waits backups."
-               "<YEARS>y<MONTHS>mon<WEEKS>w<DAYS>d<HOURS>h<MINUTES>min<SECONDS>s."),
+        help=_(
+            "The duration while the backup cycle waits backups."
+            "<YEARS>y<MONTHS>mon<WEEKS>w<DAYS>d<HOURS>h<MINUTES>min<SECONDS>s."
+        ),
     ),
     cfg.StrOpt(
         "backup_metadata_key",
@@ -39,8 +43,10 @@ rotation_opts = [
     cfg.IntOpt(
         "rotation_workers",
         default=1,
-        help=_("The maximum number of rotation processes to "
-               "fork and run. Default to number of CPUs on the host."),
+        help=_(
+            "The maximum number of rotation processes to "
+            "fork and run. Default to number of CPUs on the host."
+        ),
     ),
     cfg.IntOpt(
         "retention_service_period",
@@ -51,15 +57,19 @@ rotation_opts = [
     cfg.IntOpt(
         "rotation_workers",
         default=1,
-        help=_("The maximum number of rotation processes to "
-               "fork and run. Default to number of CPUs on the host."),
+        help=_(
+            "The maximum number of rotation processes to "
+            "fork and run. Default to number of CPUs on the host."
+        ),
     ),
     cfg.StrOpt(
         "retention_time",
         regex=r'((?P<years>\d+?)y)?((?P<months>\d+?)mon)?((?P<weeks>\d+?)w)?((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)min)?((?P<seconds>\d+?)s)?',
         default="2w3d",
-        help=_("The time of retention period, the for mat is "
-               "<YEARS>y<MONTHS>mon<WEEKS>w<DAYS>d<HOURS>h<MINUTES>min<SECONDS>s."),
+        help=_(
+            "The time of retention period, the for mat is "
+            "<YEARS>y<MONTHS>mon<WEEKS>w<DAYS>d<HOURS>h<MINUTES>min<SECONDS>s."
+        ),
     ),
 ]
 

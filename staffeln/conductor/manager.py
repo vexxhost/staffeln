@@ -31,7 +31,9 @@ class BackupManager(cotyledon.Service):
         periodic_callables = [
             (self.backup_engine, (), {}),
         ]
-        periodic_worker = periodics.PeriodicWorker(periodic_callables, schedule_strategy="last_finished")
+        periodic_worker = periodics.PeriodicWorker(
+            periodic_callables, schedule_strategy="last_finished"
+        )
         periodic_thread = threading.Thread(target=periodic_worker.start)
         periodic_thread.daemon = True
         periodic_thread.start()
@@ -50,7 +52,7 @@ class BackupManager(cotyledon.Service):
         self.cycle_start_time = xtime.get_current_time()
 
         # loop - take care of backup result while timeout
-        while (1):
+        while 1:
             queues_started = self.controller.get_queues(
                 filters={"backup_status": constants.BACKUP_WIP}
             )
@@ -59,21 +61,31 @@ class BackupManager(cotyledon.Service):
                 break
             if not self._backup_cycle_timeout():  # time in
                 LOG.info(_("cycle timein"))
-                for queue in queues_started: self.controller.check_volume_backup_status(queue)
+                for queue in queues_started:
+                    self.controller.check_volume_backup_status(queue)
             else:  # time out
                 LOG.info(_("cycle timeout"))
-                for queue in queues_started: self.controller.hard_cancel_backup_task(queue)
+                for queue in queues_started:
+                    self.controller.hard_cancel_backup_task(queue)
                 break
             time.sleep(constants.BACKUP_RESULT_CHECK_INTERVAL)
 
     # if the backup cycle timeout, then return True
     def _backup_cycle_timeout(self):
-        time_delta_dict = xtime.parse_timedelta_string(CONF.conductor.backup_cycle_timout)
+        time_delta_dict = xtime.parse_timedelta_string(
+            CONF.conductor.backup_cycle_timout
+        )
 
         if time_delta_dict == None:
-            LOG.info(_("Recycle timeout format is invalid. "
-                       "Follow <YEARS>y<MONTHS>m<WEEKS>w<DAYS>d<HOURS>h<MINUTES>min<SECONDS>s."))
-            time_delta_dict = xtime.parse_timedelta_string(constants.DEFAULT_BACKUP_CYCLE_TIMEOUT)
+            LOG.info(
+                _(
+                    "Recycle timeout format is invalid. "
+                    "Follow <YEARS>y<MONTHS>m<WEEKS>w<DAYS>d<HOURS>h<MINUTES>min<SECONDS>s."
+                )
+            )
+            time_delta_dict = xtime.parse_timedelta_string(
+                constants.DEFAULT_BACKUP_CYCLE_TIMEOUT
+            )
         rto = xtime.timeago(
             years=time_delta_dict["years"],
             months=time_delta_dict["months"],
@@ -109,7 +121,9 @@ class BackupManager(cotyledon.Service):
     def _report_backup_result(self):
         self.controller.publish_backup_result()
 
-    @periodics.periodic(spacing=CONF.conductor.backup_service_period, run_immediately=True)
+    @periodics.periodic(
+        spacing=CONF.conductor.backup_service_period, run_immediately=True
+    )
     def backup_engine(self):
         LOG.info("backing... %s" % str(time.time()))
         LOG.info("%s periodics" % self.name)
@@ -136,7 +150,9 @@ class RotationManager(cotyledon.Service):
         periodic_callables = [
             (self.rotation_engine, (), {}),
         ]
-        periodic_worker = periodics.PeriodicWorker(periodic_callables, schedule_strategy="last_finished")
+        periodic_worker = periodics.PeriodicWorker(
+            periodic_callables, schedule_strategy="last_finished"
+        )
         periodic_thread = threading.Thread(target=periodic_worker.start)
         periodic_thread.daemon = True
         periodic_thread.start()
@@ -150,8 +166,11 @@ class RotationManager(cotyledon.Service):
 
     def get_backup_list(self):
         threshold_strtime = self.get_threshold_strtime()
-        if threshold_strtime == None: return False
-        self.backup_list = self.controller.get_backups(filters={"created_at__lt": threshold_strtime})
+        if threshold_strtime == None:
+            return False
+        self.backup_list = self.controller.get_backups(
+            filters={"created_at__lt": threshold_strtime}
+        )
         return True
 
     def remove_backups(self):
@@ -159,11 +178,14 @@ class RotationManager(cotyledon.Service):
         for retention_backup in self.backup_list:
             self.controller.hard_remove_volume_backup(retention_backup)
 
-    @periodics.periodic(spacing=CONF.conductor.retention_service_period, run_immediately=True)
+    @periodics.periodic(
+        spacing=CONF.conductor.retention_service_period, run_immediately=True
+    )
     def rotation_engine(self):
         LOG.info("%s rotation_engine" % self.name)
         # 1. get the list of backups to remove based on the retention time
-        if not self.get_backup_list(): return
+        if not self.get_backup_list():
+            return
 
         # 2. remove the backups
         self.remove_backups()
@@ -172,8 +194,12 @@ class RotationManager(cotyledon.Service):
     def get_threshold_strtime(self):
         time_delta_dict = xtime.parse_timedelta_string(CONF.conductor.retention_time)
         if time_delta_dict == None:
-            LOG.info(_("Retention time format is invalid. "
-                       "Follow <YEARS>y<MONTHS>m<WEEKS>w<DAYS>d<HOURS>h<MINUTES>min<SECONDS>s."))
+            LOG.info(
+                _(
+                    "Retention time format is invalid. "
+                    "Follow <YEARS>y<MONTHS>m<WEEKS>w<DAYS>d<HOURS>h<MINUTES>min<SECONDS>s."
+                )
+            )
             return None
 
         res = xtime.timeago(

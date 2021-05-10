@@ -8,13 +8,13 @@ __DRY_RUN__ = True
 
 
 def send(
-        src_email,
-        src_pwd,
-        dest_email,
-        subject,
-        content,
-        smtp_server_domain,
-        smtp_server_port,
+    src_email,
+    src_pwd,
+    dest_email,
+    subject,
+    content,
+    smtp_server_domain,
+    smtp_server_port,
 ):
     message = MIMEMultipart("alternative")
     message["Subject"] = subject

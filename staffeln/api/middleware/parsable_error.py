@@ -25,6 +25,7 @@ from staffeln.i18n import _
 
 class ParsableErrorMiddleware(object):
     """Replace error body with something the client can parse."""
+
     def __init__(self, app):
         self.app = app
 
@@ -53,13 +54,16 @@ class ParsableErrorMiddleware(object):
             if 'min_version' in err:
                 errs.append(err)
             else:
-                errs.append({
-                    'request_id': '',
-                    'code': code,
-                    'status': status_code,
-                    'title': title,
-                    'detail': desc,
-                    'links': []})
+                errs.append(
+                    {
+                        'request_id': '',
+                        'code': code,
+                        'status': status_code,
+                        'title': title,
+                        'detail': desc,
+                        'links': [],
+                    }
+                )
 
         return errs
 
@@ -74,18 +78,20 @@ class ParsableErrorMiddleware(object):
                 status_code = int(status.split(' ')[0])
                 state['status_code'] = status_code
             except (ValueError, TypeError):  # pragma: nocover
-                raise Exception(_(
-                    'ErrorDocumentMiddleware received an invalid '
-                    'status %s') % status)
+                raise Exception(
+                    _('ErrorDocumentMiddleware received an invalid ' 'status %s')
+                    % status
+                )
             else:
                 if (state['status_code'] // 100) not in (2, 3):
                     # Remove some headers so we can replace them later
                     # when we have the full error message and can
                     # compute the length.
-                    headers = [(h, v)
-                               for (h, v) in headers
-                               if h not in ('Content-Length', 'Content-Type')
-                               ]
+                    headers = [
+                        (h, v)
+                        for (h, v) in headers
+                        if h not in ('Content-Length', 'Content-Type')
+                    ]
                 # Save the headers in case we need to modify them.
                 state['headers'] = headers
 

@@ -17,7 +17,7 @@ LOG = log.getLogger(__name__)
 def backup_id():
 
     current_user_id = openstack.get_user_id()
-    
+
     if not "user_id" in request.args or not "backup_id" in request.args:
         # Return error if the backup_id argument is not provided.
         return Response(

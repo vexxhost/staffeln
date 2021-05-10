@@ -42,7 +42,9 @@ copyright = u'2017, OpenStack Developers'
 
 # openstackdocstheme options
 openstackdocs_repo_name = 'openstack/staffeln'
-openstackdocs_bug_project = 'replace with the name of the project on Launchpad or the ID from Storyboard'
+openstackdocs_bug_project = (
+    'replace with the name of the project on Launchpad or the ID from Storyboard'
+)
 openstackdocs_bug_tag = ''
 
 # If true, '()' will be appended to :func: etc. cross-reference text.
@@ -71,11 +73,14 @@ htmlhelp_basename = '%sdoc' % project
 # (source start file, target name, title, author, documentclass
 # [howto/manual]).
 latex_documents = [
-    ('index',
-     '%s.tex' % project,
-     u'%s Documentation' % project,
-     u'OpenStack Developers', 'manual'),
+    (
+        'index',
+        '%s.tex' % project,
+        u'%s Documentation' % project,
+        u'OpenStack Developers',
+        'manual',
+    ),
 ]
 
 # Example configuration for intersphinx: refer to the Python standard library.
-#intersphinx_mapping = {'http://docs.python.org/': None}
+# intersphinx_mapping = {'http://docs.python.org/': None}

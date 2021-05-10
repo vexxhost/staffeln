@@ -16,11 +16,13 @@ CONF = staffeln.conf.CONF
 LOG = log.getLogger(__name__)
 
 BackupMapping = collections.namedtuple(
-    "BackupMapping", ["volume_id", "backup_id", "project_id", "instance_id", "backup_completed"]
+    "BackupMapping",
+    ["volume_id", "backup_id", "project_id", "instance_id", "backup_completed"],
 )
 
 QueueMapping = collections.namedtuple(
-    "QueueMapping", ["volume_id", "backup_id", "project_id", "instance_id", "backup_status"]
+    "QueueMapping",
+    ["volume_id", "backup_id", "project_id", "instance_id", "backup_status"],
 )
 
 
@@ -71,16 +73,23 @@ class Backup(object):
         if not CONF.conductor.backup_metadata_key in metadata:
             return False
 
-        return metadata[CONF.conductor.backup_metadata_key].lower() == constants.BACKUP_ENABLED_KEY
+        return (
+            metadata[CONF.conductor.backup_metadata_key].lower()
+            == constants.BACKUP_ENABLED_KEY
+        )
 
     # Backup the volumes in in-use and available status
     def filter_by_volume_status(self, volume_id, project_id):
         try:
             volume = openstacksdk.get_volume(volume_id, project_id)
-            if volume == None: return False
+            if volume == None:
+                return False
             res = volume['status'] in ("available", "in-use")
             if not res:
-                reason = _("Volume %s is not backed because it is in %s status" % (volume_id, volume['status']))
+                reason = _(
+                    "Volume %s is not backed because it is in %s status"
+                    % (volume_id, volume['status'])
+                )
                 LOG.info(reason)
                 self.result.add_failed_backup(project_id, volume_id, reason)
             return res
@@ -94,7 +103,8 @@ class Backup(object):
             reason = _("Cancel backup %s because of timeout." % task.backup_id)
             LOG.info(reason)
             backup = openstacksdk.get_backup(task.backup_id)
-            if backup == None: return task.delete_queue()
+            if backup == None:
+                return task.delete_queue()
             openstacksdk.delete_backup(task.backup_id)
             task.delete_queue()
             self.result.add_failed_backup(task.project_id, task.volume_id, reason)
@@ -102,8 +112,7 @@ class Backup(object):
             task.delete_queue()
 
         except OpenstackSDKException as e:
-            reason = _("Backup %s deletion failed."
-                       "%s" % (task.backup_id, str(e)))
+            reason = _("Backup %s deletion failed." "%s" % (task.backup_id, str(e)))
             LOG.info(reason)
             # TODO(Alex): If backup timeout and also back cancel failed,
             #  then what to do?
@@ -117,7 +126,8 @@ class Backup(object):
     def soft_remove_backup_task(self, backup_object):
         try:
             backup = openstacksdk.get_backup(backup_object.backup_id)
-            if backup == None: return backup_object.delete_backup()
+            if backup == None:
+                return backup_object.delete_backup()
             if backup["status"] in ("available"):
                 openstacksdk.delete_backup(backup_object.backup_id)
                 backup_object.delete_backup()
@@ -128,19 +138,30 @@ class Backup(object):
                 #  backup table so user can delete it on Horizon.
                 backup_object.delete_backup()
             else:  # "deleting", "restoring"
-                LOG.info(_("Rotation for the backup %s is skipped in this cycle "
-                           "because it is in %s status") % (backup_object.backup_id, backup["status"]))
+                LOG.info(
+                    _(
+                        "Rotation for the backup %s is skipped in this cycle "
+                        "because it is in %s status"
+                    )
+                    % (backup_object.backup_id, backup["status"])
+                )
 
         except OpenstackResourceNotFound:
-            LOG.info(_("Backup %s is not existing in Openstack."
-                       "Or cinder-backup is not existing in the cloud." % backup_object.backup_id))
+            LOG.info(
+                _(
+                    "Backup %s is not existing in Openstack."
+                    "Or cinder-backup is not existing in the cloud."
+                    % backup_object.backup_id
+                )
+            )
             # remove from the backup table
             backup_object.delete_backup()
             return False
 
         except OpenstackSDKException as e:
-            LOG.info(_("Backup %s deletion failed."
-                       "%s" % (backup_object.backup_id, str(e))))
+            LOG.info(
+                _("Backup %s deletion failed." "%s" % (backup_object.backup_id, str(e)))
+            )
             # TODO(Alex): Add it into the notification queue
             # remove from the backup table
             backup_object.delete_backup()
@@ -149,22 +170,30 @@ class Backup(object):
     #  delete all backups forcily regardless of the status
     def hard_remove_volume_backup(self, backup_object):
         try:
-            backup = openstacksdk.get_backup(uuid=backup_object.backup_id,
-                                             project_id=backup_object.project_id)
-            if backup == None: return backup_object.delete_backup()
+            backup = openstacksdk.get_backup(
+                uuid=backup_object.backup_id, project_id=backup_object.project_id
+            )
+            if backup == None:
+                return backup_object.delete_backup()
 
             openstacksdk.delete_backup(uuid=backup_object.backup_id)
             backup_object.delete_backup()
 
         except OpenstackResourceNotFound:
-            LOG.info(_("Backup %s is not existing in Openstack."
-                       "Or cinder-backup is not existing in the cloud." % backup_object.backup_id))
+            LOG.info(
+                _(
+                    "Backup %s is not existing in Openstack."
+                    "Or cinder-backup is not existing in the cloud."
+                    % backup_object.backup_id
+                )
+            )
             # remove from the backup table
             backup_object.delete_backup()
 
         except OpenstackSDKException as e:
-            LOG.info(_("Backup %s deletion failed."
-                       "%s" % (backup_object.backup_id, str(e))))
+            LOG.info(
+                _("Backup %s deletion failed." "%s" % (backup_object.backup_id, str(e)))
+            )
             # TODO(Alex): Add it into the notification queue
             # remove from the backup table
             backup_object.delete_backup()
@@ -180,12 +209,14 @@ class Backup(object):
             empty_project = True
             servers = openstacksdk.get_servers(project_id=project.id)
             for server in servers:
-                if not self.filter_by_server_metadata(server.metadata): continue
+                if not self.filter_by_server_metadata(server.metadata):
+                    continue
                 if empty_project:
                     empty_project = False
                     self.result.add_project(project.id, project.name)
                 for volume in server.attached_volumes:
-                    if not self.filter_by_volume_status(volume["id"], project.id): continue
+                    if not self.filter_by_volume_status(volume["id"], project.id):
+                        continue
                     queues_map.append(
                         QueueMapping(
                             project_id=project.id,
@@ -222,21 +253,29 @@ class Backup(object):
         backup_id = queue.backup_id
         if backup_id == "NULL":
             try:
-                LOG.info(_("Backup for volume %s creating in project %s"
-                           % (queue.volume_id, queue.project_id)))
+                LOG.info(
+                    _(
+                        "Backup for volume %s creating in project %s"
+                        % (queue.volume_id, queue.project_id)
+                    )
+                )
                 # NOTE(Alex): no need to wait because we have a cycle time out
-                volume_backup = openstacksdk.create_backup(volume_id=queue.volume_id,
-                                                           project_id=queue.project_id)
+                volume_backup = openstacksdk.create_backup(
+                    volume_id=queue.volume_id, project_id=queue.project_id
+                )
                 queue.backup_id = volume_backup.id
                 queue.backup_status = constants.BACKUP_WIP
                 queue.save()
             except OpenstackSDKException as error:
-                reason = _("Backup creation for the volume %s failled. %s"
-                           % (queue.volume_id, str(error)))
+                reason = _(
+                    "Backup creation for the volume %s failled. %s"
+                    % (queue.volume_id, str(error))
+                )
                 LOG.info(reason)
                 self.result.add_failed_backup(queue.project_id, queue.volume_id, reason)
                 parsed = parse.parse("Error in creating volume backup {id}", str(error))
-                if parsed == None: return
+                if parsed == None:
+                    return
                 queue.backup_id = parsed["id"]
                 queue.backup_status = constants.BACKUP_WIP
                 queue.save()
@@ -291,7 +330,12 @@ class Backup(object):
             backup_gen = openstacksdk.get_backup(queue.backup_id)
             if backup_gen == None:
                 # TODO(Alex): need to check when it is none
-                LOG.info(_("[Beta] Backup status of %s is returning none." % (queue.backup_id)))
+                LOG.info(
+                    _(
+                        "[Beta] Backup status of %s is returning none."
+                        % (queue.backup_id)
+                    )
+                )
                 self.process_non_existing_backup(queue)
                 return
             if backup_gen.status == "error":

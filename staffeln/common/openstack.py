@@ -18,6 +18,7 @@ def get_user_id():
         user = conn.get_user(name_or_id=user_name)
     return user.id
 
+
 ############## project
 def get_projects():
     conn.block_storage
@@ -26,7 +27,9 @@ def get_projects():
 
 ############## server
 def get_servers(project_id, all_projects=True, details=True):
-    return conn.compute.servers(details=details, all_projects=all_projects, project_id=project_id)
+    return conn.compute.servers(
+        details=details, all_projects=all_projects, project_id=project_id
+    )
 
 
 ############## volume
@@ -49,7 +52,9 @@ def create_backup(volume_id, project_id, force=True, wait=False):
     #     volume_id=queue.volume_id, force=True, project_id=queue.project_id,
     # )
     return conn.create_volume_backup(
-        volume_id=volume_id, force=force, wait=wait,
+        volume_id=volume_id,
+        force=force,
+        wait=wait,
     )
 
 
@@ -72,7 +77,7 @@ def get_backup_quota(project_id):
 # added usage flag
 # ref: https://docs.openstack.org/api-ref/block-storage/v3/?expanded=#show-quota-usage-for-a-project
 def _get_volume_quotas(project_id, usage=True):
-    """ Get volume quotas for a project
+    """Get volume quotas for a project
 
     :param name_or_id: project name or id
     :raises: OpenStackCloudException if it's not a valid project
@@ -82,12 +87,11 @@ def _get_volume_quotas(project_id, usage=True):
 
     if usage:
         resp = conn.block_storage.get(
-            '/os-quota-sets/{project_id}?usage=True'.format(project_id=project_id))
+            '/os-quota-sets/{project_id}?usage=True'.format(project_id=project_id)
+        )
     else:
         resp = conn.block_storage.get(
-            '/os-quota-sets/{project_id}'.format(project_id=project_id))
-    data = proxy._json_response(
-        resp,
-        error_message="cinder client call failed")
+            '/os-quota-sets/{project_id}'.format(project_id=project_id)
+        )
+    data = proxy._json_response(resp, error_message="cinder client call failed")
     return conn._get_and_munchify('quota_set', data)
-
