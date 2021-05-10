@@ -6,11 +6,10 @@ from staffeln.conductor import result
 from openstack.exceptions import ResourceNotFound as OpenstackResourceNotFound
 from openstack.exceptions import SDKException as OpenstackSDKException
 from oslo_log import log
-from staffeln.common import auth
 from staffeln.common import context
 from staffeln import objects
 from staffeln.i18n import _
-from staffeln.common import openstack as openstacksdk
+from staffeln.common import openstack
 
 CONF = staffeln.conf.CONF
 LOG = log.getLogger(__name__)
@@ -36,7 +35,7 @@ class Backup(object):
     def __init__(self):
         self.ctx = context.make_context()
         self.result = result.BackupResult()
-        self.openstacksdk = openstacksdk()
+        self.openstacksdk = openstack.OpenstackSDK()
         self.project_list = {}
 
     def publish_backup_result(self):

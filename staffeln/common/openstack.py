@@ -3,7 +3,7 @@ from openstack import proxy
 from staffeln.common import auth
 
 
-class openstacksdk():
+class OpenstackSDK():
 
     def __init__(self):
         self.conn_list = {}

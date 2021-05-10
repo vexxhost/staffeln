@@ -15,7 +15,7 @@ LOG = log.getLogger(__name__)
 
 @app.route("/v1/backup", methods=["POST"])
 def backup_id():
-    openstacksdk = openstack()
+    openstacksdk = openstack.OpenstackSDK()
     retention_user_id = openstacksdk.get_user_id()
     
     if not "user_id" in request.args or not "backup_id" in request.args:
