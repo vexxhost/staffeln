@@ -55,7 +55,10 @@ class OpenstackSDK():
         #     project_id=project_id, backup_id=uuid,
         # )
         # conn.block_storage.backups(volume_id=uuid,project_id=project_id)
-        return self.conn.get_volume_backup(uuid)
+        try:
+            return self.conn.get_volume_backup(uuid)
+        except exceptions.ResourceNotFound:
+            return None
 
 
     def create_backup(self, volume_id, project_id, force=True, wait=False):
@@ -76,7 +79,7 @@ class OpenstackSDK():
             self.conn.delete_volume_backup(uuid, force=force)
             # TODO(Alex): After delete the backup generator, need to set the volume status again
         except exceptions.ResourceNotFound:
-            return
+            return None
 
 
     def get_backup_quota(self, project_id):

@@ -104,8 +104,6 @@ class Backup(object):
             self.openstacksdk.delete_backup(task.backup_id)
             task.delete_queue()
             self.result.add_failed_backup(task.project_id, task.volume_id, reason)
-        except OpenstackResourceNotFound:
-            task.delete_queue()
 
         except OpenstackSDKException as e:
             reason = _("Backup %s deletion failed."
@@ -113,8 +111,7 @@ class Backup(object):
             LOG.info(reason)
             # TODO(Alex): If backup timeout and also back cancel failed,
             #  then what to do?
-            # 1. notify
-            # 2. set the volume status as in-use
+            #  set the volume status as in-use
             # remove from the queue table
             task.delete_queue()
             self.result.add_failed_backup(task.project_id, task.volume_id, reason)
@@ -123,7 +120,10 @@ class Backup(object):
     def soft_remove_backup_task(self, backup_object):
         try:
             backup = self.openstacksdk.get_backup(backup_object.backup_id)
-            if backup == None: return backup_object.delete_backup()
+            if backup == None:
+                LOG.info(_("Backup %s is not existing in Openstack."
+                           "Or cinder-backup is not existing in the cloud." % backup_object.backup_id))
+                return backup_object.delete_backup()
             if backup["status"] in ("available"):
                 self.openstacksdk.delete_backup(backup_object.backup_id)
                 backup_object.delete_backup()
@@ -136,13 +136,6 @@ class Backup(object):
             else:  # "deleting", "restoring"
                 LOG.info(_("Rotation for the backup %s is skipped in this cycle "
                            "because it is in %s status") % (backup_object.backup_id, backup["status"]))
-
-        except OpenstackResourceNotFound:
-            LOG.info(_("Backup %s is not existing in Openstack."
-                       "Or cinder-backup is not existing in the cloud." % backup_object.backup_id))
-            # remove from the backup table
-            backup_object.delete_backup()
-            return False
 
         except OpenstackSDKException as e:
             LOG.info(
@@ -159,15 +152,12 @@ class Backup(object):
         try:
             backup = self.openstacksdk.get_backup(uuid=backup_object.backup_id,
                                              project_id=backup_object.project_id)
-            if backup == None: return backup_object.delete_backup()
+            if backup == None:
+                LOG.info(_("Backup %s is not existing in Openstack."
+                           "Or cinder-backup is not existing in the cloud." % backup_object.backup_id))
+                return backup_object.delete_backup()
 
             self.openstacksdk.delete_backup(uuid=backup_object.backup_id)
-            backup_object.delete_backup()
-
-        except OpenstackResourceNotFound:
-            LOG.info(_("Backup %s is not existing in Openstack."
-                       "Or cinder-backup is not existing in the cloud." % backup_object.backup_id))
-            # remove from the backup table
             backup_object.delete_backup()
 
         except OpenstackSDKException as e:
@@ -312,33 +302,30 @@ class Backup(object):
                  status checked.
         Call the backups api to see if the backup is successful.
         """
-        try:
+        project_id = queue.project_id
 
-            project_id = queue.project_id
+        # The case in which the error produced before backup gen created.
+        if queue.backup_id == "NULL":
+            self.process_pre_failed_backup(queue)
+            return
+        if project_id not in self.project_list: self.process_non_existing_backup(queue)
+        self.openstacksdk.set_project(self.project_list[project_id])
+        backup_gen = self.openstacksdk.get_backup(queue.backup_id)
 
-            # The case in which the error produced before backup gen created.
-            if queue.backup_id == "NULL":
-                self.process_pre_failed_backup(queue)
-                return
-            if project_id not in self.project_list: self.process_non_existing_backup(queue)
-            self.openstacksdk.set_project(self.project_list[project_id])
-            backup_gen = self.openstacksdk.get_backup(queue.backup_id)
-
-            if backup_gen == None:
-                # TODO(Alex): need to check when it is none
-                LOG.info(_("[Beta] Backup status of %s is returning none." % (queue.backup_id)))
-                self.process_non_existing_backup(queue)
-                return
-            if backup_gen.status == "error":
-                self.process_failed_backup(queue)
-            elif backup_gen.status == "available":
-                self.process_available_backup(queue)
-            elif backup_gen.status == "creating":
-                LOG.info("Waiting for backup of %s to be completed" % queue.volume_id)
-            else:  # "deleting", "restoring", "error_restoring" status
-                self.process_using_backup(queue)
-        except OpenstackResourceNotFound as e:
+        if backup_gen == None:
+            # TODO(Alex): need to check when it is none
+            LOG.info(_("[Beta] Backup status of %s is returning none." % (queue.backup_id)))
             self.process_non_existing_backup(queue)
+            return
+        if backup_gen.status == "error":
+            self.process_failed_backup(queue)
+        elif backup_gen.status == "available":
+            self.process_available_backup(queue)
+        elif backup_gen.status == "creating":
+            LOG.info("Waiting for backup of %s to be completed" % queue.volume_id)
+        else:  # "deleting", "restoring", "error_restoring" status
+            self.process_using_backup(queue)
+
 
     def _volume_backup(self, task):
         # matching_backups = [
