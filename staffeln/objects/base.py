@@ -40,7 +40,7 @@ class StaffelnObjectSerializer(ovoo_base.VersionedObjectSerializer):
     OBJ_BASE_CLASS = StaffelnObject
 
 
-class StaffelnPersistentObject(object):
+class StaffelnPersistentObject(ovoo_base.VersionedObject):
     fields = {
         "created_at": ovoo_fields.DateTimeField(nullable=True),
         # "deleted_at": ovoo_fields.DateTimeField(nullable=True),
