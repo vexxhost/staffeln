@@ -1,15 +1,10 @@
-# Email notification package
-# This should be upgraded by integrating with mail server to send batch
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+# Backup result
 from oslo_log import log
 import staffeln.conf
 from staffeln.common import time as xtime
 from staffeln.common import email
 from staffeln.i18n import _
 from staffeln.conductor import backup
-from staffeln.common import openstack as openstacksdk
 
 CONF = staffeln.conf.CONF
 LOG = log.getLogger(__name__)
@@ -75,7 +70,8 @@ class BackupResult(object):
     def publish(self):
         # 1. get quota
         self.content = "<h3>${TIME}</h3><br>"
-        self.content = self.content.replace("${TIME}", xtime.get_current_strtime())
+        self.content = self.content.replace(
+            "${TIME}", xtime.get_current_strtime())
         html = ""
         for project in self.project_list:
             quota = backup.Backup().get_backup_quota(project["id"])
@@ -102,7 +98,7 @@ class BackupResult(object):
                 [
                     "Volume ID: %s, Reason: %s"
                     % (str(e["volume_id"]), str(e["reason"]))
-                    for e in self.failed_backup_list[[project["id"]]]
+                    for e in self.failed_backup_list[project["id"]]
                 ]
             )
 

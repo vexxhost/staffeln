@@ -58,7 +58,7 @@ def timeago(
     )
 
 
-## yearsago using Standard library
+# yearsago using Standard library
 # def yearsago(years, from_date=None):
 #     if from_date is None:
 #         from_date = datetime.now()

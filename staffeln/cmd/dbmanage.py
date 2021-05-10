@@ -22,7 +22,8 @@ class DBCommand(object):
 
 def add_command_parsers(subparsers):
 
-    parser = subparsers.add_parser('create_schema', help="Create the database schema.")
+    parser = subparsers.add_parser(
+        'create_schema', help="Create the database schema.")
     parser.set_defaults(func=DBCommand.create_schema)
 
 

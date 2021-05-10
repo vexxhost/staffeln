@@ -1,4 +1,3 @@
-from openstack import exceptions
 from openstack import proxy
 from staffeln.common import auth
 
@@ -19,26 +18,26 @@ def get_user_id():
     return user.id
 
 
-############## project
+# project
 def get_projects():
     conn.block_storage
     return conn.list_projects()
 
 
-############## server
+# server
 def get_servers(project_id, all_projects=True, details=True):
     return conn.compute.servers(
         details=details, all_projects=all_projects, project_id=project_id
     )
 
 
-############## volume
+# volume
 def get_volume(uuid, project_id):
     # volume = conn.block_storage.get_volume(volume_id)
     return conn.get_volume_by_id(uuid)
 
 
-############## backup
+# backup
 def get_backup(uuid, project_id=None):
     # return conn.block_storage.get_backup(
     #     project_id=project_id, backup_id=uuid,
@@ -87,11 +86,13 @@ def _get_volume_quotas(project_id, usage=True):
 
     if usage:
         resp = conn.block_storage.get(
-            '/os-quota-sets/{project_id}?usage=True'.format(project_id=project_id)
+            '/os-quota-sets/{project_id}?usage=True'.format(
+                project_id=project_id)
         )
     else:
         resp = conn.block_storage.get(
             '/os-quota-sets/{project_id}'.format(project_id=project_id)
         )
-    data = proxy._json_response(resp, error_message="cinder client call failed")
+    data = proxy._json_response(
+        resp, error_message="cinder client call failed")
     return conn._get_and_munchify('quota_set', data)

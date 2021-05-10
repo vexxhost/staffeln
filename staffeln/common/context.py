@@ -1,6 +1,5 @@
 from oslo_context import context
 from oslo_log import log
-from oslo_utils import timeutils
 
 LOG = log.getLogger(__name__)
 

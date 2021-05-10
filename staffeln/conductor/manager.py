@@ -192,7 +192,8 @@ class RotationManager(cotyledon.Service):
 
     # get the threshold time str
     def get_threshold_strtime(self):
-        time_delta_dict = xtime.parse_timedelta_string(CONF.conductor.retention_time)
+        time_delta_dict = xtime.parse_timedelta_string(
+            CONF.conductor.retention_time)
         if time_delta_dict == None:
             LOG.info(
                 _(
