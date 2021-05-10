@@ -36,6 +36,8 @@ class Backup(object):
     def __init__(self):
         self.ctx = context.make_context()
         self.result = result.BackupResult()
+        self.openstacksdk = openstacksdk()
+        self.project_list = {}
 
     def publish_backup_result(self):
         self.result.publish()
@@ -44,7 +46,7 @@ class Backup(object):
         return objects.Volume.list(self.ctx, filters=filters)
 
     def get_backup_quota(self, project_id):
-        return openstacksdk.get_backup_quota(project_id)
+        return self.openstacksdk.get_backup_quota(project_id)
 
     def get_queues(self, filters=None):
         """Get the list of volume queue columns from the queue_data table"""
@@ -76,7 +78,7 @@ class Backup(object):
     # Backup the volumes in in-use and available status
     def filter_by_volume_status(self, volume_id, project_id):
         try:
-            volume = openstacksdk.get_volume(volume_id, project_id)
+            volume = self.openstacksdk.get_volume(volume_id, project_id)
             if volume == None: return False
             res = volume['status'] in ("available", "in-use")
             if not res:
@@ -88,14 +90,19 @@ class Backup(object):
         except OpenstackResourceNotFound:
             return False
 
+
     #  delete all backups forcily regardless of the status
     def hard_cancel_backup_task(self, task):
         try:
+            project_id = task.project_id
             reason = _("Cancel backup %s because of timeout." % task.backup_id)
             LOG.info(reason)
-            backup = openstacksdk.get_backup(task.backup_id)
+
+            if project_id not in self.project_list: self.process_non_existing_backup(task)
+            self.openstacksdk.set_project(self.project_list[project_id])
+            backup = self.openstacksdk.get_backup(task.backup_id)
             if backup == None: return task.delete_queue()
-            openstacksdk.delete_backup(task.backup_id)
+            self.openstacksdk.delete_backup(task.backup_id)
             task.delete_queue()
             self.result.add_failed_backup(task.project_id, task.volume_id, reason)
         except OpenstackResourceNotFound:
@@ -113,13 +120,13 @@ class Backup(object):
             task.delete_queue()
             self.result.add_failed_backup(task.project_id, task.volume_id, reason)
 
-    #  delete only available backups
+    #  delete only available backups: reserved
     def soft_remove_backup_task(self, backup_object):
         try:
-            backup = openstacksdk.get_backup(backup_object.backup_id)
+            backup = self.openstacksdk.get_backup(backup_object.backup_id)
             if backup == None: return backup_object.delete_backup()
             if backup["status"] in ("available"):
-                openstacksdk.delete_backup(backup_object.backup_id)
+                self.openstacksdk.delete_backup(backup_object.backup_id)
                 backup_object.delete_backup()
             elif backup["status"] in ("error", "error_restoring"):
                 # TODO(Alex): need to discuss
@@ -149,11 +156,11 @@ class Backup(object):
     #  delete all backups forcily regardless of the status
     def hard_remove_volume_backup(self, backup_object):
         try:
-            backup = openstacksdk.get_backup(uuid=backup_object.backup_id,
+            backup = self.openstacksdk.get_backup(uuid=backup_object.backup_id,
                                              project_id=backup_object.project_id)
             if backup == None: return backup_object.delete_backup()
 
-            openstacksdk.delete_backup(uuid=backup_object.backup_id)
+            self.openstacksdk.delete_backup(uuid=backup_object.backup_id)
             backup_object.delete_backup()
 
         except OpenstackResourceNotFound:
@@ -175,10 +182,11 @@ class Backup(object):
         that are attached to the instance.
         """
         queues_map = []
-        projects = openstacksdk.get_projects()
+        projects = self.openstacksdk.get_projects()
         for project in projects:
             empty_project = True
-            servers = openstacksdk.get_servers(project_id=project.id)
+            self.project_list[project.id] = project
+            servers = self.openstacksdk.get_servers(project_id=project.id)
             for server in servers:
                 if not self.filter_by_server_metadata(server.metadata): continue
                 if empty_project:
@@ -219,14 +227,16 @@ class Backup(object):
         This function will call the backupup api and change the
         backup_status and backup_id in the queue table.
         """
-        backup_id = queue.backup_id
-        if backup_id == "NULL":
+        project_id = queue.project_id
+        if queue.backup_id == "NULL":
             try:
                 LOG.info(_("Backup for volume %s creating in project %s"
-                           % (queue.volume_id, queue.project_id)))
+                           % (queue.volume_id, project_id)))
                 # NOTE(Alex): no need to wait because we have a cycle time out
-                volume_backup = openstacksdk.create_backup(volume_id=queue.volume_id,
-                                                           project_id=queue.project_id)
+                if project_id not in self.project_list: self.process_non_existing_backup(queue)
+                self.openstacksdk.set_project(self.project_list[project_id])
+                volume_backup = self.openstacksdk.create_backup(volume_id=queue.volume_id,
+                                                           project_id=project_id)
                 queue.backup_id = volume_backup.id
                 queue.backup_status = constants.BACKUP_WIP
                 queue.save()
@@ -234,7 +244,7 @@ class Backup(object):
                 reason = _("Backup creation for the volume %s failled. %s"
                            % (queue.volume_id, str(error)))
                 LOG.info(reason)
-                self.result.add_failed_backup(queue.project_id, queue.volume_id, reason)
+                self.result.add_failed_backup(project_id, queue.volume_id, reason)
                 parsed = parse.parse("Error in creating volume backup {id}", str(error))
                 if parsed == None: return
                 queue.backup_id = parsed["id"]
@@ -248,12 +258,12 @@ class Backup(object):
             #  are not finished in the current cycle
 
     def process_failed_backup(self, task):
-        # 1. TODO(Alex): notify via email
+        # 1. notify via email
         reason = _("The status of backup for the volume %s is error." % task.volume_id)
         self.result.add_failed_backup(task.project_id, task.volume_id, reason)
         LOG.error(reason)
-        # 2. cancel volume backup
-        self.hard_cancel_backup_task(task)
+        # 2. delete backup generator
+        self.openstacksdk.delete_backup(uuid=task.backup_id)
         # 3. remove failed task from the task queue
         task.delete_queue()
 
@@ -288,7 +298,10 @@ class Backup(object):
         Call the backups api to see if the backup is successful.
         """
         try:
-            backup_gen = openstacksdk.get_backup(queue.backup_id)
+            project_id = queue.project_id
+            if project_id not in self.project_list: self.process_non_existing_backup(queue)
+            self.openstacksdk.set_project(self.project_list[project_id])
+            backup_gen = self.openstacksdk.get_backup(queue.backup_id)
             if backup_gen == None:
                 # TODO(Alex): need to check when it is none
                 LOG.info(_("[Beta] Backup status of %s is returning none." % (queue.backup_id)))
