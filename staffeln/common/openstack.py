@@ -86,13 +86,11 @@ def _get_volume_quotas(project_id, usage=True):
 
     if usage:
         resp = conn.block_storage.get(
-            '/os-quota-sets/{project_id}?usage=True'.format(
-                project_id=project_id)
+            '/os-quota-sets/{project_id}?usage=True'.format(project_id=project_id)
         )
     else:
         resp = conn.block_storage.get(
             '/os-quota-sets/{project_id}'.format(project_id=project_id)
         )
-    data = proxy._json_response(
-        resp, error_message="cinder client call failed")
+    data = proxy._json_response(resp, error_message="cinder client call failed")
     return conn._get_and_munchify('quota_set', data)

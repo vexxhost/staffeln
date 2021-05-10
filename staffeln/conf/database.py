@@ -14,8 +14,7 @@ database = cfg.OptGroup(
 )
 
 SQL_OPTS = [
-    cfg.StrOpt("mysql_engine", default="InnoDB",
-               help=_("MySQL engine to use.")),
+    cfg.StrOpt("mysql_engine", default="InnoDB", help=_("MySQL engine to use.")),
 ]
 
 

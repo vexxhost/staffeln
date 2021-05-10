@@ -18,9 +18,9 @@ def _to_byte_string(value, num_bits):
     """
     shifts = six.moves.xrange(num_bits - 8, -8, -8)
 
-    def byte_at(off): return (
-        (value >> off if off >= 0 else value << -off) & 0xFF  # noqa: E731
-    )
+    def byte_at(off):
+        return (value >> off if off >= 0 else value << -off) & 0xFF  # noqa: E731
+
     return ''.join(chr(byte_at(offset)) for offset in shifts)
 
 

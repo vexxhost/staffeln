@@ -106,14 +106,12 @@ class Backup(object):
                 return task.delete_queue()
             openstacksdk.delete_backup(task.backup_id)
             task.delete_queue()
-            self.result.add_failed_backup(
-                task.project_id, task.volume_id, reason)
+            self.result.add_failed_backup(task.project_id, task.volume_id, reason)
         except OpenstackResourceNotFound:
             task.delete_queue()
 
         except OpenstackSDKException as e:
-            reason = _("Backup %s deletion failed." "%s" %
-                       (task.backup_id, str(e)))
+            reason = _("Backup %s deletion failed." "%s" % (task.backup_id, str(e)))
             LOG.info(reason)
             # TODO(Alex): If backup timeout and also back cancel failed,
             #  then what to do?
@@ -121,8 +119,7 @@ class Backup(object):
             # 2. set the volume status as in-use
             # remove from the queue table
             task.delete_queue()
-            self.result.add_failed_backup(
-                task.project_id, task.volume_id, reason)
+            self.result.add_failed_backup(task.project_id, task.volume_id, reason)
 
     #  delete only available backups
     def soft_remove_backup_task(self, backup_object):
@@ -162,8 +159,7 @@ class Backup(object):
 
         except OpenstackSDKException as e:
             LOG.info(
-                _("Backup %s deletion failed." "%s" %
-                  (backup_object.backup_id, str(e)))
+                _("Backup %s deletion failed." "%s" % (backup_object.backup_id, str(e)))
             )
             # TODO(Alex): Add it into the notification queue
             # remove from the backup table
@@ -195,8 +191,7 @@ class Backup(object):
 
         except OpenstackSDKException as e:
             LOG.info(
-                _("Backup %s deletion failed." "%s" %
-                  (backup_object.backup_id, str(e)))
+                _("Backup %s deletion failed." "%s" % (backup_object.backup_id, str(e)))
             )
             # TODO(Alex): Add it into the notification queue
             # remove from the backup table
@@ -276,10 +271,8 @@ class Backup(object):
                     % (queue.volume_id, str(error))
                 )
                 LOG.info(reason)
-                self.result.add_failed_backup(
-                    queue.project_id, queue.volume_id, reason)
-                parsed = parse.parse(
-                    "Error in creating volume backup {id}", str(error))
+                self.result.add_failed_backup(queue.project_id, queue.volume_id, reason)
+                parsed = parse.parse("Error in creating volume backup {id}", str(error))
                 if parsed == None:
                     return
                 queue.backup_id = parsed["id"]
@@ -294,8 +287,7 @@ class Backup(object):
 
     def process_failed_backup(self, task):
         # 1. TODO(Alex): notify via email
-        reason = _("The status of backup for the volume %s is error." %
-                   task.volume_id)
+        reason = _("The status of backup for the volume %s is error." % task.volume_id)
         self.result.add_failed_backup(task.project_id, task.volume_id, reason)
         LOG.error(reason)
         # 2. cancel volume backup
@@ -318,8 +310,7 @@ class Backup(object):
                 backup_completed=1,
             )
         )
-        self.result.add_success_backup(
-            task.project_id, task.volume_id, task.backup_id)
+        self.result.add_success_backup(task.project_id, task.volume_id, task.backup_id)
         # 2. remove from the task list
         task.delete_queue()
         # 3. TODO(Alex): notify via email
@@ -351,8 +342,7 @@ class Backup(object):
             elif backup_gen.status == "available":
                 self.process_available_backup(queue)
             elif backup_gen.status == "creating":
-                LOG.info("Waiting for backup of %s to be completed" %
-                         queue.volume_id)
+                LOG.info("Waiting for backup of %s to be completed" % queue.volume_id)
             else:  # "deleting", "restoring", "error_restoring" status
                 self.process_using_backup(queue)
         except OpenstackResourceNotFound as e:

@@ -70,8 +70,7 @@ class BackupResult(object):
     def publish(self):
         # 1. get quota
         self.content = "<h3>${TIME}</h3><br>"
-        self.content = self.content.replace(
-            "${TIME}", xtime.get_current_strtime())
+        self.content = self.content.replace("${TIME}", xtime.get_current_strtime())
         html = ""
         for project in self.project_list:
             quota = backup.Backup().get_backup_quota(project["id"])
@@ -91,7 +90,6 @@ class BackupResult(object):
                     "Volume ID: %s, Backup ID: %s"
                     % (str(e["volume_id"]), str(e["backup_id"]))
                     for e in self.success_backup_list[project["id"]]
-
                 ]
             )
             failed_volumes = "<br>".join(
