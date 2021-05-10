@@ -24,8 +24,8 @@ def backup_id():
             "Error: backup_id or user_id is missing.", status=403, mimetype="text/plain"
         )
 
-    if current_user_id != request.args["user_id"]:
-        return Response("False", status=401, mimetype="text/plain")
+    if current_user_id == request.args["user_id"]:
+        return Response("True", status=200, mimetype="text/plain")
 
     # Retrive the backup object from backup_data table with matching backup_id.
     backup = objects.Volume.get_backup_by_backup_id(ctx, request.args["backup_id"])
