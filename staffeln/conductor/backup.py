@@ -208,6 +208,7 @@ class Backup(object):
         volume_queue.backup_id = task.backup_id
         volume_queue.volume_id = task.volume_id
         volume_queue.instance_id = task.instance_id
+        volume_queue.project_id = task.project_id
         volume_queue.backup_status = task.backup_status
         volume_queue.create()
 
@@ -313,5 +314,6 @@ class Backup(object):
         volume_backup.backup_id = task.backup_id
         volume_backup.volume_id = task.volume_id
         volume_backup.instance_id = task.instance_id
+        volume_backup.project_id = task.project_id
         volume_backup.backup_completed = task.backup_completed
         volume_backup.create()
