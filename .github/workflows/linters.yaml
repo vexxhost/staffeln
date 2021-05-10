@@ -27,6 +27,7 @@ jobs:
         env:
           DEFAULT_BRANCH: main
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VALIDATE_PYTHON_MYPY: false
           VALIDATE_ALL_CODEBASE: true
           PYTHONPATH: "/github/workspace/:\
             /github/workflow/.venv/lib/python3.6/site-packages"

@@ -63,7 +63,7 @@ class Volume(
     @base.remotable
     def delete_backup(self):
         """Soft Delete the :class:`Queue_data` from the DB"""
-        db_obj = self.dbapi.soft_delete_backup(self.id)
+        self.dbapi.soft_delete_backup(self.id)
 
     @base.remotable_classmethod
     def get_backup_by_backup_id(cls, context, backup_id):

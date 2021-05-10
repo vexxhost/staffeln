@@ -143,7 +143,7 @@ class Connection(object):
 
     def _add_filters(self, query, model, filters=None, plain_fields=None):
         """Add filters while listing the columns from database table"""
-        timestamp_mixin_fields = ["created_at", "updated_at"]
+        # timestamp_mixin_fields = ["created_at", "updated_at"]
         filters = filters or {}
 
         for raw_fieldname, value in filters.items():
@@ -226,7 +226,7 @@ class Connection(object):
             except exc.NoResultFound:
                 LOG.error("Resource Not found.")
 
-            deleted_row = session.delete(row)
+            session.delete(row)
             return row
 
     def _get_model_list(

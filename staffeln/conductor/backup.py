@@ -345,7 +345,7 @@ class Backup(object):
                 LOG.info("Waiting for backup of %s to be completed" % queue.volume_id)
             else:  # "deleting", "restoring", "error_restoring" status
                 self.process_using_backup(queue)
-        except OpenstackResourceNotFound as e:
+        except OpenstackResourceNotFound:
             self.process_non_existing_backup(queue)
 
     def _volume_backup(self, task):

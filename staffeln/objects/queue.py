@@ -64,4 +64,4 @@ class Queue(
     @base.remotable
     def delete_queue(self):
         """Soft Delete the :class:`Queue_data` from the DB"""
-        db_obj = self.dbapi.soft_delete_queue(self.id)
+        self.dbapi.soft_delete_queue(self.id)
