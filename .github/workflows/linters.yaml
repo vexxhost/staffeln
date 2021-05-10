@@ -1,13 +1,32 @@
 name: linters
 on: push 
 
+
 jobs:
   super-lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: github/super-linter@v3
+
+      - name: Install missing python packages
+        run: sudo apt-get install -y --no-install-recommends python3-venv python3-setuptools
+
+      ## Dependencies with pip + requirements.txt
+      - name: Install dependencies with pip + requirements.txt
+        run: |
+          python3 -m venv .venv
+          .venv/bin/pip install -r requirements.txt
+
+      # Now we move the dependencies where super-linter can see them
+      - name: Move the dependencies
+        run: mv .venv /home/runner/work/_temp/_github_workflow
+
+      # Now we set the PYTHONPATH to the path of the dependencies *inside* the container
+      - name: Lint Code Base
+        uses: docker://github/super-linter:v3 # ghcr.io/github/super-linter:v3.17.0
         env:
           DEFAULT_BRANCH: main
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+          VALIDATE_ALL_CODEBASE: true
+          PYTHONPATH: "/github/workspace/:\
+            /github/workflow/.venv/lib/python3.6/site-packages"
