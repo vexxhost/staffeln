@@ -139,8 +139,10 @@ class Backup(object):
             return False
 
         except OpenstackSDKException as e:
-            LOG.info(_("Backup %s deletion failed."
-                       "%s" % (backup_object.backup_id, str(e))))
+            LOG.info(
+                _("Backup %s deletion failed." "%s" % (backup_object.backup_id,
+                                                       str(e)))
+            )
             # TODO(Alex): Add it into the notification queue
             # remove from the backup table
             backup_object.delete_backup()
@@ -163,8 +165,11 @@ class Backup(object):
             backup_object.delete_backup()
 
         except OpenstackSDKException as e:
-            LOG.info(_("Backup %s deletion failed."
-                       "%s" % (backup_object.backup_id, str(e))))
+            LOG.info(
+                _("Backup %s deletion failed." "%s" % (backup_object.backup_id,
+                                                       str(e)))
+            )
+
             # TODO(Alex): Add it into the notification queue
             # remove from the backup table
             backup_object.delete_backup()
@@ -236,8 +241,8 @@ class Backup(object):
                 LOG.info(reason)
                 self.result.add_failed_backup(queue.project_id, queue.volume_id, reason)
                 parsed = parse.parse("Error in creating volume backup {id}", str(error))
-                if parsed == None: return
-                queue.backup_id = parsed["id"]
+                if parsed is not None:
+                    queue.backup_id = parsed["id"]
                 queue.backup_status = constants.BACKUP_WIP
                 queue.save()
         else:
@@ -247,8 +252,19 @@ class Backup(object):
             #  Reserve for now because it is related to the WIP backup genenrators which
             #  are not finished in the current cycle
 
+
+    # backup gen was not created
+    def process_pre_failed_backup(self, task):
+        # 1.notify via email
+        reason = _("The backup creation for the volume %s was prefailed."
+                   % task.volume_id)
+        self.result.add_failed_backup(task.project_id, task.volume_id, reason)
+        # LOG.error(reason)
+        # 2. remove failed task from the task queue
+        task.delete_queue()
+
     def process_failed_backup(self, task):
-        # 1. TODO(Alex): notify via email
+        # 1.notify via email
         reason = _("The status of backup for the volume %s is error." % task.volume_id)
         self.result.add_failed_backup(task.project_id, task.volume_id, reason)
         LOG.error(reason)
@@ -288,6 +304,10 @@ class Backup(object):
         Call the backups api to see if the backup is successful.
         """
         try:
+            # The case in which the error produced before backup gen created.
+            if queue.backup_id == "NULL":
+                self.process_pre_failed_backup(queue)
+                return
             backup_gen = openstacksdk.get_backup(queue.backup_id)
             if backup_gen == None:
                 # TODO(Alex): need to check when it is none
