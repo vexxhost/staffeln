@@ -26,7 +26,7 @@ QueueMapping = collections.namedtuple(
 
 
 def check_vm_backup_metadata(metadata):
-    if not CONF.conductor.backup_metadata_key in metadata:
+    if CONF.conductor.backup_metadata_key not in metadata:
         return False
     return metadata[CONF.conductor.backup_metadata_key].lower() in ["true"]
 
@@ -63,13 +63,13 @@ class Backup(object):
         # 2. add new tasks in the queue which are not existing in the old task list
         queue_list = self.check_instance_volumes()
         for queue in queue_list:
-            if not queue.volume_id in old_task_volume_list:
+            if queue.volume_id not in old_task_volume_list:
                 self._volume_queue(queue)
 
     # Backup the volumes attached to which has a specific metadata
     def filter_by_server_metadata(self, metadata):
 
-        if not CONF.conductor.backup_metadata_key in metadata:
+        if CONF.conductor.backup_metadata_key not in metadata:
             return False
 
         return (
@@ -81,7 +81,7 @@ class Backup(object):
     def filter_by_volume_status(self, volume_id, project_id):
         try:
             volume = openstacksdk.get_volume(volume_id, project_id)
-            if volume == None:
+            if volume is None:
                 return False
             res = volume['status'] in ("available", "in-use")
             if not res:
@@ -102,7 +102,7 @@ class Backup(object):
             reason = _("Cancel backup %s because of timeout." % task.backup_id)
             LOG.info(reason)
             backup = openstacksdk.get_backup(task.backup_id)
-            if backup == None:
+            if backup is None:
                 return task.delete_queue()
             openstacksdk.delete_backup(task.backup_id)
             task.delete_queue()
@@ -125,7 +125,7 @@ class Backup(object):
     def soft_remove_backup_task(self, backup_object):
         try:
             backup = openstacksdk.get_backup(backup_object.backup_id)
-            if backup == None:
+            if backup is None:
                 return backup_object.delete_backup()
             if backup["status"] in ("available"):
                 openstacksdk.delete_backup(backup_object.backup_id)
@@ -172,7 +172,7 @@ class Backup(object):
             backup = openstacksdk.get_backup(
                 uuid=backup_object.backup_id, project_id=backup_object.project_id
             )
-            if backup == None:
+            if backup is None:
                 return backup_object.delete_backup()
 
             openstacksdk.delete_backup(uuid=backup_object.backup_id)
@@ -273,7 +273,7 @@ class Backup(object):
                 LOG.info(reason)
                 self.result.add_failed_backup(queue.project_id, queue.volume_id, reason)
                 parsed = parse.parse("Error in creating volume backup {id}", str(error))
-                if parsed == None:
+                if parsed is None:
                     return
                 queue.backup_id = parsed["id"]
                 queue.backup_status = constants.BACKUP_WIP
@@ -327,7 +327,7 @@ class Backup(object):
         """
         try:
             backup_gen = openstacksdk.get_backup(queue.backup_id)
-            if backup_gen == None:
+            if backup_gen is None:
                 # TODO(Alex): need to check when it is none
                 LOG.info(
                     _(
