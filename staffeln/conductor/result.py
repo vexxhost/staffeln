@@ -53,6 +53,7 @@ class BackupResult(object):
     def send_result_email(self):
         subject = "Backup result"
         try:
+            if len(CONF.notification.receiver) == 0: return
             email.send(
                 src_email=CONF.notification.sender_email,
                 src_pwd=CONF.notification.sender_pwd,
