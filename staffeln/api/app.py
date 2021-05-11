@@ -3,7 +3,6 @@ from flask import Response
 from flask import request
 from staffeln import objects
 from staffeln.common import context
-from staffeln.common import openstack
 from oslo_log import log
 
 
@@ -15,17 +14,12 @@ LOG = log.getLogger(__name__)
 
 @app.route("/v1/backup", methods=["POST"])
 def backup_id():
-    openstacksdk = openstack.OpenstackSDK()
-    retention_user_id = openstacksdk.get_user_id()
     
-    if not "user_id" in request.args or not "backup_id" in request.args:
+    if not "backup_id" in request.args:
         # Return error if the backup_id argument is not provided.
         return Response(
-            "Error: backup_id or user_id is missing.", status=403, mimetype="text/plain"
+            "Error: backup_id is missing.", status=403, mimetype="text/plain"
         )
-
-    if retention_user_id == request.args["user_id"]:
-        return Response("True", status=200, mimetype="text/plain")
 
     # Retrive the backup object from backup_data table with matching backup_id.
     backup = objects.Volume.get_backup_by_backup_id(ctx, request.args["backup_id"])
