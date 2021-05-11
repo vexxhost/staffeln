@@ -1,12 +1,12 @@
 [Unit]
 Description = staffeln api  service
-After = cinder-backup.service
+After = staffeln-api.service
 After = syslog.target
 
 [Service]
 Type = simple
-User = staffeln
-Group = staffeln
+User = cgm
+Group = cgm
 ExecStart = /home/cgm/cgm/bin/staffeln-api
 ExecReload = /bin/kill -HUP $MAINPID
 # Give a reasonable amount of time for the server to start up/shut down
