@@ -92,7 +92,6 @@ class Backup(object):
         except OpenstackResourceNotFound:
             return False
 
-
     #  delete all backups forcily regardless of the status
     def hard_cancel_backup_task(self, task):
         try:
@@ -160,8 +159,13 @@ class Backup(object):
     #  delete all backups forcily regardless of the status
     def hard_remove_volume_backup(self, backup_object):
         try:
+            project_id = backup_object.project_id
+            if project_id not in self.project_list:
+                backup_object.delete_backup()
+
+            self.openstacksdk.set_project(project_id)
             backup = self.openstacksdk.get_backup(uuid=backup_object.backup_id,
-                                             project_id=backup_object.project_id)
+                                                  project_id=project_id)
             if backup == None: return backup_object.delete_backup()
 
             self.openstacksdk.delete_backup(uuid=backup_object.backup_id)
@@ -182,6 +186,11 @@ class Backup(object):
             # TODO(Alex): Add it into the notification queue
             # remove from the backup table
             backup_object.delete_backup()
+
+    def update_project_list(self):
+        projects = self.openstacksdk.get_projects()
+        for project in projects:
+            self.project_list[project.id] = project
 
     def check_instance_volumes(self):
         """Get the list of all the volumes from the project using openstacksdk
@@ -243,7 +252,7 @@ class Backup(object):
                 if project_id not in self.project_list: self.process_non_existing_backup(queue)
                 self.openstacksdk.set_project(self.project_list[project_id])
                 volume_backup = self.openstacksdk.create_backup(volume_id=queue.volume_id,
-                                                           project_id=project_id)
+                                                                project_id=project_id)
                 queue.backup_id = volume_backup.id
                 queue.backup_status = constants.BACKUP_WIP
                 queue.save()
@@ -263,7 +272,6 @@ class Backup(object):
             #  Backup planned task cannot have backup_id in the same cycle
             #  Reserve for now because it is related to the WIP backup genenrators which
             #  are not finished in the current cycle
-
 
     # backup gen was not created
     def process_pre_failed_backup(self, task):
