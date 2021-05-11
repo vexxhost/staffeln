@@ -1,6 +1,6 @@
 [Unit]
 Description = staffeln conductor  service
-After = staffeln-conductor.service
+After = cinder-backup.service
 After = syslog.target
 
 [Service]
@@ -8,6 +8,7 @@ Type = simple
 User = cgm
 Group = cgm
 ExecStart = /home/cgm/cgm/bin/staffeln-conductor
+EnvironmentFile=/home/cgm/openrc
 ExecReload = /bin/kill -HUP $MAINPID
 # Give a reasonable amount of time for the server to start up/shut down
 TimeoutSec = 120
