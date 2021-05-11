@@ -103,6 +103,7 @@ class BackupManager(cotyledon.Service):
     # Refresh the task queue
     def _update_task_queue(self):
         LOG.info(_("Updating backup task queue..."))
+        self.controller.refresh_backup_result()
         current_tasks = self.controller.get_queues()
         self.controller.create_queue(current_tasks)
 

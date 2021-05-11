@@ -41,6 +41,9 @@ class Backup(object):
     def publish_backup_result(self):
         self.result.publish()
 
+    def refresh_backup_result(self):
+        self.result.initialize()
+
     def get_backups(self, filters=None):
         return objects.Volume.list(self.ctx, filters=filters)
 

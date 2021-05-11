@@ -18,6 +18,9 @@ LOG = log.getLogger(__name__)
 class BackupResult(object):
 
     def __init__(self):
+        pass
+
+    def initialize(self):
         self.content = ""
         self.project_list = []
         self.success_backup_list = {}
