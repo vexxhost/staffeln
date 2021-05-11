@@ -15,7 +15,7 @@ LOG = log.getLogger(__name__)
 @app.route("/v1/backup", methods=["POST"])
 def backup_id():
     
-    if not "backup_id" in request.args:
+    if "backup_id" not in request.args:
         # Return error if the backup_id argument is not provided.
         return Response(
             "Error: backup_id is missing.", status=403, mimetype="text/plain"
