@@ -1,13 +1,13 @@
 [Unit]
 Description = staffeln conductor  service
-After = cinder-backup.service
+After = staffeln-conductor.service
 After = syslog.target
 
 [Service]
 Type = simple
-User = staffeln
-Group = staffeln
-ExecStart = /openstack/venvs/cinder-21.2.6.dev1/bin/cinder-backup
+User = cgm
+Group = cgm
+ExecStart = /home/cgm/cgm/bin/staffeln-conductor
 ExecReload = /bin/kill -HUP $MAINPID
 # Give a reasonable amount of time for the server to start up/shut down
 TimeoutSec = 120
@@ -27,7 +27,7 @@ PrivateTmp = False
 PrivateDevices = False
 PrivateNetwork = False
 PrivateUsers = False
-Environment = PATH=/openstack/venvs/cinder-21.2.6.dev1/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+Environment = PATH=/home/cgm/cgm/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 [Install]
 WantedBy = multi-user.target
