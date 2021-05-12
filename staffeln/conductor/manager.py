@@ -165,8 +165,9 @@ class RotationManager(cotyledon.Service):
         LOG.info("%s rotation_engine" % self.name)
         # 1. get the list of backups to remove based on the retention time
         if not self.get_backup_list(): return
-
-        # 2. remove the backups
+        # 2. get project list
+        self.controller.update_project_list()
+        # 3. remove the backups
         self.remove_backups()
 
     # get the threshold time str
