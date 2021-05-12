@@ -163,7 +163,7 @@ class Backup(object):
             if project_id not in self.project_list:
                 backup_object.delete_backup()
 
-            self.openstacksdk.set_project(project_id)
+            self.openstacksdk.set_project(self.project_list[project_id])
             backup = self.openstacksdk.get_backup(uuid=backup_object.backup_id,
                                                   project_id=project_id)
             if backup == None: return backup_object.delete_backup()
