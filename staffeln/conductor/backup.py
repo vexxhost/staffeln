@@ -25,7 +25,7 @@ QueueMapping = collections.namedtuple(
 
 def check_vm_backup_metadata(metadata):
     if not CONF.conductor.backup_metadata_key in metadata:
-        return False
+        return True
     return metadata[CONF.conductor.backup_metadata_key].lower() in ["true"]
 
 
