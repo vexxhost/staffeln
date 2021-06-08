@@ -249,7 +249,11 @@ class Backup(object):
                 LOG.info(_("Backup for volume %s creating in project %s"
                            % (queue.volume_id, project_id)))
                 # NOTE(Alex): no need to wait because we have a cycle time out
-                if project_id not in self.project_list: self.process_non_existing_backup(queue)
+                if project_id not in self.project_list:
+                    LOG.info(_("Project ID %s is not existing in project list"
+                               % project_id))
+                    self.process_non_existing_backup(queue)
+                    return
                 self.openstacksdk.set_project(self.project_list[project_id])
                 volume_backup = self.openstacksdk.create_backup(volume_id=queue.volume_id,
                                                                 project_id=project_id)
