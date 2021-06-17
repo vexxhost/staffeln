@@ -21,20 +21,13 @@ class OpenstackSDK():
 
     # user
     def get_user_id(self):
-        user_name = self.conn.config.auth["username"]
-        if "user_domain_id" in self.conn.config.auth:
-            domain_id = self.conn.config.auth["user_domain_id"]
-            user = self.conn.get_user(name_or_id=user_name, domain_id=domain_id)
-        elif "user_domain_name" in self.conn.config.auth:
-            domain_name = self.conn.config.auth["user_domain_name"]
-            user = self.conn.get_user(name_or_id=user_name, domain_id=domain_name)
-        else:
-            user = self.conn.get_user(name_or_id=user_name)
-        return user.id
+        user_id = self.conn.current_user_id
+        return user_id
 
     ############## project
     def get_projects(self):
-        return self.conn.list_projects()
+        user_id = self.get_user_id()
+        return self.conn.identity.user_projects(user=user_id)
 
 
     ############## server
@@ -67,7 +60,7 @@ class OpenstackSDK():
         )
 
 
-    def delete_backup(self, uuid, project_id=None, force=True):
+    def delete_backup(self, uuid, project_id=None, force=False):
         # Note(Alex): v3 is not supporting force delete?
         # conn.block_storage.delete_backup(
         #     project_id=project_id, backup_id=uuid,
