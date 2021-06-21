@@ -270,6 +270,17 @@ class Backup(object):
                     queue.backup_id = parsed["id"]
                 queue.backup_status = constants.BACKUP_WIP
                 queue.save()
+            # Added extra exception as OpenstackSDKException does not handle the keystone unauthourized issue.
+            except Exception as error:
+                reason = _("Backup creation for the volume %s failled. %s"
+                           % (queue.volume_id, str(error)))
+                LOG.error(reason)
+                self.result.add_failed_backup(project_id, queue.volume_id, reason)
+                parsed = parse.parse("Error in creating volume backup {id}", str(error))
+                if parsed is not None:
+                    queue.backup_id = parsed["id"]
+                queue.backup_status = constants.BACKUP_WIP
+                queue.save()
         else:
             pass
             # TODO(Alex): remove this task from the task list
@@ -293,7 +304,7 @@ class Backup(object):
         self.result.add_failed_backup(task.project_id, task.volume_id, reason)
         LOG.error(reason)
         # 2. delete backup generator
-        self.openstacksdk.delete_backup(uuid=task.backup_id)
+        self.openstacksdk.delete_backup(uuid=task.backup_id, force=True)
         # 3. remove failed task from the task queue
         task.delete_queue()
 
