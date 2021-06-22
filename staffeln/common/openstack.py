@@ -67,7 +67,7 @@ class OpenstackSDK():
         )
 
 
-    def delete_backup(self, uuid, project_id=None, force=True):
+    def delete_backup(self, uuid, project_id=None, force=False):
         # Note(Alex): v3 is not supporting force delete?
         # conn.block_storage.delete_backup(
         #     project_id=project_id, backup_id=uuid,
