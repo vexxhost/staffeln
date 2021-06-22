@@ -65,11 +65,13 @@ class Backup(object):
 
     # Backup the volumes attached to which has a specific metadata
     def filter_by_server_metadata(self, metadata):
+        if CONF.conductor.backup_metadata_key is not None:
+            if not CONF.conductor.backup_metadata_key in metadata:
+                return False
 
-        if not CONF.conductor.backup_metadata_key in metadata:
+            return metadata[CONF.conductor.backup_metadata_key].lower() == constants.BACKUP_ENABLED_KEY
+        else:
             return True
-
-        return metadata[CONF.conductor.backup_metadata_key].lower() == constants.BACKUP_ENABLED_KEY
 
     # Backup the volumes in in-use and available status
     def filter_by_volume_status(self, volume_id, project_id):
