@@ -73,7 +73,7 @@ class Backup(object):
     def filter_by_server_metadata(self, metadata):
 
         if not CONF.conductor.backup_metadata_key in metadata:
-            return False
+            return True
 
         return metadata[CONF.conductor.backup_metadata_key].lower() == constants.BACKUP_ENABLED_KEY
 
