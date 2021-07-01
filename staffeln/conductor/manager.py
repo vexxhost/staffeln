@@ -28,13 +28,7 @@ class BackupManager(cotyledon.Service):
 
     def run(self):
         LOG.info("%s run" % self.name)
-        periodic_callables = [
-            (self.backup_engine, (), {}),
-        ]
-        periodic_worker = periodics.PeriodicWorker(periodic_callables, schedule_strategy="last_finished")
-        periodic_thread = threading.Thread(target=periodic_worker.start)
-        periodic_thread.daemon = True
-        periodic_thread.start()
+        self.backup_engine(CONF.conductor.backup_service_period)
 
     def terminate(self):
         LOG.info("%s terminate" % self.name)
@@ -110,16 +104,24 @@ class BackupManager(cotyledon.Service):
     def _report_backup_result(self):
         self.controller.publish_backup_result()
 
-    @periodics.periodic(spacing=CONF.conductor.backup_service_period, run_immediately=True)
-    def backup_engine(self):
+    def backup_engine(self, backup_service_period):
         LOG.info("backing... %s" % str(time.time()))
         LOG.info("%s periodics" % self.name)
 
-        self._update_task_queue()
-        self._process_todo_tasks()
-        self._process_wip_tasks()
-        self._report_backup_result()
+        @periodics.periodic(spacing=backup_service_period, run_immediately=True)
+        def backup_tasks():
+            self._update_task_queue()
+            self._process_todo_tasks()
+            self._process_wip_tasks()
+            self._report_backup_result()
 
+        periodic_callables = [
+            (backup_tasks, (), {}),
+        ]
+        periodic_worker = periodics.PeriodicWorker(periodic_callables, schedule_strategy="last_finished")
+        periodic_thread = threading.Thread(target=periodic_worker.start)
+        periodic_thread.daemon = True
+        periodic_thread.start()
 
 class RotationManager(cotyledon.Service):
     name = "Staffeln conductor rotation controller"
@@ -133,14 +135,7 @@ class RotationManager(cotyledon.Service):
 
     def run(self):
         LOG.info("%s run" % self.name)
-
-        periodic_callables = [
-            (self.rotation_engine, (), {}),
-        ]
-        periodic_worker = periodics.PeriodicWorker(periodic_callables, schedule_strategy="last_finished")
-        periodic_thread = threading.Thread(target=periodic_worker.start)
-        periodic_thread.daemon = True
-        periodic_thread.start()
+        self.rotation_engine(CONF.conductor.retention_service_period)
 
     def terminate(self):
         LOG.info("%s terminate" % self.name)
@@ -160,15 +155,24 @@ class RotationManager(cotyledon.Service):
         for retention_backup in self.backup_list:
             self.controller.hard_remove_volume_backup(retention_backup)
 
-    @periodics.periodic(spacing=CONF.conductor.retention_service_period, run_immediately=True)
-    def rotation_engine(self):
+    def rotation_engine(self, retention_service_period):
         LOG.info("%s rotation_engine" % self.name)
-        # 1. get the list of backups to remove based on the retention time
-        if not self.get_backup_list(): return
-        # 2. get project list
-        self.controller.update_project_list()
-        # 3. remove the backups
-        self.remove_backups()
+
+        @periodics.periodic(spacing=retention_service_period, run_immediately=True)
+        def rotation_tasks():
+            # 1. get the list of backups to remove based on the retention time
+            if not self.get_backup_list(): return
+            # 2. get project list
+            self.controller.update_project_list()
+            # 3. remove the backups
+            self.remove_backups()
+        periodic_callables = [
+            (rotation_tasks, (), {}),
+        ]
+        periodic_worker = periodics.PeriodicWorker(periodic_callables, schedule_strategy="last_finished")
+        periodic_thread = threading.Thread(target=periodic_worker.start)
+        periodic_thread.daemon = True
+        periodic_thread.start()
 
     # get the threshold time str
     def get_threshold_strtime(self):
