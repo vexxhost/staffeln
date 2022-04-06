@@ -5,6 +5,7 @@ from staffeln.common import constants
 from staffeln.conductor import result
 from openstack.exceptions import ResourceNotFound as OpenstackResourceNotFound
 from openstack.exceptions import SDKException as OpenstackSDKException
+from openstack.exceptions import HttpException as OpenstackHttpException
 from oslo_log import log
 from staffeln.common import context
 from staffeln import objects
@@ -23,14 +24,30 @@ QueueMapping = collections.namedtuple(
 )
 
 
+def retry_auth(func):
+    """Decorator to reconnect openstack and avoid token rotation"""
+    def wrapper(self, *args, **kwargs):
+        try:
+            return func(self, *args, **kwargs)
+        except OpenstackHttpException as ex:
+            if ex.status_code == 403:
+                LOG.warn(_("Token has been expired or rotated!"))
+                self.refresh_openstacksdk()
+                return func(self, *args, **kwargs)
+    return wrapper
+
+
 class Backup(object):
     """Implmentations of the queue with the sql."""
 
     def __init__(self):
         self.ctx = context.make_context()
         self.result = result.BackupResult()
-        self.openstacksdk = openstack.OpenstackSDK()
+        self.refresh_openstacksdk()
         self.project_list = {}
+
+    def refresh_openstacksdk(self):
+        self.openstacksdk = openstack.OpenstackSDK()
 
     def publish_backup_result(self):
         self.result.publish()
@@ -188,6 +205,7 @@ class Backup(object):
         for project in projects:
             self.project_list[project.id] = project
 
+    @retry_auth
     def check_instance_volumes(self):
         """Get the list of all the volumes from the project using openstacksdk
         Function first list all the servers in the project and get the volumes

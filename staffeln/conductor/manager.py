@@ -97,6 +97,7 @@ class BackupManager(cotyledon.Service):
     # Refresh the task queue
     def _update_task_queue(self):
         LOG.info(_("Updating backup task queue..."))
+        self.controller.refresh_openstacksdk()
         self.controller.refresh_backup_result()
         current_tasks = self.controller.get_queues()
         self.controller.create_queue(current_tasks)
@@ -160,6 +161,7 @@ class RotationManager(cotyledon.Service):
 
         @periodics.periodic(spacing=retention_service_period, run_immediately=True)
         def rotation_tasks():
+            self.controller.refresh_openstacksdk()
             # 1. get the list of backups to remove based on the retention time
             if not self.get_backup_list(): return
             # 2. get project list
