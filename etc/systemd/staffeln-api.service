@@ -1,0 +1,33 @@
+[Unit]
+Description = staffeln api  service
+After = cinder-backup.service
+After = syslog.target
+
+[Service]
+Type = simple
+User = cgm
+Group = cgm
+ExecStart = /home/cgm/cgm/bin/staffeln-api
+ExecReload = /bin/kill -HUP $MAINPID
+# Give a reasonable amount of time for the server to start up/shut down
+TimeoutSec = 120
+Restart = on-failure
+RestartSec = 2
+# This creates a specific slice which all services will operate from
+#  The accounting options give us the ability to see resource usage through
+#  the `systemd-cgtop` command.
+Slice = staffeln.slice
+# Set Accounting
+CPUAccounting = True
+BlockIOAccounting = True
+MemoryAccounting = True
+TasksAccounting = True
+# Set Sandboxing
+PrivateTmp = False
+PrivateDevices = False
+PrivateNetwork = False
+PrivateUsers = False
+Environment = PATH=/home/cgm/cgm/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+[Install]
+WantedBy = multi-user.target

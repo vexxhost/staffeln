@@ -18,6 +18,9 @@ LOG = log.getLogger(__name__)
 class BackupResult(object):
 
     def __init__(self):
+        pass
+
+    def initialize(self):
         self.content = ""
         self.project_list = []
         self.success_backup_list = {}
@@ -53,6 +56,7 @@ class BackupResult(object):
     def send_result_email(self):
         subject = "Backup result"
         try:
+            if len(CONF.notification.receiver) == 0: return
             email.send(
                 src_email=CONF.notification.sender_email,
                 src_pwd=CONF.notification.sender_pwd,

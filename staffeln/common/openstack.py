@@ -1,6 +1,10 @@
 from openstack import exceptions
 from openstack import proxy
+from oslo_log import log
 from staffeln.common import auth
+from staffeln.i18n import _
+
+LOG = log.getLogger(__name__)
 
 
 class OpenstackSDK():
@@ -11,13 +15,16 @@ class OpenstackSDK():
 
 
     def set_project(self, project):
+        LOG.debug(_("Connect as project %s" % project.get('name')))
         project_id = project.get('id')
 
-        if project_id in self.conn_list:
-            self.conn = self.conn_list[project_id]
-        else:
+        if project_id not in self.conn_list:
+            LOG.debug(_("Initiate connection for project %s" % project.get('name')))
             conn = self.conn.connect_as_project(project)
-            self.conn = conn
+            self.conn_list[project_id] = conn
+        LOG.debug(_("Connect as project %s" % project.get('name')))
+        self.conn = self.conn_list[project_id]
+
 
     # user
     def get_user_id(self):
@@ -70,7 +77,7 @@ class OpenstackSDK():
         )
 
 
-    def delete_backup(self, uuid, project_id=None, force=True):
+    def delete_backup(self, uuid, project_id=None, force=False):
         # Note(Alex): v3 is not supporting force delete?
         # conn.block_storage.delete_backup(
         #     project_id=project_id, backup_id=uuid,

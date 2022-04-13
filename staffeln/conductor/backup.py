@@ -5,6 +5,7 @@ from staffeln.common import constants
 from staffeln.conductor import result
 from openstack.exceptions import ResourceNotFound as OpenstackResourceNotFound
 from openstack.exceptions import SDKException as OpenstackSDKException
+from openstack.exceptions import HttpException as OpenstackHttpException
 from oslo_log import log
 from staffeln.common import context
 from staffeln import objects
@@ -23,10 +24,17 @@ QueueMapping = collections.namedtuple(
 )
 
 
-def check_vm_backup_metadata(metadata):
-    if not CONF.conductor.backup_metadata_key in metadata:
-        return False
-    return metadata[CONF.conductor.backup_metadata_key].lower() in ["true"]
+def retry_auth(func):
+    """Decorator to reconnect openstack and avoid token rotation"""
+    def wrapper(self, *args, **kwargs):
+        try:
+            return func(self, *args, **kwargs)
+        except OpenstackHttpException as ex:
+            if ex.status_code == 403:
+                LOG.warn(_("Token has been expired or rotated!"))
+                self.refresh_openstacksdk()
+                return func(self, *args, **kwargs)
+    return wrapper
 
 
 class Backup(object):
@@ -35,11 +43,17 @@ class Backup(object):
     def __init__(self):
         self.ctx = context.make_context()
         self.result = result.BackupResult()
-        self.openstacksdk = openstack.OpenstackSDK()
+        self.refresh_openstacksdk()
         self.project_list = {}
+
+    def refresh_openstacksdk(self):
+        self.openstacksdk = openstack.OpenstackSDK()
 
     def publish_backup_result(self):
         self.result.publish()
+
+    def refresh_backup_result(self):
+        self.result.initialize()
 
     def get_backups(self, filters=None):
         return objects.Volume.list(self.ctx, filters=filters)
@@ -68,11 +82,13 @@ class Backup(object):
 
     # Backup the volumes attached to which has a specific metadata
     def filter_by_server_metadata(self, metadata):
+        if CONF.conductor.backup_metadata_key is not None:
+            if not CONF.conductor.backup_metadata_key in metadata:
+                return False
 
-        if not CONF.conductor.backup_metadata_key in metadata:
-            return False
-
-        return metadata[CONF.conductor.backup_metadata_key].lower() == constants.BACKUP_ENABLED_KEY
+            return metadata[CONF.conductor.backup_metadata_key].lower() == constants.BACKUP_ENABLED_KEY
+        else:
+            return True
 
     # Backup the volumes in in-use and available status
     def filter_by_volume_status(self, volume_id, project_id):
@@ -88,7 +104,6 @@ class Backup(object):
 
         except OpenstackResourceNotFound:
             return False
-
 
     #  delete all backups forcily regardless of the status
     def hard_cancel_backup_task(self, task):
@@ -150,8 +165,13 @@ class Backup(object):
     #  delete all backups forcily regardless of the status
     def hard_remove_volume_backup(self, backup_object):
         try:
+            project_id = backup_object.project_id
+            if project_id not in self.project_list:
+                backup_object.delete_backup()
+
+            self.openstacksdk.set_project(self.project_list[project_id])
             backup = self.openstacksdk.get_backup(uuid=backup_object.backup_id,
-                                             project_id=backup_object.project_id)
+                                                  project_id=project_id)
             if backup == None:
                 LOG.info(_("Backup %s is not existing in Openstack."
                            "Or cinder-backup is not existing in the cloud." % backup_object.backup_id))
@@ -170,6 +190,12 @@ class Backup(object):
             # remove from the backup table
             backup_object.delete_backup()
 
+    def update_project_list(self):
+        projects = self.openstacksdk.get_projects()
+        for project in projects:
+            self.project_list[project.id] = project
+
+    @retry_auth
     def check_instance_volumes(self):
         """Get the list of all the volumes from the project using openstacksdk
         Function first list all the servers in the project and get the volumes
@@ -227,10 +253,14 @@ class Backup(object):
                 LOG.info(_("Backup for volume %s creating in project %s"
                            % (queue.volume_id, project_id)))
                 # NOTE(Alex): no need to wait because we have a cycle time out
-                if project_id not in self.project_list: self.process_non_existing_backup(queue)
+                if project_id not in self.project_list:
+                    LOG.info(_("Project ID %s is not existing in project list"
+                               % project_id))
+                    self.process_non_existing_backup(queue)
+                    return
                 self.openstacksdk.set_project(self.project_list[project_id])
                 volume_backup = self.openstacksdk.create_backup(volume_id=queue.volume_id,
-                                                           project_id=project_id)
+                                                                project_id=project_id)
                 queue.backup_id = volume_backup.id
                 queue.backup_status = constants.BACKUP_WIP
                 queue.save()
@@ -244,13 +274,23 @@ class Backup(object):
                     queue.backup_id = parsed["id"]
                 queue.backup_status = constants.BACKUP_WIP
                 queue.save()
+            # Added extra exception as OpenstackSDKException does not handle the keystone unauthourized issue.
+            except Exception as error:
+                reason = _("Backup creation for the volume %s failled. %s"
+                           % (queue.volume_id, str(error)))
+                LOG.error(reason)
+                self.result.add_failed_backup(project_id, queue.volume_id, reason)
+                parsed = parse.parse("Error in creating volume backup {id}", str(error))
+                if parsed is not None:
+                    queue.backup_id = parsed["id"]
+                queue.backup_status = constants.BACKUP_WIP
+                queue.save()
         else:
             pass
             # TODO(Alex): remove this task from the task list
             #  Backup planned task cannot have backup_id in the same cycle
             #  Reserve for now because it is related to the WIP backup genenrators which
             #  are not finished in the current cycle
-
 
     # backup gen was not created
     def process_pre_failed_backup(self, task):
@@ -268,7 +308,7 @@ class Backup(object):
         self.result.add_failed_backup(task.project_id, task.volume_id, reason)
         LOG.error(reason)
         # 2. delete backup generator
-        self.openstacksdk.delete_backup(uuid=task.backup_id)
+        self.openstacksdk.delete_backup(uuid=task.backup_id, force=True)
         # 3. remove failed task from the task queue
         task.delete_queue()
 

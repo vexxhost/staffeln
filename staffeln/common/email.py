@@ -4,7 +4,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-__DRY_RUN__ = True
+__DRY_RUN__ = False
 
 
 def send(
