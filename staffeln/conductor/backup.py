@@ -59,14 +59,18 @@ class Backup(object):
         self.result.initialize()
 
     def get_backups(self, filters=None):
-        return objects.Volume.list(context=self.ctx, filters=filters)  # pylint: disable=E1120
+        return objects.Volume.list(
+            context=self.ctx, filters=filters
+        )  # pylint: disable=E1120
 
     def get_backup_quota(self, project_id):
         return self.openstacksdk.get_backup_quota(project_id)
 
     def get_queues(self, filters=None):
         """Get the list of volume queue columns from the queue_data table"""
-        queues = objects.Queue.list(context=self.ctx, filters=filters)  # pylint: disable=E1120
+        queues = objects.Queue.list(
+            context=self.ctx, filters=filters
+        )  # pylint: disable=E1120
         return queues
 
     def create_queue(self, old_tasks):

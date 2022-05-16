@@ -20,13 +20,13 @@ class Queue(
         "backup_status": sfeild.IntegerField(),
     }
 
-    @base.remotable_classmethod  # pylint: disable=E0213
-    def list(cls, context, filters=None):
+    @base.remotable_classmethod
+    def list(cls, context, filters=None):  # pylint: disable=E0213
         db_queue = cls.dbapi.get_queue_list(context, filters=filters)
         return [cls._from_db_object(cls(context), obj) for obj in db_queue]
 
-    @base.remotable_classmethod  # pylint: disable=E0213
-    def get_by_id(cls, context, id):
+    @base.remotable_classmethod
+    def get_by_id(cls, context, id):  # pylint: disable=E0213
         """Find a backup based on backup_id
         :param context: Security context. NOTE: This should only
                         be used internally by the indirection_api.

@@ -65,8 +65,8 @@ class Volume(
         """Soft Delete the :class:`Queue_data` from the DB"""
         self.dbapi.soft_delete_backup(self.id)
 
-    @base.remotable_classmethod  # pylint: disable=E0213
-    def get_backup_by_backup_id(cls, context, backup_id):
+    @base.remotable_classmethod
+    def get_backup_by_backup_id(cls, context, backup_id):  # pylint: disable=E0213
         """Find a backup based on backup_id
         :param context: Security context. NOTE: This should only
                         be used internally by the indirection_api.
