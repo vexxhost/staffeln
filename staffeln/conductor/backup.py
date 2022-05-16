@@ -1,16 +1,14 @@
+import collections
+
 import parse
 import staffeln.conf
-import collections
-from staffeln.common import constants
-from staffeln.conductor import result
+from openstack.exceptions import HttpException as OpenstackHttpException
 from openstack.exceptions import ResourceNotFound as OpenstackResourceNotFound
 from openstack.exceptions import SDKException as OpenstackSDKException
-from openstack.exceptions import HttpException as OpenstackHttpException
 from oslo_log import log
-from staffeln.common import context
 from staffeln import objects
+from staffeln.common import constants, context, openstack
 from staffeln.i18n import _
-from staffeln.common import openstack
 
 CONF = staffeln.conf.CONF
 LOG = log.getLogger(__name__)
@@ -60,14 +58,14 @@ class Backup(object):
         self.result.initialize()
 
     def get_backups(self, filters=None):
-        return objects.Volume.list(self.ctx, filters=filters)
+        return objects.Volume.list(context=self.ctx, filters=filters)
 
     def get_backup_quota(self, project_id):
         return self.openstacksdk.get_backup_quota(project_id)
 
     def get_queues(self, filters=None):
         """Get the list of volume queue columns from the queue_data table"""
-        queues = objects.Queue.list(self.ctx, filters=filters)
+        queues = objects.Queue.list(context=self.ctx, filters=filters)
         return queues
 
     def create_queue(self, old_tasks):
@@ -81,13 +79,13 @@ class Backup(object):
         # 2. add new tasks in the queue which are not existing in the old task list
         queue_list = self.check_instance_volumes()
         for queue in queue_list:
-            if not queue.volume_id in old_task_volume_list:
+            if queue.volume_id not in old_task_volume_list:
                 self._volume_queue(queue)
 
     # Backup the volumes attached to which has a specific metadata
     def filter_by_server_metadata(self, metadata):
         if CONF.conductor.backup_metadata_key is not None:
-            if not CONF.conductor.backup_metadata_key in metadata:
+            if CONF.conductor.backup_metadata_key not in metadata:
                 return False
 
             return (
@@ -101,7 +99,7 @@ class Backup(object):
     def filter_by_volume_status(self, volume_id, project_id):
         try:
             volume = self.openstacksdk.get_volume(volume_id, project_id)
-            if volume == None:
+            if volume is None:
                 return False
             res = volume["status"] in ("available", "in-use")
             if not res:
@@ -127,7 +125,7 @@ class Backup(object):
                 self.process_non_existing_backup(task)
             self.openstacksdk.set_project(self.project_list[project_id])
             backup = self.openstacksdk.get_backup(task.backup_id)
-            if backup == None:
+            if backup is None:
                 return task.delete_queue()
             self.openstacksdk.delete_backup(task.backup_id, force=True)
             task.delete_queue()
@@ -144,7 +142,7 @@ class Backup(object):
     def soft_remove_backup_task(self, backup_object):
         try:
             backup = self.openstacksdk.get_backup(backup_object.backup_id)
-            if backup == None:
+            if backup is None:
                 LOG.info(
                     _(
                         "Backup %s is not existing in Openstack."
@@ -191,7 +189,7 @@ class Backup(object):
             backup = self.openstacksdk.get_backup(
                 uuid=backup_object.backup_id, project_id=project_id
             )
-            if backup == None:
+            if backup is None:
                 LOG.info(
                     _(
                         "Backup %s is not existing in Openstack."
@@ -392,7 +390,7 @@ class Backup(object):
         self.openstacksdk.set_project(self.project_list[project_id])
         backup_gen = self.openstacksdk.get_backup(queue.backup_id)
 
-        if backup_gen == None:
+        if backup_gen is None:
             # TODO(Alex): need to check when it is none
             LOG.info(
                 _("[Beta] Backup status of %s is returning none." % (queue.backup_id))

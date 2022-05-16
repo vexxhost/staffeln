@@ -25,7 +25,10 @@ backup_opts = [
     ),
     cfg.StrOpt(
         "backup_cycle_timout",
-        regex=r"((?P<years>\d+?)y)?((?P<months>\d+?)mon)?((?P<weeks>\d+?)w)?((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)min)?((?P<seconds>\d+?)s)?",
+        regex=(
+            r"((?P<years>\d+?)y)?((?P<months>\d+?)mon)?((?P<weeks>\d+?)w)?"
+            r"((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)min)?((?P<seconds>\d+?)s)?"
+        ),
         default=constants.DEFAULT_BACKUP_CYCLE_TIMEOUT,
         help=_(
             "The duration while the backup cycle waits backups."
@@ -63,7 +66,10 @@ rotation_opts = [
     ),
     cfg.StrOpt(
         "retention_time",
-        regex=r"((?P<years>\d+?)y)?((?P<months>\d+?)mon)?((?P<weeks>\d+?)w)?((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)min)?((?P<seconds>\d+?)s)?",
+        regex=(
+            r"((?P<years>\d+?)y)?((?P<months>\d+?)mon)?((?P<weeks>\d+?)w)?"
+            r"((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)min)?((?P<seconds>\d+?)s)?"
+        ),
         default="2w3d",
         help=_(
             "The time of retention period, the for mat is "

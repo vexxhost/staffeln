@@ -1,11 +1,13 @@
 import re
 from datetime import datetime
+
 from dateutil.relativedelta import relativedelta
 
 DEFAULT_TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 regex = re.compile(
-    r"((?P<years>\d+?)y)?((?P<months>\d+?)mon)?((?P<weeks>\d+?)w)?((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)min)?((?P<seconds>\d+?)s)?"
+    r"((?P<years>\d+?)y)?((?P<months>\d+?)mon)?((?P<weeks>\d+?)w)?((?P<days>\d+?)d)?"
+    r"((?P<hours>\d+?)h)?((?P<minutes>\d+?)min)?((?P<seconds>\d+?)s)?"
 )
 
 
@@ -29,7 +31,7 @@ def parse_timedelta_string(time_str):
         if empty_flag:
             return None
         return time_params
-    except:
+    except: # noqa: E722
         return None
 
 
@@ -56,16 +58,3 @@ def timeago(
         minutes=minutes,
         seconds=seconds,
     )
-
-
-## yearsago using Standard library
-# def yearsago(years, from_date=None):
-#     if from_date is None:
-#         from_date = datetime.now()
-#     try:
-#         return from_date.replace(year=from_date.year - years)
-#     except ValueError:
-#         # Must be 2/29!
-#         assert from_date.month == 2 and from_date.day == 29 # can be removed
-#         return from_date.replace(month=2, day=28,
-#                                  year=from_date.year-years)

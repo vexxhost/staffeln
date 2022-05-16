@@ -1,10 +1,7 @@
-from flask import Flask
-from flask import Response
-from flask import request
+from flask import Flask, Response, request
+from oslo_log import log
 from staffeln import objects
 from staffeln.common import context
-from oslo_log import log
-
 
 ctx = context.make_context()
 app = Flask(__name__)
@@ -22,7 +19,10 @@ def backup_id():
         )
 
     # Retrive the backup object from backup_data table with matching backup_id.
-    backup = objects.Volume.get_backup_by_backup_id(ctx, request.args["backup_id"])
+    backup = objects.Volume.get_backup_by_backup_id(
+        context=ctx,
+        backup_id=request.args["backup_id"]
+    )
     # backup_info is None when there is no entry of the backup id in backup_table.
     # So the backup should not be the automated backup.
     if backup is None:

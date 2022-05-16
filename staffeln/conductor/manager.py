@@ -1,12 +1,12 @@
-import cotyledon
-from futurist import periodics
-from oslo_log import log
-import staffeln.conf
+
 import threading
 import time
 
-from staffeln.common import constants
-from staffeln.common import context
+import cotyledon
+import staffeln.conf
+from futurist import periodics
+from oslo_log import log
+from staffeln.common import constants, context
 from staffeln.common import time as xtime
 from staffeln.conductor import backup
 from staffeln.i18n import _
@@ -68,7 +68,7 @@ class BackupManager(cotyledon.Service):
             CONF.conductor.backup_cycle_timout
         )
 
-        if time_delta_dict == None:
+        if time_delta_dict is None:
             LOG.info(
                 _(
                     "Recycle timeout format is invalid. "
@@ -160,7 +160,7 @@ class RotationManager(cotyledon.Service):
 
     def get_backup_list(self):
         threshold_strtime = self.get_threshold_strtime()
-        if threshold_strtime == None:
+        if threshold_strtime is None:
             return False
         self.backup_list = self.controller.get_backups(
             filters={"created_at__lt": threshold_strtime}
@@ -199,7 +199,7 @@ class RotationManager(cotyledon.Service):
     # get the threshold time str
     def get_threshold_strtime(self):
         time_delta_dict = xtime.parse_timedelta_string(CONF.conductor.retention_time)
-        if time_delta_dict == None:
+        if time_delta_dict is None:
             LOG.info(
                 _(
                     "Retention time format is invalid. "

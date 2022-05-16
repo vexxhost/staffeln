@@ -1,5 +1,3 @@
-import os
-
 from staffeln.db.sqlalchemy import api as sqla_api
 from staffeln.db.sqlalchemy import models
 

@@ -1,5 +1,4 @@
-from openstack import exceptions
-from openstack import proxy
+from openstack import exceptions, proxy
 from oslo_log import log
 from staffeln.common import auth
 from staffeln.i18n import _
@@ -36,21 +35,17 @@ class OpenstackSDK:
             user = self.conn.get_user(name_or_id=user_name)
         return user.id
 
-    ############## project
     def get_projects(self):
         return self.conn.list_projects()
 
-    ############## server
     def get_servers(self, project_id, all_projects=True, details=True):
         return self.conn.compute.servers(
             details=details, all_projects=all_projects, project_id=project_id
         )
 
-    ############## volume
     def get_volume(self, uuid, project_id):
         return self.conn.get_volume_by_id(uuid)
 
-    ############## backup
     def get_backup(self, uuid, project_id=None):
         # return conn.block_storage.get_backup(
         #     project_id=project_id, backup_id=uuid,

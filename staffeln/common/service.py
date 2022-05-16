@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from oslo_log import log as logging
-
-from staffeln.common import config
-from staffeln import objects
 import staffeln.conf
+from oslo_log import log as logging
+from staffeln import objects
+from staffeln.common import config
 
 CONF = staffeln.conf.CONF
 

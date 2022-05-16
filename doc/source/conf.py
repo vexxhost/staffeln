@@ -23,7 +23,7 @@ sys.path.insert(0, os.path.abspath("../.."))
 extensions = [
     "sphinx.ext.autodoc",
     "openstackdocstheme",
-    #'sphinx.ext.intersphinx',
+#    'sphinx.ext.intersphinx',
 ]
 
 # autodoc generation is a bit aggressive and a nuisance when doing heavy
