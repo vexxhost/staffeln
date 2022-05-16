@@ -28,4 +28,4 @@ def prepare_service(argv=None):
     config.parse_args(argv)
     config.set_config_defaults()
     objects.register_all()
-    logging.setup(CONF, 'staffeln')
+    logging.setup(CONF, "staffeln")

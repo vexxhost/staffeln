@@ -12,6 +12,5 @@ def get_instance():
     """Return a DB API instance."""
     return IMPL
 
-
-# class BaseConnection(object, metaclass=abc.ABCMeta):
+    # class BaseConnection(object, metaclass=abc.ABCMeta):
     """Base class for storage system connections."""

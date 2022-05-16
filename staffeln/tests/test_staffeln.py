@@ -23,6 +23,5 @@ from staffeln.tests import base
 
 
 class TestStaffeln(base.TestCase):
-
     def test_something(self):
         pass
