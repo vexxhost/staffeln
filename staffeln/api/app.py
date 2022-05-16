@@ -19,7 +19,7 @@ def backup_id():
         )
 
     # Retrive the backup object from backup_data table with matching backup_id.
-    backup = objects.Volume.get_backup_by_backup_id(
+    backup = objects.Volume.get_backup_by_backup_id(  # pylint: disable=E1120
         context=ctx, backup_id=request.args["backup_id"]
     )
     # backup_info is None when there is no entry of the backup id in backup_table.
