@@ -21,12 +21,12 @@ class Queue(
     }
 
     @base.remotable_classmethod
-    def list(self, context, filters=None):
-        db_queue = self.dbapi.get_queue_list(context, filters=filters)
-        return [self._from_db_object(self(context), obj) for obj in db_queue]
+    def list(cls, context, filters=None):
+        db_queue = cls.dbapi.get_queue_list(context, filters=filters)
+        return [cls._from_db_object(cls(context), obj) for obj in db_queue]
 
     @base.remotable_classmethod
-    def get_by_id(self, context, id):
+    def get_by_id(cls, context, id):
         """Find a backup based on backup_id
         :param context: Security context. NOTE: This should only
                         be used internally by the indirection_api.
@@ -37,8 +37,8 @@ class Queue(
         :param backup_id: the backup id of volume in queue.
         :returns: a :class:`Queue` object.
         """
-        db_queue = self.dbapi.get_queue_by_id(context, id)
-        queue = self._from_db_object(self(context), db_queue)
+        db_queue = cls.dbapi.get_queue_by_id(context, id)
+        queue = cls._from_db_object(cls(context), db_queue)
         return queue
 
     @base.remotable
