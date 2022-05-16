@@ -1,20 +1,20 @@
 # Email notification package
 # This should be upgraded by integrating with mail server to send batch
 import smtplib
-from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 __DRY_RUN__ = False
 
 
 def send(
-        src_email,
-        src_pwd,
-        dest_email,
-        subject,
-        content,
-        smtp_server_domain,
-        smtp_server_port,
+    src_email,
+    src_pwd,
+    dest_email,
+    subject,
+    content,
+    smtp_server_domain,
+    smtp_server_port,
 ):
     message = MIMEMultipart("alternative")
     message["Subject"] = subject

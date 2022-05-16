@@ -1,4 +1,3 @@
-from staffeln.common import short_id
 from staffeln.db import api as db_api
 from staffeln.objects import base
 from staffeln.objects import fields as sfeild
@@ -22,12 +21,12 @@ class Queue(
     }
 
     @base.remotable_classmethod
-    def list(cls, context, filters=None):
+    def list(cls, context, filters=None):  # pylint: disable=E0213
         db_queue = cls.dbapi.get_queue_list(context, filters=filters)
         return [cls._from_db_object(cls(context), obj) for obj in db_queue]
 
     @base.remotable_classmethod
-    def get_by_id(cls, context, id):
+    def get_by_id(cls, context, id):  # pylint: disable=E0213
         """Find a backup based on backup_id
         :param context: Security context. NOTE: This should only
                         be used internally by the indirection_api.
@@ -65,4 +64,4 @@ class Queue(
     @base.remotable
     def delete_queue(self):
         """Soft Delete the :class:`Queue_data` from the DB"""
-        db_obj = self.dbapi.soft_delete_queue(self.id)
+        self.dbapi.soft_delete_queue(self.id)

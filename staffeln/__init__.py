@@ -14,6 +14,4 @@
 
 import pbr.version
 
-
-__version__ = pbr.version.VersionInfo(
-    'staffeln').version_string()
+__version__ = pbr.version.VersionInfo("staffeln").version_string()

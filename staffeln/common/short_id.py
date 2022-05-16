@@ -6,7 +6,6 @@ import base64
 import uuid
 
 import six
-
 from staffeln.i18n import _
 
 
@@ -17,9 +16,10 @@ def _to_byte_string(value, num_bits):
     required.
     """
     shifts = six.moves.xrange(num_bits - 8, -8, -8)
-    byte_at = lambda off: ((value >> off  # noqa: E731
-                            if off >= 0 else value << -off) & 0xff)
-    return ''.join(chr(byte_at(offset)) for offset in shifts)
+    byte_at = lambda off: (  # noqa: E731
+        (value >> off if off >= 0 else value << -off) & 0xFF
+    )
+    return "".join(chr(byte_at(offset)) for offset in shifts)
 
 
 def get_id(source_uuid):
@@ -30,7 +30,7 @@ def get_id(source_uuid):
     if isinstance(source_uuid, six.string_types):
         source_uuid = uuid.UUID(source_uuid)
     if source_uuid.version != 4:
-        raise ValueError(_('Invalid UUID version (%d)') % source_uuid.version)
+        raise ValueError(_("Invalid UUID version (%d)") % source_uuid.version)
 
     # The "time" field of a v4 UUID contains 60 random bits
     # (see RFC4122, Section 4.4)
@@ -39,7 +39,7 @@ def get_id(source_uuid):
     encoded = base64.b32encode(six.b(random_bytes))[:12]
 
     if six.PY3:
-        return encoded.lower().decode('utf-8')
+        return encoded.lower().decode("utf-8")
     else:
         return encoded.lower()
 

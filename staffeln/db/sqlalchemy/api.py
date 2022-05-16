@@ -4,19 +4,15 @@ import datetime
 import operator
 
 from oslo_config import cfg
-from oslo_log import log
 from oslo_db import exception as db_exc
 from oslo_db.sqlalchemy import session as db_session
 from oslo_db.sqlalchemy import utils as db_utils
-from oslo_utils import timeutils
-from oslo_utils import strutils
-from oslo_utils import uuidutils
+from oslo_log import log
+from oslo_utils import strutils, timeutils, uuidutils
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm import exc
-
-from staffeln.db.sqlalchemy import models
 from staffeln.common import short_id
-
+from staffeln.db.sqlalchemy import models
 
 LOG = log.getLogger(__name__)
 
@@ -109,14 +105,13 @@ class Connection(object):
         if filters is None:
             filters = {}
 
-
         plain_fields = [
             "volume_id",
             "backup_id",
             "project_id",
             "backup_completed",
             "instance_id",
-            "created_at"
+            "created_at",
         ]
 
         return self._add_filters(
@@ -148,7 +143,7 @@ class Connection(object):
 
     def _add_filters(self, query, model, filters=None, plain_fields=None):
         """Add filters while listing the columns from database table"""
-        timestamp_mixin_fields = ["created_at", "updated_at"]
+        # timestamp_mixin_fields = ["created_at", "updated_at"]
         filters = filters or {}
 
         for raw_fieldname, value in filters.items():
@@ -231,7 +226,7 @@ class Connection(object):
             except exc.NoResultFound:
                 LOG.error("Resource Not found.")
 
-            deleted_row = session.delete(row)
+            session.delete(row)
             return row
 
     def _get_model_list(
@@ -271,7 +266,7 @@ class Connection(object):
 
         try:
             return self._update(models.Backup_data, backup_id, values)
-        except:
+        except:  # noqa: E722
             LOG.error("backup resource not found.")
 
     def create_queue(self, values):
@@ -293,7 +288,7 @@ class Connection(object):
 
         try:
             return self._update(models.Queue_data, id, values)
-        except:
+        except:  # noqa: E722
             LOG.error("Queue resource not found.")
 
     def get_queue_by_id(self, context, id):
@@ -308,22 +303,21 @@ class Connection(object):
             return self._get(
                 context, model=models.Queue_data, fieldname=fieldname, value=value
             )
-        except:
+        except:  # noqa: E722
             LOG.error("Queue not found")
 
     def soft_delete_queue(self, id):
         try:
             return self._soft_delete(models.Queue_data, id)
-        except:
+        except:  # noqa: E722
             LOG.error("Queue Not found.")
-
 
     def get_backup_by_backup_id(self, context, backup_id):
         """Get the column from the backup_data with matching backup_id"""
 
         try:
             return self._get_backup(context, fieldname="backup_id", value=backup_id)
-        except:
+        except:  # noqa: E722
             LOG.error("Backup not found with backup_id %s." % backup_id)
 
     def _get_backup(self, context, fieldname, value):
@@ -333,12 +327,11 @@ class Connection(object):
             return self._get(
                 context, model=models.Backup_data, fieldname=fieldname, value=value
             )
-        except:
+        except:  # noqa: E722
             LOG.error("Backup resource not found.")
-
 
     def soft_delete_backup(self, id):
         try:
             return self._soft_delete(models.Backup_data, id)
-        except:
+        except:  # noqa: E722
             LOG.error("Backup Not found.")

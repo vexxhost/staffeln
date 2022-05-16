@@ -12,7 +12,7 @@ File-level backup will not be provided. The volume can be restored and attached 
 
 ### Function Overview
 
-The solution backs up all volumes attached to VMs which have a pre-defined metadata set, for
+The solution backs up all volumes attached to VMs which have a predefined metadata set, for
 example, `backup=yes`.
 First, it gets the list of VMs which have backup metadata and the list of volumes attached to the
 VMs in the given project by consuming the Openstack API (nova-api and cinder-api). Once the

@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from oslo_log import log as logging
-
-from staffeln.common import config
-from staffeln import objects
 import staffeln.conf
+from oslo_log import log as logging
+from staffeln import objects
+from staffeln.common import config
 
 CONF = staffeln.conf.CONF
 
@@ -28,4 +27,4 @@ def prepare_service(argv=None):
     config.parse_args(argv)
     config.set_config_defaults()
     objects.register_all()
-    logging.setup(CONF, 'staffeln')
+    logging.setup(CONF, "staffeln")

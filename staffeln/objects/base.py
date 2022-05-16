@@ -3,9 +3,7 @@
 from oslo_utils import versionutils
 from oslo_versionedobjects import base as ovoo_base
 from oslo_versionedobjects import fields as ovoo_fields
-
 from staffeln import objects
-
 
 remotable_classmethod = ovoo_base.remotable_classmethod
 remotable = ovoo_base.remotable

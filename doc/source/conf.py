@@ -15,35 +15,33 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath('../..'))
+sys.path.insert(0, os.path.abspath("../.."))
 # -- General configuration ----------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = [
-    'sphinx.ext.autodoc',
-    'openstackdocstheme',
-    #'sphinx.ext.intersphinx',
-]
+extensions = ["sphinx.ext.autodoc", "openstackdocstheme"]
 
 # autodoc generation is a bit aggressive and a nuisance when doing heavy
 # text edit cycles.
 # execute "export SPHINX_DEBUG=1" in your terminal to disable
 
 # The suffix of source filenames.
-source_suffix = '.rst'
+source_suffix = ".rst"
 
 # The master toctree document.
-master_doc = 'index'
+master_doc = "index"
 
 # General information about the project.
-project = u'staffeln'
-copyright = u'2017, OpenStack Developers'
+project = "staffeln"
+copyright = "2017, OpenStack Developers"
 
 # openstackdocstheme options
-openstackdocs_repo_name = 'openstack/staffeln'
-openstackdocs_bug_project = 'replace with the name of the project on Launchpad or the ID from Storyboard'
-openstackdocs_bug_tag = ''
+openstackdocs_repo_name = "openstack/staffeln"
+openstackdocs_bug_project = (
+    "replace with the name of the project on Launchpad or the ID from Storyboard"
+)
+openstackdocs_bug_tag = ""
 
 # If true, '()' will be appended to :func: etc. cross-reference text.
 add_function_parentheses = True
@@ -53,7 +51,7 @@ add_function_parentheses = True
 add_module_names = True
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'native'
+pygments_style = "native"
 
 # -- Options for HTML output --------------------------------------------------
 
@@ -62,20 +60,23 @@ pygments_style = 'native'
 # html_theme_path = ["."]
 # html_theme = '_theme'
 # html_static_path = ['static']
-html_theme = 'openstackdocs'
+html_theme = "openstackdocs"
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = '%sdoc' % project
+htmlhelp_basename = "%sdoc" % project
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass
 # [howto/manual]).
 latex_documents = [
-    ('index',
-     '%s.tex' % project,
-     u'%s Documentation' % project,
-     u'OpenStack Developers', 'manual'),
+    (
+        "index",
+        "%s.tex" % project,
+        "%s Documentation" % project,
+        "OpenStack Developers",
+        "manual",
+    ),
 ]
 
 # Example configuration for intersphinx: refer to the Python standard library.
-#intersphinx_mapping = {'http://docs.python.org/': None}
+# intersphinx_mapping = {'http://docs.python.org/': None}
