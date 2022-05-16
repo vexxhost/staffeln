@@ -12,3 +12,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VALIDATE_ALL_CODEBASE: true
           VALIDATE_PYTHON_MYPY: false
+          VALIDATE_JSCPD: false

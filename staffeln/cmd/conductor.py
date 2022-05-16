@@ -1,11 +1,10 @@
 """Starter script for the staffeln conductor service."""
 
 import cotyledon
+import staffeln.conf
 from cotyledon import oslo_config_glue
-
 from staffeln.common import service
 from staffeln.conductor import manager
-import staffeln.conf
 
 CONF = staffeln.conf.CONF
 

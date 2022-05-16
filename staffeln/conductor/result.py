@@ -29,7 +29,7 @@ class BackupResult(object):
         self.failed_backup_list[id] = []
 
     def add_success_backup(self, project_id, volume_id, backup_id):
-        if not project_id in self.success_backup_list:
+        if project_id not in self.success_backup_list:
             LOG.error(_("Not registered project is reported for backup result."))
             return
         self.success_backup_list[project_id].append(
@@ -40,7 +40,7 @@ class BackupResult(object):
         )
 
     def add_failed_backup(self, project_id, volume_id, reason):
-        if not project_id in self.failed_backup_list:
+        if project_id not in self.failed_backup_list:
             LOG.error(_("Not registered project is reported for backup result."))
             return
         self.failed_backup_list[project_id].append(

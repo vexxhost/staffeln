@@ -8,6 +8,7 @@ from openstack.exceptions import SDKException as OpenstackSDKException
 from oslo_log import log
 from staffeln import objects
 from staffeln.common import constants, context, openstack
+from staffeln.conductor import result
 from staffeln.i18n import _
 
 CONF = staffeln.conf.CONF

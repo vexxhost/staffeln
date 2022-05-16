@@ -21,14 +21,14 @@ class Volume(
     }
 
     @base.remotable_classmethod
-    def list(cls, context, filters=None):
+    def list(self, context, filters=None):
         """Return a list of :class:`Backup` objects.
 
         :param filters: dict mapping the filter to a value.
         """
-        db_backups = cls.dbapi.get_backup_list(context, filters=filters)
+        db_backups = self.dbapi.get_backup_list(context, filters=filters)
 
-        return [cls._from_db_object(cls(context), obj) for obj in db_backups]
+        return [self._from_db_object(self(context), obj) for obj in db_backups]
 
     @base.remotable
     def create(self):
@@ -66,7 +66,7 @@ class Volume(
         self.dbapi.soft_delete_backup(self.id)
 
     @base.remotable_classmethod
-    def get_backup_by_backup_id(cls, context, backup_id):
+    def get_backup_by_backup_id(self, context, backup_id):
         """Find a backup based on backup_id
         :param context: Security context. NOTE: This should only
                         be used internally by the indirection_api.
@@ -77,9 +77,9 @@ class Volume(
         :param backup_id: the backup id of volume in volume data.
         :returns: a :class:`Backup` object.
         """
-        db_backup = cls.dbapi.get_backup_by_backup_id(context, backup_id)
+        db_backup = self.dbapi.get_backup_by_backup_id(context, backup_id)
         if db_backup is None:
             return db_backup
         else:
-            backup = cls._from_db_object(cls(context), db_backup)
+            backup = self._from_db_object(self(context), db_backup)
             return backup

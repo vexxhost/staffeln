@@ -31,7 +31,7 @@ def parse_timedelta_string(time_str):
         if empty_flag:
             return None
         return time_params
-    except: # noqa: E722
+    except:  # noqa: E722
         return None
 
 
