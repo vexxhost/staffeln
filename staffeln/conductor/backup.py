@@ -209,7 +209,10 @@ class Backup(object):
 
         except OpenstackSDKException as e:
             LOG.info(
-                _("Backup %s deletion failed." "%s" % (backup_object.backup_id, str(e)))
+                _(
+                    "Backup %s deletion failed. Need to delete manually."
+                    "%s" % (backup_object.backup_id, str(e))
+                )
             )
 
             # TODO(Alex): Add it into the notification queue
@@ -340,7 +343,7 @@ class Backup(object):
             "The backup creation for the volume %s was prefailed." % task.volume_id
         )
         self.result.add_failed_backup(task.project_id, task.volume_id, reason)
-        # LOG.error(reason)
+        LOG.warn(reason)
         # 2. remove failed task from the task queue
         task.delete_queue()
 
@@ -348,9 +351,17 @@ class Backup(object):
         # 1. notify via email
         reason = _("The status of backup for the volume %s is error." % task.volume_id)
         self.result.add_failed_backup(task.project_id, task.volume_id, reason)
-        LOG.error(reason)
+        LOG.warn(reason)
         # 2. delete backup generator
-        self.openstacksdk.delete_backup(uuid=task.backup_id, force=True)
+        try:
+            self.openstacksdk.delete_backup(uuid=task.backup_id, force=True)
+        except OpenstackHttpException as ex:
+            LOG.error(
+                _(
+                    "Failed to delete volume backup %s. %s. Need to delete manually."
+                    % (task.backup_id, str(ex))
+                )
+            )
         # 3. remove failed task from the task queue
         task.delete_queue()
 
@@ -392,6 +403,7 @@ class Backup(object):
             return
         if project_id not in self.project_list:
             self.process_non_existing_backup(queue)
+            return
         self.openstacksdk.set_project(self.project_list[project_id])
         backup_gen = self.openstacksdk.get_backup(queue.backup_id)
 
