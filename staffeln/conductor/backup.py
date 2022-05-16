@@ -116,7 +116,7 @@ class Backup(object):
             self.openstacksdk.set_project(self.project_list[project_id])
             backup = self.openstacksdk.get_backup(task.backup_id)
             if backup == None: return task.delete_queue()
-            self.openstacksdk.delete_backup(task.backup_id)
+            self.openstacksdk.delete_backup(task.backup_id, force=True)
             task.delete_queue()
             self.result.add_failed_backup(task.project_id, task.volume_id, reason)
 
@@ -124,9 +124,6 @@ class Backup(object):
             reason = _("Backup %s deletion failed."
                        "%s" % (task.backup_id, str(e)))
             LOG.info(reason)
-            # TODO(Alex): If backup timeout and also back cancel failed,
-            #  then what to do?
-            #  set the volume status as in-use
             # remove from the queue table
             task.delete_queue()
             self.result.add_failed_backup(task.project_id, task.volume_id, reason)
@@ -195,18 +192,23 @@ class Backup(object):
         for project in projects:
             self.project_list[project.id] = project
 
-    @retry_auth
     def check_instance_volumes(self):
         """Get the list of all the volumes from the project using openstacksdk
         Function first list all the servers in the project and get the volumes
         that are attached to the instance.
         """
         queues_map = []
+        self.refresh_openstacksdk()
         projects = self.openstacksdk.get_projects()
         for project in projects:
             empty_project = True
             self.project_list[project.id] = project
-            servers = self.openstacksdk.get_servers(project_id=project.id)
+            try:
+                servers = self.openstacksdk.get_servers(project_id=project.id)
+            except OpenstackHttpException as ex:
+                LOG.warn(_("Failed to list servers in project %s. %s"
+                           % (project.id, str(ex))))
+                continue
             for server in servers:
                 if not self.filter_by_server_metadata(server.metadata): continue
                 if empty_project:
@@ -228,10 +230,6 @@ class Backup(object):
     def _volume_queue(self, task):
         """Saves the queue data to the database."""
 
-        # TODO(Alex): Need to escalate discussion
-        # When create the task list, need to check the WIP backup generators
-        # which are created in the past backup cycle.
-        # Then skip to create new tasks for the volumes whose backup is WIP
         volume_queue = objects.Queue(self.ctx)
         volume_queue.backup_id = task.backup_id
         volume_queue.volume_id = task.volume_id
@@ -250,15 +248,15 @@ class Backup(object):
         project_id = queue.project_id
         if queue.backup_id == "NULL":
             try:
-                LOG.info(_("Backup for volume %s creating in project %s"
-                           % (queue.volume_id, project_id)))
                 # NOTE(Alex): no need to wait because we have a cycle time out
                 if project_id not in self.project_list:
-                    LOG.info(_("Project ID %s is not existing in project list"
+                    LOG.warn(_("Project ID %s is not existing in project list"
                                % project_id))
                     self.process_non_existing_backup(queue)
                     return
                 self.openstacksdk.set_project(self.project_list[project_id])
+                LOG.info(_("Backup for volume %s creating in project %s"
+                           % (queue.volume_id, project_id)))
                 volume_backup = self.openstacksdk.create_backup(volume_id=queue.volume_id,
                                                                 project_id=project_id)
                 queue.backup_id = volume_backup.id
@@ -286,11 +284,9 @@ class Backup(object):
                 queue.backup_status = constants.BACKUP_WIP
                 queue.save()
         else:
-            pass
-            # TODO(Alex): remove this task from the task list
-            #  Backup planned task cannot have backup_id in the same cycle
-            #  Reserve for now because it is related to the WIP backup genenrators which
-            #  are not finished in the current cycle
+            # Backup planned task cannot have backup_id in the same cycle.
+            # Remove this task from the task list
+            queue.delete_queue()
 
     # backup gen was not created
     def process_pre_failed_backup(self, task):
