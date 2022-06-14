@@ -56,14 +56,15 @@ class OpenstackSDK:
         except exceptions.ResourceNotFound:
             return None
 
-    def create_backup(self, volume_id, project_id, force=True, wait=False):
+    def create_backup(self, volume_id, project_id, force=True, wait=False, name=None):
         # return conn.block_storage.create_backup(
-        #     volume_id=queue.volume_id, force=True, project_id=queue.project_id,
+        #     volume_id=queue.volume_id, force=True, project_id=queue.project_id, name="name"
         # )
         return self.conn.create_volume_backup(
             volume_id=volume_id,
             force=force,
             wait=wait,
+            name=name,
         )
 
     def delete_backup(self, uuid, project_id=None, force=False):

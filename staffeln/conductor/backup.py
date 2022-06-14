@@ -1,4 +1,5 @@
 import collections
+from datetime import datetime
 
 import parse
 import staffeln.conf
@@ -21,7 +22,15 @@ BackupMapping = collections.namedtuple(
 
 QueueMapping = collections.namedtuple(
     "QueueMapping",
-    ["volume_id", "backup_id", "project_id", "instance_id", "backup_status"],
+    [
+        "volume_id",
+        "backup_id",
+        "project_id",
+        "instance_id",
+        "backup_status",
+        "instance_name",
+        "volume_name",
+    ],
 )
 
 
@@ -261,6 +270,10 @@ class Backup(object):
                             backup_id="NULL",
                             instance_id=server.id,
                             backup_status=constants.BACKUP_PLANNED,
+                            # Only keep the last 100 chars of instance_name and
+                            # volume_name for forming backup_name
+                            instance_name=server.name[:100],
+                            volume_name=volume["name"][:100],
                         )
                     )
         return queues_map
@@ -274,6 +287,8 @@ class Backup(object):
         volume_queue.instance_id = task.instance_id
         volume_queue.project_id = task.project_id
         volume_queue.backup_status = task.backup_status
+        volume_queue.instance_name = task.instance_name
+        volume_queue.volume_name = task.volume_name
         volume_queue.create()
 
     def create_volume_backup(self, queue):
@@ -284,6 +299,16 @@ class Backup(object):
         backup_status and backup_id in the queue table.
         """
         project_id = queue.project_id
+        timestamp = int(datetime.now().timestamp())
+        # Backup name allows max 255 chars of string
+        backup_name = ("%(instance_name)s-%(volume_name)s-%(timestamp)s") % {
+            "instance_name": queue.instance_name,
+            "volume_name": queue.volume_name,
+            "timestamp": timestamp,
+        }
+
+        # Make sure we don't exceed max size of backup_name
+        backup_name = backup_name[:255]
         if queue.backup_id == "NULL":
             try:
                 # NOTE(Alex): no need to wait because we have a cycle time out
@@ -296,20 +321,22 @@ class Backup(object):
                 self.openstacksdk.set_project(self.project_list[project_id])
                 LOG.info(
                     _(
-                        "Backup for volume %s creating in project %s"
-                        % (queue.volume_id, project_id)
+                        ("Backup (name: %s) for volume %s creating in project %s")
+                        % (backup_name, queue.volume_id, project_id)
                     )
                 )
                 volume_backup = self.openstacksdk.create_backup(
-                    volume_id=queue.volume_id, project_id=project_id
+                    volume_id=queue.volume_id,
+                    project_id=project_id,
+                    name=backup_name,
                 )
                 queue.backup_id = volume_backup.id
                 queue.backup_status = constants.BACKUP_WIP
                 queue.save()
             except OpenstackSDKException as error:
                 reason = _(
-                    "Backup creation for the volume %s failled. %s"
-                    % (queue.volume_id, str(error))
+                    "Backup (name: %s) creation for the volume %s failled. %s"
+                    % (backup_name, queue.volume_id, str(error))
                 )
                 LOG.info(reason)
                 self.result.add_failed_backup(project_id, queue.volume_id, reason)
@@ -321,8 +348,8 @@ class Backup(object):
             # Added extra exception as OpenstackSDKException does not handle the keystone unauthourized issue.
             except Exception as error:
                 reason = _(
-                    "Backup creation for the volume %s failled. %s"
-                    % (queue.volume_id, str(error))
+                    "Backup (name: %s) creation for the volume %s failled. %s"
+                    % (backup_name, queue.volume_id, str(error))
                 )
                 LOG.error(reason)
                 self.result.add_failed_backup(project_id, queue.volume_id, reason)

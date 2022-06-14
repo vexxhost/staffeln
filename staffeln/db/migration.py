@@ -18,3 +18,8 @@ def get_backend():
 
 def create_schema():
     return get_backend().create_schema()
+
+
+def upgrade(version=None):
+    """Migrate the database to `version` or the most recent version."""
+    return get_backend().upgrade(version)

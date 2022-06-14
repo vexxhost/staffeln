@@ -66,3 +66,5 @@ class Queue_data(Base):
     volume_id = Column(String(100))
     backup_status = Column(Integer())
     instance_id = Column(String(100))
+    volume_name = Column(String(100))
+    instance_name = Column(String(100))
