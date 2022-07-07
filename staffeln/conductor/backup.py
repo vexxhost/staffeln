@@ -263,7 +263,7 @@ class Backup(object):
                 for volume in server.attached_volumes:
                     if not self.filter_by_volume_status(volume["id"], project.id):
                         continue
-                    if "name"  not in volume:
+                    if "name" not in volume:
                         volume_name = volume["id"]
                     else:
                         volume_name = volume["name"][:100]
