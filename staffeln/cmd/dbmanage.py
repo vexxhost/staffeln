@@ -47,12 +47,12 @@ def main():
     valid_commands = set(
         [
             "create_schema",
-            "do_upgrade",
+            "upgrade",
         ]
     )
     if not set(sys.argv).intersection(valid_commands):
         sys.argv.append("create_schema")
-        sys.argv.append("do_upgrade")
+        sys.argv.append("upgrade")
 
     service.prepare_service(sys.argv)
     CONF.command.func()
