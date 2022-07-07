@@ -263,6 +263,10 @@ class Backup(object):
                 for volume in server.attached_volumes:
                     if not self.filter_by_volume_status(volume["id"], project.id):
                         continue
+                    if "name" not in volume:
+                        volume_name = volume["id"]
+                    else:
+                        volume_name = volume["name"][:100]
                     queues_map.append(
                         QueueMapping(
                             project_id=project.id,
@@ -273,7 +277,7 @@ class Backup(object):
                             # Only keep the last 100 chars of instance_name and
                             # volume_name for forming backup_name
                             instance_name=server.name[:100],
-                            volume_name=volume["name"][:100],
+                            volume_name=volume_name,
                         )
                     )
         return queues_map
@@ -301,7 +305,7 @@ class Backup(object):
         project_id = queue.project_id
         timestamp = int(datetime.now().timestamp())
         # Backup name allows max 255 chars of string
-        backup_name = ("%(instance_name)s-%(volume_name)s-%(timestamp)s") % {
+        backup_name = ("%(instance_name)s_%(volume_name)s_%(timestamp)s") % {
             "instance_name": queue.instance_name,
             "volume_name": queue.volume_name,
             "timestamp": timestamp,
