@@ -1,3 +1,4 @@
+from email.policy import default
 from staffeln.db import api as db_api
 from staffeln.objects import base
 from staffeln.objects import fields as sfeild
@@ -20,6 +21,7 @@ class Queue(
         "backup_status": sfeild.IntegerField(),
         "volume_name": sfeild.StringField(),
         "instance_name": sfeild.StringField(),
+        "incremental": sfeild.BooleanField(default=False),
     }
 
     @base.remotable_classmethod

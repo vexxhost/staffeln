@@ -1,5 +1,6 @@
 import threading
 import time
+from xml.etree.ElementInclude import include
 
 import cotyledon
 import staffeln.conf
@@ -23,6 +24,7 @@ class BackupManager(cotyledon.Service):
         self.conf = conf
         self.ctx = context.make_context()
         self.controller = backup.Backup()
+        self.inc_count = 0
         LOG.info("%s init" % self.name)
 
     def run(self):
@@ -93,15 +95,33 @@ class BackupManager(cotyledon.Service):
             return True
         return False
 
+    def _is_incremental(self):
+        """
+        Determine backup mode, whether full or incremental backup
+
+        :return: If backup will be incremental or not
+        :rtype: bool
+        """
+
+        LOG.debug(_("Inc count is %s" % self.inc_count))
+        if self.inc_count == CONF.conductor.full_backup_depth:
+            LOG.info(_("Full backup!"))
+            self.inc_count = 0
+            return False
+        else:
+            LOG.info(_("Incremental backup!"))
+            self.inc_count += 1
+            return True
+
     # Create backup generators
     def _process_todo_tasks(self):
         LOG.info(_("Creating new backup generators..."))
-        queues_to_start = self.controller.get_queues(
+        tasks_to_start = self.controller.get_queues(
             filters={"backup_status": constants.BACKUP_PLANNED}
         )
-        if len(queues_to_start) != 0:
-            for queue in queues_to_start:
-                self.controller.create_volume_backup(queue)
+        if len(tasks_to_start) != 0:
+            for task in tasks_to_start:
+                self.controller.create_volume_backup(task)
 
     # Refresh the task queue
     def _update_task_queue(self):
@@ -109,7 +129,7 @@ class BackupManager(cotyledon.Service):
         self.controller.refresh_openstacksdk()
         self.controller.refresh_backup_result()
         current_tasks = self.controller.get_queues()
-        self.controller.create_queue(current_tasks)
+        self.controller.create_queue(current_tasks, incremental=self._is_incremental())
 
     def _report_backup_result(self):
         self.controller.publish_backup_result()

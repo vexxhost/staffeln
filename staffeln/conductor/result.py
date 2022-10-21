@@ -28,7 +28,7 @@ class BackupResult(object):
         self.success_backup_list[id] = []
         self.failed_backup_list[id] = []
 
-    def add_success_backup(self, project_id, volume_id, backup_id):
+    def add_success_backup(self, project_id, volume_id, backup_id, incremental):
         if project_id not in self.success_backup_list:
             LOG.error(_("Not registered project is reported for backup result."))
             return
@@ -36,6 +36,7 @@ class BackupResult(object):
             {
                 "volume_id": volume_id,
                 "backup_id": backup_id,
+                "backup_mode": "Incremental" if incremental else "Full",
             }
         )
 
@@ -93,8 +94,8 @@ class BackupResult(object):
 
             success_volumes = "<br>".join(
                 [
-                    "Volume ID: %s, Backup ID: %s"
-                    % (str(e["volume_id"]), str(e["backup_id"]))
+                    "Volume ID: %s, Backup ID: %s %s"
+                    % (str(e["volume_id"]), str(e["backup_id"]), str(e["backup_mode"]))
                     for e in self.success_backup_list[project["id"]]
                 ]
             )

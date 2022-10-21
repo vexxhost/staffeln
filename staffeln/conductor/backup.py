@@ -82,8 +82,16 @@ class Backup(object):
         )
         return queues
 
-    def create_queue(self, old_tasks):
-        """Create the queue of all the volumes for backup"""
+    def create_queue(self, old_tasks, incremental):
+        """
+        Create the queue of all the volumes for backup
+
+        :param old_tasks: Task list not completed in the previous cycle
+        :type: List<Class objects.Queue>
+
+        :param incremental: If backup is incremental or full
+        :type: bool
+        """
         # 1. get the old task list, not finished in the last cycle
         #  and keep till now
         old_task_volume_list = []
@@ -94,7 +102,7 @@ class Backup(object):
         queue_list = self.check_instance_volumes()
         for queue in queue_list:
             if queue.volume_id not in old_task_volume_list:
-                self._volume_queue(queue)
+                self._volume_queue(queue, incremental)
 
     # Backup the volumes attached to which has a specific metadata
     def filter_by_server_metadata(self, metadata):
@@ -234,7 +242,10 @@ class Backup(object):
             self.project_list[project.id] = project
 
     def check_instance_volumes(self):
-        """Get the list of all the volumes from the project using openstacksdk
+        """
+        Retrieves volume list to backup
+
+        Get the list of all the volumes from the project using openstacksdk.
         Function first list all the servers in the project and get the volumes
         that are attached to the instance.
         """
@@ -282,8 +293,16 @@ class Backup(object):
                     )
         return queues_map
 
-    def _volume_queue(self, task):
-        """Saves the queue data to the database."""
+    def _volume_queue(self, task, incremental):
+        """
+        Commits one backup task to tasbk queue db table
+
+        :param task: One backup task
+        :type: QueueMapping
+
+        :incremental: If backup task is incremental or full
+        :type: bool
+        """
 
         volume_queue = objects.Queue(self.ctx)
         volume_queue.backup_id = task.backup_id
@@ -293,79 +312,80 @@ class Backup(object):
         volume_queue.backup_status = task.backup_status
         volume_queue.instance_name = task.instance_name
         volume_queue.volume_name = task.volume_name
+        # NOTE(Oleks): Backup mode is inherited from backup service.
+        # Need to keep and navigate backup mode history, to decide a different mode per volume
+        volume_queue.incremental = incremental
         volume_queue.create()
 
-    def create_volume_backup(self, queue):
+    def create_volume_backup(self, task):
         """Initiate the backup of the volume
-        :params: queue: Provide the map of the volume that needs
+        :param task: Provide the map of the volume that needs
                   backup.
         This function will call the backupup api and change the
-        backup_status and backup_id in the queue table.
+        backup_status and backup_id in the task queue table.
         """
-        project_id = queue.project_id
+        project_id = task.project_id
         timestamp = int(datetime.now().timestamp())
         # Backup name allows max 255 chars of string
         backup_name = ("%(instance_name)s_%(volume_name)s_%(timestamp)s") % {
-            "instance_name": queue.instance_name,
-            "volume_name": queue.volume_name,
+            "instance_name": task.instance_name,
+            "volume_name": task.volume_name,
             "timestamp": timestamp,
         }
 
         # Make sure we don't exceed max size of backup_name
         backup_name = backup_name[:255]
-        if queue.backup_id == "NULL":
+        if task.backup_id == "NULL":
             try:
                 # NOTE(Alex): no need to wait because we have a cycle time out
                 if project_id not in self.project_list:
                     LOG.warn(
                         _("Project ID %s is not existing in project list" % project_id)
                     )
-                    self.process_non_existing_backup(queue)
+                    self.process_non_existing_backup(task)
                     return
                 self.openstacksdk.set_project(self.project_list[project_id])
                 LOG.info(
                     _(
                         ("Backup (name: %s) for volume %s creating in project %s")
-                        % (backup_name, queue.volume_id, project_id)
+                        % (backup_name, task.volume_id, project_id)
                     )
                 )
                 volume_backup = self.openstacksdk.create_backup(
-                    volume_id=queue.volume_id,
+                    volume_id=task.volume_id,
                     project_id=project_id,
                     name=backup_name,
+                    incremental=task.incremental
                 )
-                queue.backup_id = volume_backup.id
-                queue.backup_status = constants.BACKUP_WIP
-                queue.save()
+                task.backup_id = volume_backup.id
             except OpenstackSDKException as error:
                 reason = _(
                     "Backup (name: %s) creation for the volume %s failled. %s"
-                    % (backup_name, queue.volume_id, str(error))
+                    % (backup_name, task.volume_id, str(error))
                 )
                 LOG.info(reason)
-                self.result.add_failed_backup(project_id, queue.volume_id, reason)
+                self.result.add_failed_backup(project_id, task.volume_id, reason)
                 parsed = parse.parse("Error in creating volume backup {id}", str(error))
                 if parsed is not None:
-                    queue.backup_id = parsed["id"]
-                queue.backup_status = constants.BACKUP_WIP
-                queue.save()
+                    task.backup_id = parsed["id"]
             # Added extra exception as OpenstackSDKException does not handle the keystone unauthourized issue.
             except Exception as error:
                 reason = _(
                     "Backup (name: %s) creation for the volume %s failled. %s"
-                    % (backup_name, queue.volume_id, str(error))
+                    % (backup_name, task.volume_id, str(error))
                 )
                 LOG.error(reason)
-                self.result.add_failed_backup(project_id, queue.volume_id, reason)
+                self.result.add_failed_backup(project_id, task.volume_id, reason)
                 parsed = parse.parse("Error in creating volume backup {id}", str(error))
                 if parsed is not None:
-                    queue.backup_id = parsed["id"]
-                queue.backup_status = constants.BACKUP_WIP
-                queue.save()
+                    task.backup_id = parsed["id"]
+            # TODO(oleks): Exception handling for inc backup failure because of missing full backup
+            task.backup_status = constants.BACKUP_WIP
+            task.save()
         else:
             # Backup planned task cannot have backup_id in the same cycle.
             # Remove this task from the task list
-            queue.delete_queue()
+            task.delete_queue()
 
     # backup gen was not created
     def process_pre_failed_backup(self, task):
@@ -411,7 +431,7 @@ class Backup(object):
                 backup_completed=1,
             )
         )
-        self.result.add_success_backup(task.project_id, task.volume_id, task.backup_id)
+        self.result.add_success_backup(task.project_id, task.volume_id, task.backup_id, task.incremental)
         # 2. remove from the task list
         task.delete_queue()
         # 3. TODO(Alex): notify via email
