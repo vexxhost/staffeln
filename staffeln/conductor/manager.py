@@ -6,6 +6,7 @@ import staffeln.conf
 from futurist import periodics
 from oslo_log import log
 from staffeln.common import constants, context
+from staffeln.common import node_manage
 from staffeln.common import time as xtime
 from staffeln.conductor import backup
 from staffeln.i18n import _
@@ -23,7 +24,8 @@ class BackupManager(cotyledon.Service):
         self.conf = conf
         self.ctx = context.make_context()
         self.controller = backup.Backup()
-        LOG.info("%s init" % self.name)
+        self.puller = node_manage.Puller(self.ctx)
+        LOG.info("%s init (node_id: %s)" % (self.name, self.puller.node_id))
 
     def run(self):
         LOG.info("%s run" % self.name)
@@ -120,7 +122,10 @@ class BackupManager(cotyledon.Service):
 
         @periodics.periodic(spacing=backup_service_period, run_immediately=True)
         def backup_tasks():
-            self._update_task_queue()
+            #TODO should switch to using `with`
+            if self.puller.fetch_puller_role():
+                self._update_task_queue()
+                self.puller.renew_update_time()
             self._process_todo_tasks()
             self._process_wip_tasks()
             self._report_backup_result()
