@@ -68,6 +68,7 @@ class Queue_data(Base):
     instance_id = Column(String(100))
     volume_name = Column(String(100))
     instance_name = Column(String(100))
+    reason = Column(String(255), nullable=True)
 
 
 class Puller(Base):

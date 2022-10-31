@@ -8,8 +8,8 @@ from oslo_log import log
 from tooz import coordination
 
 from staffeln.common import constants, context
-from staffeln.common import node_manage
 from staffeln.common import lock
+from staffeln.common import node_manage
 from staffeln.common import time as xtime
 from staffeln.conductor import backup
 from staffeln.i18n import _
@@ -129,6 +129,7 @@ class BackupManager(cotyledon.Service):
 
     def _report_backup_result(self):
         self.controller.publish_backup_result()
+        self.controller.purge_backups()
 
     def backup_engine(self, backup_service_period):
         LOG.info("backing... %s" % str(time.time()))
@@ -137,12 +138,14 @@ class BackupManager(cotyledon.Service):
         @periodics.periodic(spacing=backup_service_period, run_immediately=True)
         def backup_tasks():
             with self.lock_mgt:
-                if self.puller.fetch_puller_role():
+                is_puller = self.puller.fetch_puller_role()
+                if is_puller:
                     self._update_task_queue()
                     self.puller.renew_update_time()
                 self._process_todo_tasks()
                 self._process_wip_tasks()
-                self._report_backup_result()
+                if is_puller:
+                    self._report_backup_result()
 
         periodic_callables = [
             (backup_tasks, (), {}),
