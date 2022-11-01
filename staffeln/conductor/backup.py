@@ -337,7 +337,7 @@ class Backup(object):
 
     def _volume_queue(self, task):
         """
-        Commits one backup task to tasbk queue db table
+        Commits one backup task to queue table
 
         :param task: One backup task
         :type: QueueMapping

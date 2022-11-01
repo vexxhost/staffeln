@@ -24,7 +24,6 @@ class BackupManager(cotyledon.Service):
         self.conf = conf
         self.ctx = context.make_context()
         self.controller = backup.Backup()
-        self.inc_count = 0
         LOG.info("%s init" % self.name)
 
     def run(self):
