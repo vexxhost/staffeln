@@ -95,24 +95,6 @@ class BackupManager(cotyledon.Service):
             return True
         return False
 
-    def _is_incremental(self):
-        """
-        Determine backup mode, whether full or incremental backup
-
-        :return: If backup will be incremental or not
-        :rtype: bool
-        """
-
-        LOG.debug(_("Inc count is %s" % self.inc_count))
-        if self.inc_count == CONF.conductor.full_backup_depth:
-            LOG.info(_("Full backup!"))
-            self.inc_count = 0
-            return False
-        else:
-            LOG.info(_("Incremental backup!"))
-            self.inc_count += 1
-            return True
-
     # Create backup generators
     def _process_todo_tasks(self):
         LOG.info(_("Creating new backup generators..."))
@@ -129,13 +111,13 @@ class BackupManager(cotyledon.Service):
         self.controller.refresh_openstacksdk()
         self.controller.refresh_backup_result()
         current_tasks = self.controller.get_queues()
-        self.controller.create_queue(current_tasks, incremental=self._is_incremental())
+        self.controller.create_queue(current_tasks)
 
     def _report_backup_result(self):
         self.controller.publish_backup_result()
 
     def backup_engine(self, backup_service_period):
-        LOG.info("backing... %s" % str(time.time()))
+        LOG.info("Backup manager started %s" % str(time.time()))
         LOG.info("%s periodics" % self.name)
 
         @periodics.periodic(spacing=backup_service_period, run_immediately=True)

@@ -21,7 +21,7 @@ class Queue(
         "backup_status": sfeild.IntegerField(),
         "volume_name": sfeild.StringField(),
         "instance_name": sfeild.StringField(),
-        "incremental": sfeild.BooleanField(default=False),
+        "incremental": sfeild.BooleanField(),
     }
 
     @base.remotable_classmethod
@@ -50,7 +50,7 @@ class Queue(
         """Create a :class:`Backup_data` record in the DB"""
         values = self.obj_get_changes()
         db_queue = self.dbapi.create_queue(values)
-        self._from_db_object(self, db_queue)
+        return self._from_db_object(self, db_queue)
 
     @base.remotable
     def save(self):

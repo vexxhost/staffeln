@@ -4,7 +4,7 @@ SQLAlchemy models for staffeln service
 import urllib.parse as urlparse
 
 from oslo_db.sqlalchemy import models
-from sqlalchemy import Column, Integer, String, UniqueConstraint
+from sqlalchemy import Boolean, Column, Integer, String, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from staffeln import conf
 
@@ -29,7 +29,6 @@ class StaffelnBase(models.TimestampMixin, models.ModelBase):
 
     def save(self, session=None):
         import staffeln.db.sqlalchemy.api as db_api
-
         if session is None:
             session = db_api.get_session()
 
@@ -53,6 +52,7 @@ class Backup_data(Base):
     volume_id = Column(String(100))
     instance_id = Column(String(100))
     backup_completed = Column(Integer())
+    incremental = Column(Boolean, default=False)
 
 
 class Queue_data(Base):
@@ -68,3 +68,4 @@ class Queue_data(Base):
     instance_id = Column(String(100))
     volume_name = Column(String(100))
     instance_name = Column(String(100))
+    incremental = Column(Boolean, default=False)

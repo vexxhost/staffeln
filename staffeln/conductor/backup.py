@@ -17,7 +17,14 @@ LOG = log.getLogger(__name__)
 
 BackupMapping = collections.namedtuple(
     "BackupMapping",
-    ["volume_id", "backup_id", "project_id", "instance_id", "backup_completed"],
+    [
+        "volume_id",
+        "backup_id",
+        "project_id",
+        "instance_id",
+        "backup_completed",
+        "incremental",
+    ],
 )
 
 QueueMapping = collections.namedtuple(
@@ -30,6 +37,7 @@ QueueMapping = collections.namedtuple(
         "backup_status",
         "instance_name",
         "volume_name",
+        "incremental",
     ],
 )
 
@@ -67,9 +75,9 @@ class Backup(object):
     def refresh_backup_result(self):
         self.result.initialize()
 
-    def get_backups(self, filters=None):
+    def get_backups(self, filters=None, **kwargs):
         return objects.Volume.list(  # pylint: disable=E1120
-            context=self.ctx, filters=filters
+            context=self.ctx, filters=filters, **kwargs
         )
 
     def get_backup_quota(self, project_id):
@@ -82,15 +90,12 @@ class Backup(object):
         )
         return queues
 
-    def create_queue(self, old_tasks, incremental):
+    def create_queue(self, old_tasks):
         """
         Create the queue of all the volumes for backup
 
         :param old_tasks: Task list not completed in the previous cycle
         :type: List<Class objects.Queue>
-
-        :param incremental: If backup is incremental or full
-        :type: bool
         """
         # 1. get the old task list, not finished in the last cycle
         #  and keep till now
@@ -102,7 +107,7 @@ class Backup(object):
         queue_list = self.check_instance_volumes()
         for queue in queue_list:
             if queue.volume_id not in old_task_volume_list:
-                self._volume_queue(queue, incremental)
+                self._volume_queue(queue)
 
     # Backup the volumes attached to which has a specific metadata
     def filter_by_server_metadata(self, metadata):
@@ -241,6 +246,42 @@ class Backup(object):
         for project in projects:
             self.project_list[project.id] = project
 
+    def _is_incremental(self, volume_id):
+        """
+        Decide the backup method based on the backup history
+
+        It queries to select the last N backups from backup table and
+        decide backup type as full if there is no full backup.
+        N equals to CONF.conductor.full_backup_depth.
+
+        :param volume_id: Target volume id
+        :type: uuid string
+
+        :return: if backup method is incremental or not
+        :return type: bool
+        """
+        # select *from backup order by Id DESC LIMIT 2;
+        try:
+            backups = self.get_backups(
+                filters={"volume_id__eq": volume_id},
+                limit=CONF.conductor.full_backup_depth,
+                sort_key="id",
+                sort_dir="desc",
+            )
+            for bk in backups:
+                if bk.incremental:
+                    continue
+                else:
+                    return True
+        except Exception as e:
+            LOG.debug(
+                _(
+                    "Failed to get backup history to decide backup method. Reason: %s"
+                    % str(e)
+                )
+            )
+        return False
+
     def check_instance_volumes(self):
         """
         Retrieves volume list to backup
@@ -274,7 +315,7 @@ class Backup(object):
                 for volume in server.attached_volumes:
                     if not self.filter_by_volume_status(volume["id"], project.id):
                         continue
-                    if "name" not in volume:
+                    if "name" not in volume or not volume["name"]:
                         volume_name = volume["id"]
                     else:
                         volume_name = volume["name"][:100]
@@ -289,21 +330,18 @@ class Backup(object):
                             # volume_name for forming backup_name
                             instance_name=server.name[:100],
                             volume_name=volume_name,
+                            incremental=self._is_incremental(volume["id"]),
                         )
                     )
         return queues_map
 
-    def _volume_queue(self, task, incremental):
+    def _volume_queue(self, task):
         """
         Commits one backup task to tasbk queue db table
 
         :param task: One backup task
         :type: QueueMapping
-
-        :incremental: If backup task is incremental or full
-        :type: bool
         """
-
         volume_queue = objects.Queue(self.ctx)
         volume_queue.backup_id = task.backup_id
         volume_queue.volume_id = task.volume_id
@@ -314,8 +352,8 @@ class Backup(object):
         volume_queue.volume_name = task.volume_name
         # NOTE(Oleks): Backup mode is inherited from backup service.
         # Need to keep and navigate backup mode history, to decide a different mode per volume
-        volume_queue.incremental = incremental
-        volume_queue.create()
+        volume_queue.incremental = task.incremental
+        return volume_queue.create()
 
     def create_volume_backup(self, task):
         """Initiate the backup of the volume
@@ -345,17 +383,18 @@ class Backup(object):
                     self.process_non_existing_backup(task)
                     return
                 self.openstacksdk.set_project(self.project_list[project_id])
+                backup_method = "Incremental" if task.incremental else "Full"
                 LOG.info(
                     _(
-                        ("Backup (name: %s) for volume %s creating in project %s")
-                        % (backup_name, task.volume_id, project_id)
+                        ("%s Backup (name: %s) for volume %s creating in project %s")
+                        % (backup_method, backup_name, task.volume_id, project_id)
                     )
                 )
                 volume_backup = self.openstacksdk.create_backup(
                     volume_id=task.volume_id,
                     project_id=project_id,
                     name=backup_name,
-                    incremental=task.incremental
+                    incremental=task.incremental,
                 )
                 task.backup_id = volume_backup.id
             except OpenstackSDKException as error:
@@ -429,9 +468,12 @@ class Backup(object):
                 backup_id=task.backup_id,
                 instance_id=task.instance_id,
                 backup_completed=1,
+                incremental=task.incremental,
             )
         )
-        self.result.add_success_backup(task.project_id, task.volume_id, task.backup_id, task.incremental)
+        self.result.add_success_backup(
+            task.project_id, task.volume_id, task.backup_id, task.incremental
+        )
         # 2. remove from the task list
         task.delete_queue()
         # 3. TODO(Alex): notify via email
@@ -485,4 +527,5 @@ class Backup(object):
         volume_backup.instance_id = task.instance_id
         volume_backup.project_id = task.project_id
         volume_backup.backup_completed = task.backup_completed
+        volume_backup.incremental = task.incremental
         volume_backup.create()
