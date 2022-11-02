@@ -20,7 +20,6 @@ class Queue(
         "backup_status": sfeild.IntegerField(),
         "volume_name": sfeild.StringField(),
         "instance_name": sfeild.StringField(),
-        "reason": sfeild.StringField(),
     }
 
     @base.remotable_classmethod
