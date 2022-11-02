@@ -1,4 +1,3 @@
-from email.policy import default
 from staffeln.db import api as db_api
 from staffeln.objects import base
 from staffeln.objects import fields as sfeild

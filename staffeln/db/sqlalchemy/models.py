@@ -29,6 +29,7 @@ class StaffelnBase(models.TimestampMixin, models.ModelBase):
 
     def save(self, session=None):
         import staffeln.db.sqlalchemy.api as db_api
+
         if session is None:
             session = db_api.get_session()
 
