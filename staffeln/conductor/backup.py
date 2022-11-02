@@ -135,11 +135,27 @@ class Backup(object):
                     % (volume_id, volume["status"])
                 )
                 LOG.info(reason)
-                self.result.add_failed_backup(project_id, volume_id, reason)
+                return reason
             return res
 
         except OpenstackResourceNotFound:
             return False
+
+    def purge_backups(self):
+        #TODO make all this in a single DB command
+        success_tasks = self.get_queues(
+            filters={"backup_status": constants.BACKUP_COMPLETED}
+        )
+        failed_tasks = self.get_queues(
+            filters={"backup_status": constants.BACKUP_FAILED}
+        )
+        for queue in success_tasks:
+            LOG.info("Start purge completed tasks.")
+            queue.delete_queue()
+
+        for queue in failed_tasks:
+            LOG.info("Start purge failed tasks.")
+            queue.delete_queue()
 
     #  delete all backups forcily regardless of the status
     def hard_cancel_backup_task(self, task):
@@ -155,15 +171,16 @@ class Backup(object):
             if backup is None:
                 return task.delete_queue()
             self.openstacksdk.delete_backup(task.backup_id, force=True)
-            task.delete_queue()
-            self.result.add_failed_backup(task.project_id, task.volume_id, reason)
+            task.reason = reason
+            task.backup_status = constants.BACKUP_FAILED
+            task.save()
 
         except OpenstackSDKException as e:
             reason = _("Backup %s deletion failed." "%s" % (task.backup_id, str(e)))
             LOG.info(reason)
-            # remove from the queue table
-            task.delete_queue()
-            self.result.add_failed_backup(task.project_id, task.volume_id, reason)
+            task.reason = reason
+            task.backup_status = constants.BACKUP_FAILED
+            task.save()
 
     #  delete only available backups: reserved
     def soft_remove_backup_task(self, backup_object):
@@ -313,24 +330,34 @@ class Backup(object):
                     empty_project = False
                     self.result.add_project(project.id, project.name)
                 for volume in server.attached_volumes:
-                    if not self.filter_by_volume_status(volume["id"], project.id):
+                    filter_result = self.filter_by_volume_status(
+                        volume["id"], project.id)
+
+                    if not filter_result:
                         continue
                     if "name" not in volume or not volume["name"]:
                         volume_name = volume["id"]
                     else:
                         volume_name = volume["name"][:100]
+                    if filter_result is True:
+                        backup_status = constants.BACKUP_PLANNED
+                        reason = None
+                    else:
+                        backup_status = constants.BACKUP_FAILED
+                        reason = filter_result
                     queues_map.append(
                         QueueMapping(
                             project_id=project.id,
                             volume_id=volume["id"],
                             backup_id="NULL",
                             instance_id=server.id,
-                            backup_status=constants.BACKUP_PLANNED,
+                            backup_status=backup_status,
                             # Only keep the last 100 chars of instance_name and
                             # volume_name for forming backup_name
                             instance_name=server.name[:100],
                             volume_name=volume_name,
                             incremental=self._is_incremental(volume["id"]),
+                            reason=reason,
                         )
                     )
         return queues_map
@@ -403,10 +430,9 @@ class Backup(object):
                     % (backup_name, task.volume_id, str(error))
                 )
                 LOG.info(reason)
-                self.result.add_failed_backup(project_id, task.volume_id, reason)
-                parsed = parse.parse("Error in creating volume backup {id}", str(error))
-                if parsed is not None:
-                    task.backup_id = parsed["id"]
+                task.reason = reason
+                task.backup_status = constants.BACKUP_FAILED
+                task.save()
             # Added extra exception as OpenstackSDKException does not handle the keystone unauthourized issue.
             except Exception as error:
                 reason = _(
@@ -414,13 +440,9 @@ class Backup(object):
                     % (backup_name, task.volume_id, str(error))
                 )
                 LOG.error(reason)
-                self.result.add_failed_backup(project_id, task.volume_id, reason)
-                parsed = parse.parse("Error in creating volume backup {id}", str(error))
-                if parsed is not None:
-                    task.backup_id = parsed["id"]
-            # TODO(oleks): Exception handling for inc backup failure because of missing full backup
-            task.backup_status = constants.BACKUP_WIP
-            task.save()
+                task.reason = reason
+                task.backup_status = constants.BACKUP_FAILED
+                task.save()
         else:
             # Backup planned task cannot have backup_id in the same cycle.
             # Remove this task from the task list
@@ -432,15 +454,14 @@ class Backup(object):
         reason = _(
             "The backup creation for the volume %s was prefailed." % task.volume_id
         )
-        self.result.add_failed_backup(task.project_id, task.volume_id, reason)
         LOG.warn(reason)
-        # 2. remove failed task from the task queue
-        task.delete_queue()
+        task.reason = reason
+        task.backup_status = constants.BACKUP_FAILED
+        task.save()
 
     def process_failed_backup(self, task):
         # 1. notify via email
         reason = _("The status of backup for the volume %s is error." % task.volume_id)
-        self.result.add_failed_backup(task.project_id, task.volume_id, reason)
         LOG.warn(reason)
         # 2. delete backup generator
         try:
@@ -452,8 +473,9 @@ class Backup(object):
                     % (task.backup_id, str(ex))
                 )
             )
-        # 3. remove failed task from the task queue
-        task.delete_queue()
+        task.reason = reason
+        task.backup_status = constants.BACKUP_FAILED
+        task.save()
 
     def process_non_existing_backup(self, task):
         task.delete_queue()
@@ -471,12 +493,8 @@ class Backup(object):
                 incremental=task.incremental,
             )
         )
-        self.result.add_success_backup(
-            task.project_id, task.volume_id, task.backup_id, task.incremental
-        )
-        # 2. remove from the task list
-        task.delete_queue()
-        # 3. TODO(Alex): notify via email
+        task.backup_status = constants.BACKUP_COMPLETED
+        task.save()
 
     def process_using_backup(self, task):
         # treat same as the available backup for now

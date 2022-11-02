@@ -70,3 +70,4 @@ class Queue_data(Base):
     volume_name = Column(String(100))
     instance_name = Column(String(100))
     incremental = Column(Boolean, default=False)
+    reason = Column(String(255), nullable=True)

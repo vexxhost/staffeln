@@ -5,7 +5,10 @@ import cotyledon
 import staffeln.conf
 from futurist import periodics
 from oslo_log import log
+from tooz import coordination
+
 from staffeln.common import constants, context
+from staffeln.common import lock
 from staffeln.common import time as xtime
 from staffeln.conductor import backup
 from staffeln.i18n import _
@@ -22,6 +25,7 @@ class BackupManager(cotyledon.Service):
         self._shutdown = threading.Event()
         self.conf = conf
         self.ctx = context.make_context()
+        self.lock_mgt = lock.LockManager()
         self.controller = backup.Backup()
         LOG.info("%s init" % self.name)
 
@@ -53,7 +57,12 @@ class BackupManager(cotyledon.Service):
             if not self._backup_cycle_timeout():  # time in
                 LOG.info(_("cycle timein"))
                 for queue in queues_started:
-                    self.controller.check_volume_backup_status(queue)
+                    try:
+                        with self.lock_mgt.coordinator.get_lock(queue.volume_id):
+                            self.controller.check_volume_backup_status(queue)
+                    except coordination.LockAcquireFailed:
+                        LOG.debug("Failed to lock task for volume: "
+                                  "%s." % queue.volume_id)
             else:  # time out
                 LOG.info(_("cycle timeout"))
                 for queue in queues_started:
@@ -101,7 +110,12 @@ class BackupManager(cotyledon.Service):
         )
         if len(tasks_to_start) != 0:
             for task in tasks_to_start:
-                self.controller.create_volume_backup(task)
+                try:
+                    with self.lock_mgt.coordinator.get_lock(task.volume_id):
+                        self.controller.create_volume_backup(task)
+                except coordination.LockAcquireFailed:
+                    LOG.debug("Failed to lock task for volume: "
+                              "%s." % task.volume_id)
 
     # Refresh the task queue
     def _update_task_queue(self):
@@ -113,6 +127,7 @@ class BackupManager(cotyledon.Service):
 
     def _report_backup_result(self):
         self.controller.publish_backup_result()
+        self.controller.purge_backups()
 
     def backup_engine(self, backup_service_period):
         LOG.info("Backup manager started %s" % str(time.time()))
@@ -120,10 +135,18 @@ class BackupManager(cotyledon.Service):
 
         @periodics.periodic(spacing=backup_service_period, run_immediately=True)
         def backup_tasks():
-            self._update_task_queue()
-            self._process_todo_tasks()
-            self._process_wip_tasks()
-            self._report_backup_result()
+            with self.lock_mgt:
+                try:
+                    with self.lock_mgt.coordinator.get_lock(constants.PULLER):
+                        LOG.info("Running as puller role")
+                        self._update_task_queue()
+                        self._process_todo_tasks()
+                        self._process_wip_tasks()
+                        self._report_backup_result()
+                except coordination.LockAcquireFailed:
+                    LOG.info("Running as non-puller role")
+                    self._process_todo_tasks()
+                    self._process_wip_tasks()
 
         periodic_callables = [
             (backup_tasks, (), {}),
