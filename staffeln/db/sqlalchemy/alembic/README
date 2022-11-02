@@ -1,5 +1,5 @@
 Please see https://alembic.readthedocs.org/en/latest/index.html for general documentation
 
-Upgrade can be performed by:
+Upgrade can be performed by: 
 $ staffeln-dbmanage upgrade
 $ staffeln-dbmanage upgrade head
