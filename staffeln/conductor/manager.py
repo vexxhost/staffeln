@@ -96,12 +96,12 @@ class BackupManager(cotyledon.Service):
     # Create backup generators
     def _process_todo_tasks(self):
         LOG.info(_("Creating new backup generators..."))
-        queues_to_start = self.controller.get_queues(
+        tasks_to_start = self.controller.get_queues(
             filters={"backup_status": constants.BACKUP_PLANNED}
         )
-        if len(queues_to_start) != 0:
-            for queue in queues_to_start:
-                self.controller.create_volume_backup(queue)
+        if len(tasks_to_start) != 0:
+            for task in tasks_to_start:
+                self.controller.create_volume_backup(task)
 
     # Refresh the task queue
     def _update_task_queue(self):
@@ -115,7 +115,7 @@ class BackupManager(cotyledon.Service):
         self.controller.publish_backup_result()
 
     def backup_engine(self, backup_service_period):
-        LOG.info("backing... %s" % str(time.time()))
+        LOG.info("Backup manager started %s" % str(time.time()))
         LOG.info("%s periodics" % self.name)
 
         @periodics.periodic(spacing=backup_service_period, run_immediately=True)

@@ -18,15 +18,16 @@ class Volume(
         "project_id": sfeild.UUIDField(),
         "volume_id": sfeild.UUIDField(),
         "backup_completed": sfeild.IntegerField(),
+        "incremental": sfeild.BooleanField(),
     }
 
     @base.remotable_classmethod
-    def list(cls, context, filters=None):  # pylint: disable=E0213
+    def list(cls, context, filters=None, **kwargs):  # pylint: disable=E0213
         """Return a list of :class:`Backup` objects.
 
         :param filters: dict mapping the filter to a value.
         """
-        db_backups = cls.dbapi.get_backup_list(context, filters=filters)
+        db_backups = cls.dbapi.get_backup_list(context, filters=filters, **kwargs)
 
         return [cls._from_db_object(cls(context), obj) for obj in db_backups]
 

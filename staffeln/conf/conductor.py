@@ -39,6 +39,12 @@ backup_opts = [
         "backup_metadata_key",
         help=_("The key string of metadata the VM, which requres back up, has"),
     ),
+    cfg.IntOpt(
+        "full_backup_depth",
+        default=2,
+        min=1,
+        help=_("Number of incremental backups between full backups."),
+    ),
 ]
 
 rotation_opts = [
