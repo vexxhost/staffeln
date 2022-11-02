@@ -335,3 +335,26 @@ class Connection(object):
             return self._soft_delete(models.Backup_data, id)
         except:  # noqa: E722
             LOG.error("Backup Not found.")
+
+    def get_puller(self):
+        """Get puller"""
+        try:
+            return self._get(
+                context, model=models.Puller, fieldname="id", value=1
+            )
+        except:  # noqa: E722
+            LOG.debug("Puller not found.")
+            return None
+
+    def create_puller(self, values):
+        try:
+            puller = self._create(models.Puller, values)
+        except db_exc.DBDuplicateEntry:
+            LOG.error("Puller already exists.")
+        return puller
+
+    def update_puller(self, id, values):
+        try:
+            return self._update(models.Puller, id, values)
+        except:  # noqa: E722
+            LOG.error("Puller resource not found.")

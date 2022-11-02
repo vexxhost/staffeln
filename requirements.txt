@@ -11,8 +11,10 @@ oslo.db>=5.0.0
 oslo.config>=8.1.0
 oslo.log>=4.4.0 # Apache-2.0
 oslo_versionedobjects
+oslo.utils>=3.40.0 # Apache-2.0
 openstacksdk>0.28.0
 pymysql
 parse
+tooz>=2.7.1 # Apache-2.0
 # email
 # smtplib

@@ -68,3 +68,13 @@ class Queue_data(Base):
     instance_id = Column(String(100))
     volume_name = Column(String(100))
     instance_name = Column(String(100))
+    reason = Column(String(255), nullable=True)
+
+
+class Puller(Base):
+    """Represent OpenStack information Puller"""
+
+    __tablename__ = "puller"
+    __table_args__ = table_args()
+    id = Column(Integer, primary_key=True)
+    node_id = Column(String(100), nullable=True)
