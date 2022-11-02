@@ -1,6 +1,5 @@
 import threading
 import time
-from xml.etree.ElementInclude import include
 
 import cotyledon
 import staffeln.conf
