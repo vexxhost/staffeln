@@ -5,13 +5,11 @@ import cotyledon
 import staffeln.conf
 from futurist import periodics
 from oslo_log import log
-from tooz import coordination
-
-from staffeln.common import constants, context
-from staffeln.common import lock
+from staffeln.common import constants, context, lock
 from staffeln.common import time as xtime
 from staffeln.conductor import backup
 from staffeln.i18n import _
+from tooz import coordination
 
 LOG = log.getLogger(__name__)
 CONF = staffeln.conf.CONF
@@ -61,8 +59,9 @@ class BackupManager(cotyledon.Service):
                         with self.lock_mgt.coordinator.get_lock(queue.volume_id):
                             self.controller.check_volume_backup_status(queue)
                     except coordination.LockAcquireFailed:
-                        LOG.debug("Failed to lock task for volume: "
-                                  "%s." % queue.volume_id)
+                        LOG.debug(
+                            "Failed to lock task for volume: %s." % queue.volume_id
+                        )
             else:  # time out
                 LOG.info(_("cycle timeout"))
                 for queue in queues_started:
@@ -114,8 +113,7 @@ class BackupManager(cotyledon.Service):
                     with self.lock_mgt.coordinator.get_lock(task.volume_id):
                         self.controller.create_volume_backup(task)
                 except coordination.LockAcquireFailed:
-                    LOG.debug("Failed to lock task for volume: "
-                              "%s." % task.volume_id)
+                    LOG.debug("Failed to lock task for volume: %s." % task.volume_id)
 
     # Refresh the task queue
     def _update_task_queue(self):

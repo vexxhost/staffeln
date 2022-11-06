@@ -1,6 +1,6 @@
+import staffeln.conf
 from oslo_utils import uuidutils
 from tooz import coordination
-import staffeln.conf
 
 CONF = staffeln.conf.CONF
 
@@ -8,9 +8,7 @@ CONF = staffeln.conf.CONF
 class LockManager(object):
     def __init__(self, node_id=None):
         self.db_url = CONF.database.connection
-        self.node_id = (
-            uuidutils.generate_uuid() if node_id is None else node_id
-        )
+        self.node_id = uuidutils.generate_uuid() if node_id is None else node_id
         # get_coordinator(backend_url, member_id)
         self.coordinator = coordination.get_coordinator(self.db_url, node_id)
 

@@ -1,10 +1,8 @@
 # Email notification package
 # This should be upgraded by integrating with mail server to send batch
-from oslo_log import log
-
 import staffeln.conf
-from staffeln.common import constants
-from staffeln.common import email
+from oslo_log import log
+from staffeln.common import constants, email
 from staffeln.common import time as xtime
 from staffeln.conductor import backup
 from staffeln.i18n import _
@@ -89,8 +87,11 @@ class BackupResult(object):
                 success_volumes = "<br>".join(
                     [
                         "Volume ID: %s, Backup ID: %s, backup mode: %s"
-                        % (str(e.volume_id), str(e.backup_id),
-                           "Incremental" if e.incremental else "Full")
+                        % (
+                            str(e.volume_id),
+                            str(e.backup_id),
+                            "Incremental" if e.incremental else "Full",
+                        )
                         for e in project_success[project_id]
                     ]
                 )
@@ -99,8 +100,7 @@ class BackupResult(object):
             for project_id in project_failed:
                 failed_volumes = "<br>".join(
                     [
-                        "Volume ID: %s, Reason: %s"
-                        % (str(e.volume_id), str(e.reason))
+                        "Volume ID: %s, Reason: %s" % (str(e.volume_id), str(e.reason))
                         for e in project_failed[project_id]
                     ]
                 )

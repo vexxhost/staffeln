@@ -1,7 +1,6 @@
 import collections
 from datetime import datetime
 
-import parse
 import staffeln.conf
 from openstack.exceptions import HttpException as OpenstackHttpException
 from openstack.exceptions import ResourceNotFound as OpenstackResourceNotFound
@@ -142,7 +141,7 @@ class Backup(object):
             return False
 
     def purge_backups(self):
-        #TODO make all this in a single DB command
+        # TODO make all this in a single DB command
         success_tasks = self.get_queues(
             filters={"backup_status": constants.BACKUP_COMPLETED}
         )
@@ -331,7 +330,8 @@ class Backup(object):
                     self.result.add_project(project.id, project.name)
                 for volume in server.attached_volumes:
                     filter_result = self.filter_by_volume_status(
-                        volume["id"], project.id)
+                        volume["id"], project.id
+                    )
 
                     if not filter_result:
                         continue
