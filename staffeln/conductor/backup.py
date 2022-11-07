@@ -37,6 +37,7 @@ QueueMapping = collections.namedtuple(
         "instance_name",
         "volume_name",
         "incremental",
+        "reason",
     ],
 )
 

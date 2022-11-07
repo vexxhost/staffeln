@@ -83,7 +83,7 @@ class BackupResult(object):
                 "<h4>${FAILED_VOLUME_LIST}</h4><br>"
             )
 
-            for project_id in project_success:
+            if project_id in project_success:
                 success_volumes = "<br>".join(
                     [
                         "Volume ID: %s, Backup ID: %s, backup mode: %s"
@@ -97,7 +97,7 @@ class BackupResult(object):
                 )
             else:
                 success_volumes = "<br>"
-            for project_id in project_failed:
+            if project_id in project_failed:
                 failed_volumes = "<br>".join(
                     [
                         "Volume ID: %s, Reason: %s" % (str(e.volume_id), str(e.reason))
