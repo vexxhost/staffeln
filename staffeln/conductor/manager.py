@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 import threading
 import time
 
@@ -164,6 +165,7 @@ class RotationManager(cotyledon.Service):
         super(RotationManager, self).__init__(worker_id)
         self._shutdown = threading.Event()
         self.conf = conf
+        self.lock_mgt = lock.LockManager()
         self.controller = backup.Backup()
         LOG.info("%s init" % self.name)
 
@@ -178,18 +180,12 @@ class RotationManager(cotyledon.Service):
     def reload(self):
         LOG.info("%s reload" % self.name)
 
-    def get_backup_list(self):
-        threshold_strtime = self.get_threshold_strtime()
-        if threshold_strtime is None:
-            return False
-        self.backup_list = self.controller.get_backups(
-            filters={"created_at__lt": threshold_strtime}
-        )
-        return True
+    def get_backup_list(self, filters=None):
+        return self.controller.get_backups(filters=filters)
 
-    def remove_backups(self):
-        print(self.backup_list)
-        for retention_backup in self.backup_list:
+    def remove_backups(self, retention_backups):
+        LOG.info(_("Backups to be removed: %s" % retention_backups))
+        for retention_backup in retention_backups:
             self.controller.hard_remove_volume_backup(retention_backup)
 
     def rotation_engine(self, retention_service_period):
@@ -197,14 +193,46 @@ class RotationManager(cotyledon.Service):
 
         @periodics.periodic(spacing=retention_service_period, run_immediately=True)
         def rotation_tasks():
-            self.controller.refresh_openstacksdk()
-            # 1. get the list of backups to remove based on the retention time
-            if not self.get_backup_list():
-                return
-            # 2. get project list
-            self.controller.update_project_list()
-            # 3. remove the backups
-            self.remove_backups()
+            try:
+                # TODO(rlin): change to use decorator for this
+                # Make sure only one retention at a time
+                with self.lock_mgt.coordinator.get_lock("retention"):
+                    self.controller.refresh_openstacksdk()
+                    # get the threshold time
+                    threshold_strtime = self.get_time_from_str(CONF.conductor.retention_time)
+                    instance_retention_map = self.controller.collect_instance_retention_map()
+                    retention_backups = []
+                    # 1. get init list of backups to remove based on the retention time
+                    if not instance_retention_map:
+                        retention_backups = self.get_backup_list(
+                            filters={
+                                "created_at__lt": threshold_strtime.strftime(
+                                    xtime.DEFAULT_TIME_FORMAT
+                                )
+                            }
+                        )
+                    else:
+                        full_backup_list = self.get_backup_list()
+                        for backup in full_backup_list:
+                            if backup.instance_id in instance_retention_map:
+                                retention_time = self.get_time_from_str(
+                                    instance_retention_map[backup.instance_id]
+                                )
+                                backup_age = datetime.now(timezone.utc) - backup.created_at
+                                if backup_age > retention_time:
+                                    # Backup remain longer than retention, need to purge it.
+                                    retention_backups.append(backup)
+                            elif threshold_strtime < backup.created_at:
+                                retention_backups.append(backup)
+
+                    if not retention_backups:
+                        return
+                    # 2. get project list
+                    self.controller.update_project_list()
+                    # 3. remove the backups
+                    self.remove_backups(retention_backups)
+            except coordination.LockAcquireFailed:
+                LOG.debug("Failed to lock for retention")
 
         periodic_callables = [
             (rotation_tasks, (), {}),
@@ -216,9 +244,9 @@ class RotationManager(cotyledon.Service):
         periodic_thread.daemon = True
         periodic_thread.start()
 
-    # get the threshold time str
-    def get_threshold_strtime(self):
-        time_delta_dict = xtime.parse_timedelta_string(CONF.conductor.retention_time)
+    # get time
+    def get_time_from_str(self, time_str, to_str=False):
+        time_delta_dict = xtime.parse_timedelta_string(time_str)
         if time_delta_dict is None:
             LOG.info(
                 _(
@@ -237,4 +265,4 @@ class RotationManager(cotyledon.Service):
             minutes=time_delta_dict["minutes"],
             seconds=time_delta_dict["seconds"],
         )
-        return res.strftime(xtime.DEFAULT_TIME_FORMAT)
+        return res.strftime(xtime.DEFAULT_TIME_FORMAT) if to_str else res

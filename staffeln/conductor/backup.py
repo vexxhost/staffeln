@@ -23,6 +23,7 @@ BackupMapping = collections.namedtuple(
         "instance_id",
         "backup_completed",
         "incremental",
+        "created_at",
     ],
 )
 
@@ -362,6 +363,27 @@ class Backup(object):
                         )
                     )
         return queues_map
+
+    def collect_instance_retention_map(self):
+        """Retrieves instance backup retention map"""
+
+        retention_map = {}
+        # No customized retention.
+        if not CONF.conductor.retention_metadata_key:
+            return retention_map
+        self.refresh_openstacksdk()
+
+        try:
+            servers = self.openstacksdk.get_servers(all_projects=True)
+        except OpenstackHttpException as ex:
+            LOG.warn(_("Failed to list servers for all projects."))
+
+        for server in servers:
+            if CONF.conductor.retention_metadata_key in server.metadata:
+                retention_map[server.id] = server.metadata[
+                    CONF.conductor.retention_metadata_key
+                ].lower()
+        return retention_map
 
     def _volume_queue(self, task):
         """

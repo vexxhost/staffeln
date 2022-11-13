@@ -39,6 +39,14 @@ backup_opts = [
         "backup_metadata_key",
         help=_("The key string of metadata the VM, which requres back up, has"),
     ),
+    cfg.StrOpt(
+        "retention_metadata_key",
+        regex=(
+            r"((?P<years>\d+?)y)?((?P<months>\d+?)mon)?((?P<weeks>\d+?)w)?"
+            r"((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)min)?((?P<seconds>\d+?)s)?"
+        ),
+        help=_("The key string of metadata the VM, which use as backup retention period."),
+    ),
     cfg.IntOpt(
         "full_backup_depth",
         default=2,
