@@ -23,6 +23,12 @@ backup_opts = [
         min=10,
         help=_("The time of bakup period, the unit is one minute."),
     ),
+    cfg.IntOpt(
+        "report_period",
+        default=1440,
+        min=10,
+        help=_("The time of report period, the unit is one minute."),
+    ),
     cfg.StrOpt(
         "backup_cycle_timout",
         regex=(

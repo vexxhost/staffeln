@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import threading
 import time
 
@@ -125,8 +125,19 @@ class BackupManager(cotyledon.Service):
         self.controller.create_queue(current_tasks)
 
     def _report_backup_result(self):
-        self.controller.publish_backup_result()
-        self.controller.purge_backups()
+        report_period_mins = CONF.conductor.report_period
+        threshold_strtime = datetime.now(timezone.utc) - timedelta(minutes=report_period_mins)
+        filters={
+            "created_at__lt": threshold_strtime,
+            "backup_status": constants.BACKUP_COMPLETED
+        }
+        success_tasks = self.controller.get_queues(filters=filters)
+        filters['backup_status'] = constants.BACKUP_FAILED
+        failed_tasks = self.controller.get_queues(filters=filters)
+        if success_tasks or failed_tasks:
+            self.controller.publish_backup_result()
+            # Purge backup queue tasks
+            self.controller.purge_backups()
 
     def backup_engine(self, backup_service_period):
         LOG.info("Backup manager started %s" % str(time.time()))

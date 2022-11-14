@@ -52,22 +52,22 @@ class BackupResult(object):
         backup_mgt = backup.Backup()
         project_success = {}
         project_failed = {}
-        success_queues = backup_mgt.get_queues(
+        success_tasks = backup_mgt.get_queues(
             filters={"backup_status": constants.BACKUP_COMPLETED}
         )
-        for queue in success_queues:
-            if queue.project_id in project_success:
-                project_success[queue.project_id].append(queue)
+        for task in success_tasks:
+            if task.project_id in project_success:
+                project_success[task.project_id].append(task)
             else:
-                project_success[queue.project_id] = [queue]
-        failed_queues = backup_mgt.get_queues(
+                project_success[task.project_id] = [task]
+        failed_tasks = backup_mgt.get_queues(
             filters={"backup_status": constants.BACKUP_FAILED}
         )
-        for queue in failed_queues:
-            if queue.project_id in project_failed:
-                project_failed[queue.project_id].append(queue)
+        for task in failed_tasks:
+            if task.project_id in project_failed:
+                project_failed[task.project_id].append(task)
             else:
-                project_failed[queue.project_id] = [queue]
+                project_failed[task.project_id] = [task]
 
         html = ""
         for project_id, project_name in self.project_list:
