@@ -375,7 +375,7 @@ class Backup(object):
 
         try:
             servers = self.openstacksdk.get_servers(all_projects=True)
-        except OpenstackHttpException as ex:
+        except OpenstackHttpException:
             LOG.warn(_("Failed to list servers for all projects."))
 
         for server in servers:

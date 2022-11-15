@@ -1,6 +1,6 @@
-from datetime import datetime, timezone, timedelta
 import threading
 import time
+from datetime import datetime, timedelta
 
 import cotyledon
 import staffeln.conf
@@ -8,7 +8,7 @@ from futurist import periodics
 from oslo_log import log
 from staffeln.common import constants, context, lock
 from staffeln.common import time as xtime
-from staffeln.conductor import backup
+from staffeln.conductor import backup as backup_controller
 from staffeln.i18n import _
 from tooz import coordination
 
@@ -25,7 +25,7 @@ class BackupManager(cotyledon.Service):
         self.conf = conf
         self.ctx = context.make_context()
         self.lock_mgt = lock.LockManager()
-        self.controller = backup.Backup()
+        self.controller = backup_controller.Backup()
         LOG.info("%s init" % self.name)
 
     def run(self):
@@ -126,13 +126,13 @@ class BackupManager(cotyledon.Service):
 
     def _report_backup_result(self):
         report_period_mins = CONF.conductor.report_period
-        threshold_strtime = datetime.now(timezone.utc) - timedelta(minutes=report_period_mins)
-        filters={
+        threshold_strtime = datetime.now() - timedelta(minutes=report_period_mins)
+        filters = {
             "created_at__lt": threshold_strtime,
-            "backup_status": constants.BACKUP_COMPLETED
+            "backup_status": constants.BACKUP_COMPLETED,
         }
         success_tasks = self.controller.get_queues(filters=filters)
-        filters['backup_status'] = constants.BACKUP_FAILED
+        filters["backup_status"] = constants.BACKUP_FAILED
         failed_tasks = self.controller.get_queues(filters=filters)
         if success_tasks or failed_tasks:
             self.controller.publish_backup_result()
@@ -177,7 +177,7 @@ class RotationManager(cotyledon.Service):
         self._shutdown = threading.Event()
         self.conf = conf
         self.lock_mgt = lock.LockManager()
-        self.controller = backup.Backup()
+        self.controller = backup_controller.Backup()
         LOG.info("%s init" % self.name)
 
     def run(self):
@@ -202,10 +202,11 @@ class RotationManager(cotyledon.Service):
     def is_retention(self, backup):
         # see if need to be delete.
         if backup.instance_id in self.instance_retention_map:
-            retention_time = self.get_time_from_str(
+            now = datetime.now()
+            retention_time = now - self.get_time_from_str(
                 self.instance_retention_map[backup.instance_id]
             )
-            backup_age = datetime.now(timezone.utc) - backup.created_at
+            backup_age = now - backup.created_at
             if backup_age > retention_time:
                 # Backup remain longer than retention, need to purge it.
                 return True
@@ -224,11 +225,18 @@ class RotationManager(cotyledon.Service):
                 with self.lock_mgt.coordinator.get_lock("retention"):
                     self.controller.refresh_openstacksdk()
                     # get the threshold time
-                    self.threshold_strtime = self.get_time_from_str(CONF.conductor.retention_time)
-                    self.instance_retention_map = self.controller.collect_instance_retention_map()
+                    self.threshold_strtime = self.get_time_from_str(
+                        CONF.conductor.retention_time
+                    )
+                    self.instance_retention_map = (
+                        self.controller.collect_instance_retention_map()
+                    )
 
                     # No way to judge retention
-                    if self.threshold_strtime is None and not self.instance_retention_map:
+                    if (
+                        self.threshold_strtime is None
+                        and not self.instance_retention_map
+                    ):
                         return
                     retention_backups = []
                     backup_instance_map = {}
@@ -245,19 +253,19 @@ class RotationManager(cotyledon.Service):
 
                     # Sort backup instance map and use it to check backup create time and order.
                     # Generate retention_backups base on it.
-                    for instance_id, backup_list in backup_instance_map:
-                        reversed_sorted_list = sorted(
-                            backup_list,
+                    for instance_id in backup_instance_map:
+                        sorted_backup_list = sorted(
+                            backup_instance_map[instance_id],
                             key=lambda backup: backup.created_at.timestamp(),
-                            reverse=True
+                            reverse=True,
                         )
                         idx = 0
-                        list_len = len(reversed_sorted_list)
+                        list_len = len(sorted_backup_list)
                         find_earlier_full = False
                         purge_incremental = True
 
                         while idx < list_len:
-                            backup = reversed_sorted_list[idx]
+                            backup = sorted_backup_list[idx]
                             if find_earlier_full and backup.incremental is True:
                                 # Skip on incrementals when try to find earlier
                                 # created full backup.
@@ -266,7 +274,7 @@ class RotationManager(cotyledon.Service):
                             # If we should consider delete this backup
                             if self.is_retention(backup):
                                 # If is full backup
-                                if backup.incremental == False:
+                                if not backup.incremental:
                                     # For full backup should be deleted, purge
                                     # all backup include itself, otherwise, purge
                                     # only all earlier one if other backup depends on it.
@@ -274,7 +282,7 @@ class RotationManager(cotyledon.Service):
                                         # Still got incremental dependency,
                                         # but add all backups older than this one if any.
                                         idx += 1
-                                    retention_backups = backup_list[idx:]
+                                    retention_backups += sorted_backup_list[idx:]
                                     break
                                 # If is incremental backup
                                 else:
@@ -289,12 +297,14 @@ class RotationManager(cotyledon.Service):
                                     else:
                                         # The later backup is full backup, fine for us to
                                         # purge this and all older backup.
-                                        retention_backups = backup_list[idx:]
+                                        retention_backups += sorted_backup_list[idx:]
                                         break
                             else:
                                 # If it's incremental and not to be delete, make sure
                                 # we keep all it's dependency.
-                                purge_incremental = False if backup.incremental == True else True
+                                purge_incremental = (
+                                    False if backup.incremental else True
+                                )
                                 idx += 1
 
                     if not retention_backups:
