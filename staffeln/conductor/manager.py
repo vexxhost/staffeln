@@ -1,14 +1,16 @@
 import threading
 import time
+from datetime import datetime, timedelta
 
 import cotyledon
 import staffeln.conf
 from futurist import periodics
 from oslo_log import log
-from staffeln.common import constants, context
+from staffeln.common import constants, context, lock
 from staffeln.common import time as xtime
-from staffeln.conductor import backup
+from staffeln.conductor import backup as backup_controller
 from staffeln.i18n import _
+from tooz import coordination
 
 LOG = log.getLogger(__name__)
 CONF = staffeln.conf.CONF
@@ -22,7 +24,8 @@ class BackupManager(cotyledon.Service):
         self._shutdown = threading.Event()
         self.conf = conf
         self.ctx = context.make_context()
-        self.controller = backup.Backup()
+        self.lock_mgt = lock.LockManager()
+        self.controller = backup_controller.Backup()
         LOG.info("%s init" % self.name)
 
     def run(self):
@@ -53,7 +56,13 @@ class BackupManager(cotyledon.Service):
             if not self._backup_cycle_timeout():  # time in
                 LOG.info(_("cycle timein"))
                 for queue in queues_started:
-                    self.controller.check_volume_backup_status(queue)
+                    try:
+                        with self.lock_mgt.coordinator.get_lock(queue.volume_id):
+                            self.controller.check_volume_backup_status(queue)
+                    except coordination.LockAcquireFailed:
+                        LOG.debug(
+                            "Failed to lock task for volume: %s." % queue.volume_id
+                        )
             else:  # time out
                 LOG.info(_("cycle timeout"))
                 for queue in queues_started:
@@ -101,7 +110,11 @@ class BackupManager(cotyledon.Service):
         )
         if len(tasks_to_start) != 0:
             for task in tasks_to_start:
-                self.controller.create_volume_backup(task)
+                try:
+                    with self.lock_mgt.coordinator.get_lock(task.volume_id):
+                        self.controller.create_volume_backup(task)
+                except coordination.LockAcquireFailed:
+                    LOG.debug("Failed to lock task for volume: %s." % task.volume_id)
 
     # Refresh the task queue
     def _update_task_queue(self):
@@ -112,7 +125,19 @@ class BackupManager(cotyledon.Service):
         self.controller.create_queue(current_tasks)
 
     def _report_backup_result(self):
-        self.controller.publish_backup_result()
+        report_period_mins = CONF.conductor.report_period
+        threshold_strtime = datetime.now() - timedelta(minutes=report_period_mins)
+        filters = {
+            "created_at__lt": threshold_strtime,
+            "backup_status": constants.BACKUP_COMPLETED,
+        }
+        success_tasks = self.controller.get_queues(filters=filters)
+        filters["backup_status"] = constants.BACKUP_FAILED
+        failed_tasks = self.controller.get_queues(filters=filters)
+        if success_tasks or failed_tasks:
+            self.controller.publish_backup_result()
+            # Purge backup queue tasks
+            self.controller.purge_backups()
 
     def backup_engine(self, backup_service_period):
         LOG.info("Backup manager started %s" % str(time.time()))
@@ -120,10 +145,18 @@ class BackupManager(cotyledon.Service):
 
         @periodics.periodic(spacing=backup_service_period, run_immediately=True)
         def backup_tasks():
-            self._update_task_queue()
-            self._process_todo_tasks()
-            self._process_wip_tasks()
-            self._report_backup_result()
+            with self.lock_mgt:
+                try:
+                    with self.lock_mgt.coordinator.get_lock(constants.PULLER):
+                        LOG.info("Running as puller role")
+                        self._update_task_queue()
+                        self._process_todo_tasks()
+                        self._process_wip_tasks()
+                        self._report_backup_result()
+                except coordination.LockAcquireFailed:
+                    LOG.info("Running as non-puller role")
+                    self._process_todo_tasks()
+                    self._process_wip_tasks()
 
         periodic_callables = [
             (backup_tasks, (), {}),
@@ -143,7 +176,8 @@ class RotationManager(cotyledon.Service):
         super(RotationManager, self).__init__(worker_id)
         self._shutdown = threading.Event()
         self.conf = conf
-        self.controller = backup.Backup()
+        self.lock_mgt = lock.LockManager()
+        self.controller = backup_controller.Backup()
         LOG.info("%s init" % self.name)
 
     def run(self):
@@ -157,33 +191,130 @@ class RotationManager(cotyledon.Service):
     def reload(self):
         LOG.info("%s reload" % self.name)
 
-    def get_backup_list(self):
-        threshold_strtime = self.get_threshold_strtime()
-        if threshold_strtime is None:
-            return False
-        self.backup_list = self.controller.get_backups(
-            filters={"created_at__lt": threshold_strtime}
-        )
-        return True
+    def get_backup_list(self, filters=None):
+        return self.controller.get_backups(filters=filters)
 
-    def remove_backups(self):
-        print(self.backup_list)
-        for retention_backup in self.backup_list:
+    def remove_backups(self, retention_backups):
+        LOG.info(_("Backups to be removed: %s" % retention_backups))
+        for retention_backup in retention_backups:
             self.controller.hard_remove_volume_backup(retention_backup)
+
+    def is_retention(self, backup):
+        # see if need to be delete.
+        if backup.instance_id in self.instance_retention_map:
+            now = datetime.now()
+            retention_time = now - self.get_time_from_str(
+                self.instance_retention_map[backup.instance_id]
+            )
+            backup_age = now - backup.created_at
+            if backup_age > retention_time:
+                # Backup remain longer than retention, need to purge it.
+                return True
+        elif self.threshold_strtime < backup.created_at:
+            return True
+        return False
 
     def rotation_engine(self, retention_service_period):
         LOG.info("%s rotation_engine" % self.name)
 
         @periodics.periodic(spacing=retention_service_period, run_immediately=True)
         def rotation_tasks():
-            self.controller.refresh_openstacksdk()
-            # 1. get the list of backups to remove based on the retention time
-            if not self.get_backup_list():
-                return
-            # 2. get project list
-            self.controller.update_project_list()
-            # 3. remove the backups
-            self.remove_backups()
+            try:
+                # TODO(rlin): change to use decorator for this
+                # Make sure only one retention at a time
+                with self.lock_mgt.coordinator.get_lock("retention"):
+                    self.controller.refresh_openstacksdk()
+                    # get the threshold time
+                    self.threshold_strtime = self.get_time_from_str(
+                        CONF.conductor.retention_time
+                    )
+                    self.instance_retention_map = (
+                        self.controller.collect_instance_retention_map()
+                    )
+
+                    # No way to judge retention
+                    if (
+                        self.threshold_strtime is None
+                        and not self.instance_retention_map
+                    ):
+                        return
+                    retention_backups = []
+                    backup_instance_map = {}
+                    for backup in self.get_backup_list():
+                        # Create backup instance map for later sorted by created_at.
+                        # This can be use as base of judgement on delete a backup.
+                        # The reason we need such list is because backup have
+                        # dependency with each other after we enable incremental backup.
+                        # So we need to have information to judge on.
+                        if backup.instance_id in backup_instance_map:
+                            backup_instance_map[backup.instance_id].append(backup)
+                        else:
+                            backup_instance_map[backup.instance_id] = [backup]
+
+                    # Sort backup instance map and use it to check backup create time and order.
+                    # Generate retention_backups base on it.
+                    for instance_id in backup_instance_map:
+                        sorted_backup_list = sorted(
+                            backup_instance_map[instance_id],
+                            key=lambda backup: backup.created_at.timestamp(),
+                            reverse=True,
+                        )
+                        idx = 0
+                        list_len = len(sorted_backup_list)
+                        find_earlier_full = False
+                        purge_incremental = True
+
+                        while idx < list_len:
+                            backup = sorted_backup_list[idx]
+                            if find_earlier_full and backup.incremental is True:
+                                # Skip on incrementals when try to find earlier
+                                # created full backup.
+                                idx += 1
+                                continue
+                            # If we should consider delete this backup
+                            if self.is_retention(backup):
+                                # If is full backup
+                                if not backup.incremental:
+                                    # For full backup should be deleted, purge
+                                    # all backup include itself, otherwise, purge
+                                    # only all earlier one if other backup depends on it.
+                                    if not purge_incremental:
+                                        # Still got incremental dependency,
+                                        # but add all backups older than this one if any.
+                                        idx += 1
+                                    retention_backups += sorted_backup_list[idx:]
+                                    break
+                                # If is incremental backup
+                                else:
+                                    # This means there still have incremental
+                                    # backup denepds on this one. So we will go to the
+                                    # latest incremental backup for earlier full backup,
+                                    # or to the earlier full backup itself if it had no
+                                    # incremental backup rely on.
+                                    if not purge_incremental:
+                                        find_earlier_full = True
+                                        idx += 1
+                                    else:
+                                        # The later backup is full backup, fine for us to
+                                        # purge this and all older backup.
+                                        retention_backups += sorted_backup_list[idx:]
+                                        break
+                            else:
+                                # If it's incremental and not to be delete, make sure
+                                # we keep all it's dependency.
+                                purge_incremental = (
+                                    False if backup.incremental else True
+                                )
+                                idx += 1
+
+                    if not retention_backups:
+                        return
+                    # 2. get project list
+                    self.controller.update_project_list()
+                    # 3. remove the backups
+                    self.remove_backups(retention_backups)
+            except coordination.LockAcquireFailed:
+                LOG.debug("Failed to lock for retention")
 
         periodic_callables = [
             (rotation_tasks, (), {}),
@@ -195,9 +326,9 @@ class RotationManager(cotyledon.Service):
         periodic_thread.daemon = True
         periodic_thread.start()
 
-    # get the threshold time str
-    def get_threshold_strtime(self):
-        time_delta_dict = xtime.parse_timedelta_string(CONF.conductor.retention_time)
+    # get time
+    def get_time_from_str(self, time_str, to_str=False):
+        time_delta_dict = xtime.parse_timedelta_string(time_str)
         if time_delta_dict is None:
             LOG.info(
                 _(
@@ -216,4 +347,4 @@ class RotationManager(cotyledon.Service):
             minutes=time_delta_dict["minutes"],
             seconds=time_delta_dict["seconds"],
         )
-        return res.strftime(xtime.DEFAULT_TIME_FORMAT)
+        return res.strftime(xtime.DEFAULT_TIME_FORMAT) if to_str else res

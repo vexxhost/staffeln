@@ -23,6 +23,12 @@ backup_opts = [
         min=10,
         help=_("The time of bakup period, the unit is one minute."),
     ),
+    cfg.IntOpt(
+        "report_period",
+        default=1440,
+        min=10,
+        help=_("The time of report period, the unit is one minute."),
+    ),
     cfg.StrOpt(
         "backup_cycle_timout",
         regex=(
@@ -38,6 +44,16 @@ backup_opts = [
     cfg.StrOpt(
         "backup_metadata_key",
         help=_("The key string of metadata the VM, which requres back up, has"),
+    ),
+    cfg.StrOpt(
+        "retention_metadata_key",
+        regex=(
+            r"((?P<years>\d+?)y)?((?P<months>\d+?)mon)?((?P<weeks>\d+?)w)?"
+            r"((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)min)?((?P<seconds>\d+?)s)?"
+        ),
+        help=_(
+            "The key string of metadata the VM, which use as backup retention period."
+        ),
     ),
     cfg.IntOpt(
         "full_backup_depth",

@@ -21,6 +21,7 @@ class Queue(
         "volume_name": sfeild.StringField(),
         "instance_name": sfeild.StringField(),
         "incremental": sfeild.BooleanField(),
+        "reason": sfeild.StringField(nullable=True),
     }
 
     @base.remotable_classmethod

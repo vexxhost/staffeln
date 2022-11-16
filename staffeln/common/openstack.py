@@ -38,10 +38,13 @@ class OpenstackSDK:
     def get_projects(self):
         return self.conn.list_projects()
 
-    def get_servers(self, project_id, all_projects=True, details=True):
-        return self.conn.compute.servers(
-            details=details, all_projects=all_projects, project_id=project_id
-        )
+    def get_servers(self, project_id=None, all_projects=True, details=True):
+        if project_id is not None:
+            return self.conn.compute.servers(
+                details=details, all_projects=all_projects, project_id=project_id
+            )
+        else:
+            return self.conn.compute.servers(details=details, all_projects=all_projects)
 
     def get_volume(self, uuid, project_id):
         return self.conn.get_volume_by_id(uuid)

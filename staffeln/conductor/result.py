@@ -2,7 +2,7 @@
 # This should be upgraded by integrating with mail server to send batch
 import staffeln.conf
 from oslo_log import log
-from staffeln.common import email
+from staffeln.common import constants, email
 from staffeln.common import time as xtime
 from staffeln.conductor import backup
 from staffeln.i18n import _
@@ -17,39 +17,10 @@ class BackupResult(object):
 
     def initialize(self):
         self.content = ""
-        self.project_list = []
-        self.success_backup_list = {}
-        self.failed_backup_list = {}
+        self.project_list = set()
 
-    def add_project(self, id, name):
-        if id in self.success_backup_list:
-            return
-        self.project_list.append({"name": name, "id": id})
-        self.success_backup_list[id] = []
-        self.failed_backup_list[id] = []
-
-    def add_success_backup(self, project_id, volume_id, backup_id, incremental):
-        if project_id not in self.success_backup_list:
-            LOG.error(_("Not registered project is reported for backup result."))
-            return
-        self.success_backup_list[project_id].append(
-            {
-                "volume_id": volume_id,
-                "backup_id": backup_id,
-                "backup_mode": "Incremental" if incremental else "Full",
-            }
-        )
-
-    def add_failed_backup(self, project_id, volume_id, reason):
-        if project_id not in self.failed_backup_list:
-            LOG.error(_("Not registered project is reported for backup result."))
-            return
-        self.failed_backup_list[project_id].append(
-            {
-                "volume_id": volume_id,
-                "reason": reason,
-            }
-        )
+    def add_project(self, project_id, project_name):
+        self.project_list.add((project_id, project_name))
 
     def send_result_email(self):
         subject = "Backup result"
@@ -78,9 +49,29 @@ class BackupResult(object):
         # 1. get quota
         self.content = "<h3>${TIME}</h3><br>"
         self.content = self.content.replace("${TIME}", xtime.get_current_strtime())
+        backup_mgt = backup.Backup()
+        project_success = {}
+        project_failed = {}
+        success_tasks = backup_mgt.get_queues(
+            filters={"backup_status": constants.BACKUP_COMPLETED}
+        )
+        for task in success_tasks:
+            if task.project_id in project_success:
+                project_success[task.project_id].append(task)
+            else:
+                project_success[task.project_id] = [task]
+        failed_tasks = backup_mgt.get_queues(
+            filters={"backup_status": constants.BACKUP_FAILED}
+        )
+        for task in failed_tasks:
+            if task.project_id in project_failed:
+                project_failed[task.project_id].append(task)
+            else:
+                project_failed[task.project_id] = [task]
+
         html = ""
-        for project in self.project_list:
-            quota = backup.Backup().get_backup_quota(project["id"])
+        for project_id, project_name in self.project_list:
+            quota = backup_mgt.get_backup_quota(project_id)
 
             html += (
                 "<h3>Project: ${PROJECT}</h3><br>"
@@ -92,27 +83,36 @@ class BackupResult(object):
                 "<h4>${FAILED_VOLUME_LIST}</h4><br>"
             )
 
-            success_volumes = "<br>".join(
-                [
-                    "Volume ID: %s, Backup ID: %s %s"
-                    % (str(e["volume_id"]), str(e["backup_id"]), str(e["backup_mode"]))
-                    for e in self.success_backup_list[project["id"]]
-                ]
-            )
-            failed_volumes = "<br>".join(
-                [
-                    "Volume ID: %s, Reason: %s"
-                    % (str(e["volume_id"]), str(e["reason"]))
-                    for e in self.failed_backup_list[project["id"]]
-                ]
-            )
+            if project_id in project_success:
+                success_volumes = "<br>".join(
+                    [
+                        "Volume ID: %s, Backup ID: %s, backup mode: %s"
+                        % (
+                            str(e.volume_id),
+                            str(e.backup_id),
+                            "Incremental" if e.incremental else "Full",
+                        )
+                        for e in project_success[project_id]
+                    ]
+                )
+            else:
+                success_volumes = "<br>"
+            if project_id in project_failed:
+                failed_volumes = "<br>".join(
+                    [
+                        "Volume ID: %s, Reason: %s" % (str(e.volume_id), str(e.reason))
+                        for e in project_failed[project_id]
+                    ]
+                )
+            else:
+                failed_volumes = "<br>"
 
             html = html.replace("${QUOTA_LIMIT}", str(quota["limit"]))
             html = html.replace("${QUOTA_IN_USE}", str(quota["in_use"]))
             html = html.replace("${QUOTA_RESERVED}", str(quota["reserved"]))
             html = html.replace("${SUCCESS_VOLUME_LIST}", success_volumes)
             html = html.replace("${FAILED_VOLUME_LIST}", failed_volumes)
-            html = html.replace("${PROJECT}", project["name"])
+            html = html.replace("${PROJECT}", project_name)
         if html == "":
             return
         self.content += html

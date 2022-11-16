@@ -1,3 +1,4 @@
+from oslo_versionedobjects import fields as ovoo_fields
 from staffeln.db import api as db_api
 from staffeln.objects import base
 from staffeln.objects import fields as sfeild
@@ -19,6 +20,7 @@ class Volume(
         "volume_id": sfeild.UUIDField(),
         "backup_completed": sfeild.IntegerField(),
         "incremental": sfeild.BooleanField(),
+        "created_at": ovoo_fields.DateTimeField(),
     }
 
     @base.remotable_classmethod
