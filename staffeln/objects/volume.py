@@ -19,7 +19,7 @@ class Volume(
         "project_id": sfeild.UUIDField(),
         "volume_id": sfeild.UUIDField(),
         "backup_completed": sfeild.IntegerField(),
-        "incremental": sfeild.BooleanField(nullable=True),
+        "incremental": sfeild.BooleanField(nullable=True, default=False),
         "created_at": ovoo_fields.DateTimeField(),
     }
 
