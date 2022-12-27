@@ -128,7 +128,7 @@ class BackupManager(cotyledon.Service):
         report_period_mins = CONF.conductor.report_period
         threshold_strtime = datetime.now() - timedelta(minutes=report_period_mins)
         filters = {
-            "created_at__lt": threshold_strtime,
+            "created_at__lt": threshold_strtime.astimezone(),
             "backup_status": constants.BACKUP_COMPLETED,
         }
         success_tasks = self.controller.get_queues(filters=filters)
@@ -210,7 +210,7 @@ class RotationManager(cotyledon.Service):
             if backup_age > retention_time:
                 # Backup remain longer than retention, need to purge it.
                 return True
-        elif self.threshold_strtime < backup.created_at:
+        elif self.threshold_strtime.astimezone() < backup.created_at:
             return True
         return False
 
