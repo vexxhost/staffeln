@@ -7,7 +7,9 @@ from staffeln.objects import fields as sfeild
 class Queue(
     base.StaffelnPersistentObject, base.StaffelnObject, base.StaffelnObjectDictCompat
 ):
-    VERSION = "1.0"
+    VERSION = "1.1"
+    # Version 1.0: Initial version
+    # Version 1.1: Add 'incremental' and 'reason' field
 
     dbapi = db_api.get_instance()
 
