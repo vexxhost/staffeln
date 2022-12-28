@@ -278,7 +278,7 @@ class Backup(object):
         :return: if backup method is incremental or not
         :return type: bool
         """
-        # select *from backup order by Id DESC LIMIT 2;
+        # select * from backup order by Id DESC LIMIT 2;
         try:
             backups = self.get_backups(
                 filters={"volume_id__eq": volume_id},
@@ -403,6 +403,14 @@ class Backup(object):
         # NOTE(Oleks): Backup mode is inherited from backup service.
         # Need to keep and navigate backup mode history, to decide a different mode per volume
         volume_queue.incremental = task.incremental
+
+        backup_method = "Incremental" if task.incremental else "Full"
+        LOG.info(
+            _(
+                ("Schedule %s backup task for volume %s.")
+                % (backup_method, task.volume_id)
+            )
+        )
         return volume_queue.create()
 
     def create_volume_backup(self, task):
