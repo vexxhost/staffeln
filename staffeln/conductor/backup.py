@@ -98,6 +98,8 @@ class Backup(object):
         :param old_tasks: Task list not completed in the previous cycle
         :type: List<Class objects.Queue>
         """
+
+        LOG.info("Adding new backup tasks to queue.")
         # 1. get the old task list, not finished in the last cycle
         #  and keep till now
         old_task_volume_list = []
@@ -105,10 +107,10 @@ class Backup(object):
             old_task_volume_list.append(old_task.volume_id)
 
         # 2. add new tasks in the queue which are not existing in the old task list
-        queue_list = self.check_instance_volumes()
-        for queue in queue_list:
-            if queue.volume_id not in old_task_volume_list:
-                self._volume_queue(queue)
+        task_list = self.check_instance_volumes()
+        for task in task_list:
+            if task.volume_id not in old_task_volume_list:
+                self._volume_queue(task)
 
     # Backup the volumes attached to which has a specific metadata
     def filter_by_server_metadata(self, metadata):
@@ -132,7 +134,7 @@ class Backup(object):
             res = volume["status"] in ("available", "in-use")
             if not res:
                 reason = _(
-                    "Volume %s is not backed because it is in %s status"
+                    "Volume %s is not triger new backup task because it is in %s status"
                     % (volume_id, volume["status"])
                 )
                 LOG.info(reason)
