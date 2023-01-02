@@ -349,12 +349,12 @@ class Backup(object):
                     else:
                         backup_status = constants.BACKUP_FAILED
                         reason = filter_result
-                    incremental=self._is_incremental(volume["id"])
+                    incremental = self._is_incremental(volume["id"])
                     backup_method = "Incremental" if incremental else "Full"
                     LOG.info(
                         "Prapering %s backup task for volume %s",
                         backup_method,
-                        volume["id"]
+                        volume["id"],
                     )
                     queues_map.append(
                         QueueMapping(
