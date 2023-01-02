@@ -351,7 +351,7 @@ class Backup(object):
                         reason = filter_result
                     incremental=self._is_incremental(volume["id"])
                     backup_method = "Incremental" if incremental else "Full"
-                    LOG.log(
+                    LOG.info(
                         "Prapering %s backup task for volume %s",
                         backup_method,
                         volume["id"]
