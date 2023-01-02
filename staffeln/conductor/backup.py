@@ -536,6 +536,7 @@ class Backup(object):
                 instance_id=task.instance_id,
                 backup_completed=1,
                 incremental=task.incremental,
+                created_at=datetime.now(),
             )
         )
         task.backup_status = constants.BACKUP_COMPLETED
