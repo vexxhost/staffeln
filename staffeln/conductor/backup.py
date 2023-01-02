@@ -282,15 +282,12 @@ class Backup(object):
         """
         # select * from backup order by Id DESC LIMIT 2;
         try:
-            full_backups = self.get_backups(filters=None)
             backups = self.get_backups(
                 filters={"volume_id__eq": volume_id},
                 limit=CONF.conductor.full_backup_depth,
                 sort_key="id",
                 sort_dir="desc",
             )
-            LOG.info("backups: %s" % backups)
-            LOG.info("full_backups: %s" % full_backups)
             for bk in backups:
                 if bk.incremental:
                     continue
