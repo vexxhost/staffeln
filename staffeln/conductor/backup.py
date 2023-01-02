@@ -467,6 +467,8 @@ class Backup(object):
                     incremental=task.incremental,
                 )
                 task.backup_id = volume_backup.id
+                task.backup_status = constants.BACKUP_WIP
+                task.save()
             except OpenstackSDKException as error:
                 reason = _(
                     "Backup (name: %s) creation for the volume %s failled. %s"
