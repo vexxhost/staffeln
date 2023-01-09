@@ -179,7 +179,7 @@ class Backup(object):
             task.save()
 
         except OpenstackSDKException as e:
-            reason = _("Backup %s deletion failed." "%s" % (task.backup_id, str(e)))
+            reason = _("Backup %s deletion failed." "%s" % (task.backup_id, str(e)[:128]))
             LOG.info(reason)
             task.reason = reason
             task.backup_status = constants.BACKUP_FAILED
@@ -469,7 +469,7 @@ class Backup(object):
             except OpenstackSDKException as error:
                 reason = _(
                     "Backup (name: %s) creation for the volume %s failled. %s"
-                    % (backup_name, task.volume_id, str(error))
+                    % (backup_name, task.volume_id, str(error)[:128])
                 )
                 LOG.info(reason)
                 task.reason = reason
@@ -479,7 +479,7 @@ class Backup(object):
             except Exception as error:
                 reason = _(
                     "Backup (name: %s) creation for the volume %s failled. %s"
-                    % (backup_name, task.volume_id, str(error))
+                    % (backup_name, task.volume_id, str(error)[:128])
                 )
                 LOG.error(reason)
                 task.reason = reason
