@@ -179,7 +179,7 @@ class Backup(object):
             task.save()
 
         except OpenstackSDKException as e:
-            reason = _("Backup %s deletion failed." "%s" % (task.backup_id, str(e)[:128]))
+            reason = _("Backup %s deletion failed. %s" % (task.backup_id, str(e)[:128]))
             LOG.info(reason)
             task.reason = reason
             task.backup_status = constants.BACKUP_FAILED
