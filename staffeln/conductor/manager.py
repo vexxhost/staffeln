@@ -200,17 +200,17 @@ class RotationManager(cotyledon.Service):
             self.controller.hard_remove_volume_backup(retention_backup)
 
     def is_retention(self, backup):
+        now = datetime.now()
+        backup_age = now.astimezone() - backup.created_at
         # see if need to be delete.
         if backup.instance_id in self.instance_retention_map:
-            now = datetime.now()
             retention_time = now - self.get_time_from_str(
                 self.instance_retention_map[backup.instance_id]
             )
-            backup_age = now - backup.created_at
             if backup_age > retention_time:
                 # Backup remain longer than retention, need to purge it.
                 return True
-        elif self.threshold_strtime.astimezone() < backup.created_at:
+        elif now - self.threshold_strtime < backup_age:
             return True
         return False
 

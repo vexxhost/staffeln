@@ -180,7 +180,8 @@ class Backup(object):
 
         except OpenstackSDKException as e:
             reason = _("Backup %s deletion failed. %s" % (task.backup_id, str(e)[:64]))
-            LOG.info(reason)
+            log_msg = _("Backup %s deletion failed. %s" % (task.backup_id, str(e)))
+            LOG.warn(log_msg)
             task.reason = reason
             task.backup_status = constants.BACKUP_FAILED
             task.save()
@@ -217,7 +218,7 @@ class Backup(object):
                 )
 
         except OpenstackSDKException as e:
-            LOG.info(
+            LOG.warn(
                 _("Backup %s deletion failed." "%s" % (backup_object.backup_id, str(e)))
             )
             # TODO(Alex): Add it into the notification queue
@@ -249,8 +250,8 @@ class Backup(object):
             self.openstacksdk.delete_backup(uuid=backup_object.backup_id)
             backup_object.delete_backup()
 
-        except OpenstackSDKException as e:
-            LOG.info(
+        except Exception as e:
+            LOG.warn(
                 _(
                     "Backup %s deletion failed. Need to delete manually."
                     "%s" % (backup_object.backup_id, str(e))
@@ -467,21 +468,36 @@ class Backup(object):
                 task.backup_status = constants.BACKUP_WIP
                 task.save()
             except OpenstackSDKException as error:
-                reason = _(
-                    "Backup (name: %s) creation for the volume %s failled. %s"
-                    % (backup_name, task.volume_id, str(error)[:64])
-                )
-                LOG.info(reason)
-                task.reason = reason
-                task.backup_status = constants.BACKUP_FAILED
-                task.save()
+                inc_err_msg = "No backups available to do an incremental backup"
+                if inc_err_msg in str(error):
+                    LOG.info(
+                        "Retry to create full backup for volume %s instead of incremental."
+                        % task.volume_id
+                    )
+                    task.incremental = False
+                    task.save()
+                else:
+                    reason = _(
+                        "Backup (name: %s) creation for the volume %s failled. %s"
+                        % (backup_name, task.volume_id, str(error)[:64])
+                    )
+                    LOG.warn(
+                        "Backup (name: %s) creation for the volume %s failled. %s"
+                        % (backup_name, task.volume_id, str(error))
+                    )
+                    task.reason = reason
+                    task.backup_status = constants.BACKUP_FAILED
+                    task.save()
             # Added extra exception as OpenstackSDKException does not handle the keystone unauthourized issue.
             except Exception as error:
                 reason = _(
                     "Backup (name: %s) creation for the volume %s failled. %s"
                     % (backup_name, task.volume_id, str(error)[:64])
                 )
-                LOG.error(reason)
+                LOG.warn(
+                    "Backup (name: %s) creation for the volume %s failled. %s"
+                    % (backup_name, task.volume_id, str(error))
+                )
                 task.reason = reason
                 task.backup_status = constants.BACKUP_FAILED
                 task.save()
@@ -509,7 +525,7 @@ class Backup(object):
         try:
             self.openstacksdk.delete_backup(uuid=task.backup_id, force=True)
         except OpenstackHttpException as ex:
-            LOG.error(
+            LOG.warn(
                 _(
                     "Failed to delete volume backup %s. %s. Need to delete manually."
                     % (task.backup_id, str(ex))

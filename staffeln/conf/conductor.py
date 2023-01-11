@@ -74,7 +74,7 @@ rotation_opts = [
     ),
     cfg.IntOpt(
         "retention_service_period",
-        default=20,
+        default=1200,
         min=10,
         help=_("The period of the retention service, the unit is one second."),
     ),
