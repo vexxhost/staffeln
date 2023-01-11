@@ -200,17 +200,17 @@ class RotationManager(cotyledon.Service):
             self.controller.hard_remove_volume_backup(retention_backup)
 
     def is_retention(self, backup):
+        now = datetime.now()
+        backup_age = now.astimezone() - backup.created_at
         # see if need to be delete.
         if backup.instance_id in self.instance_retention_map:
-            now = datetime.now()
             retention_time = now - self.get_time_from_str(
                 self.instance_retention_map[backup.instance_id]
             )
-            backup_age = now - backup.created_at
             if backup_age > retention_time:
                 # Backup remain longer than retention, need to purge it.
                 return True
-        elif self.threshold_strtime.astimezone() < backup.created_at:
+        elif now - self.threshold_strtime < backup_age:
             return True
         return False
 
@@ -238,8 +238,11 @@ class RotationManager(cotyledon.Service):
                         and not self.instance_retention_map
                     ):
                         return
-                    retention_backups = []
                     backup_instance_map = {}
+
+                    # get project list
+                    self.controller.update_project_list()
+
                     for backup in self.get_backup_list():
                         # Create backup instance map for later sorted by created_at.
                         # This can be use as base of judgement on delete a backup.
@@ -252,67 +255,18 @@ class RotationManager(cotyledon.Service):
                             backup_instance_map[backup.instance_id] = [backup]
 
                     # Sort backup instance map and use it to check backup create time and order.
-                    # Generate retention_backups base on it.
                     for instance_id in backup_instance_map:
                         sorted_backup_list = sorted(
                             backup_instance_map[instance_id],
                             key=lambda backup: backup.created_at.timestamp(),
                             reverse=True,
                         )
-                        idx = 0
-                        list_len = len(sorted_backup_list)
-                        find_earlier_full = False
-                        purge_incremental = True
-
-                        while idx < list_len:
-                            backup = sorted_backup_list[idx]
-                            if find_earlier_full and backup.incremental is True:
-                                # Skip on incrementals when try to find earlier
-                                # created full backup.
-                                idx += 1
-                                continue
-                            # If we should consider delete this backup
+                        for backup in sorted_backup_list:
                             if self.is_retention(backup):
-                                # If is full backup
-                                if not backup.incremental:
-                                    # For full backup should be deleted, purge
-                                    # all backup include itself, otherwise, purge
-                                    # only all earlier one if other backup depends on it.
-                                    if not purge_incremental:
-                                        # Still got incremental dependency,
-                                        # but add all backups older than this one if any.
-                                        idx += 1
-                                    retention_backups += sorted_backup_list[idx:]
-                                    break
-                                # If is incremental backup
-                                else:
-                                    # This means there still have incremental
-                                    # backup denepds on this one. So we will go to the
-                                    # latest incremental backup for earlier full backup,
-                                    # or to the earlier full backup itself if it had no
-                                    # incremental backup rely on.
-                                    if not purge_incremental:
-                                        find_earlier_full = True
-                                        idx += 1
-                                    else:
-                                        # The later backup is full backup, fine for us to
-                                        # purge this and all older backup.
-                                        retention_backups += sorted_backup_list[idx:]
-                                        break
-                            else:
-                                # If it's incremental and not to be delete, make sure
-                                # we keep all it's dependency.
-                                purge_incremental = (
-                                    False if backup.incremental else True
+                                # Try to delete and skip any incremental exist error.
+                                self.controller.hard_remove_volume_backup(
+                                    backup, skip_inc_err=True
                                 )
-                                idx += 1
-
-                    if not retention_backups:
-                        return
-                    # 2. get project list
-                    self.controller.update_project_list()
-                    # 3. remove the backups
-                    self.remove_backups(retention_backups)
             except coordination.LockAcquireFailed:
                 LOG.debug("Failed to lock for retention")
 
