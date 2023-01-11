@@ -227,7 +227,7 @@ class Backup(object):
             return False
 
     #  delete all backups forcily regardless of the status
-    def hard_remove_volume_backup(self, backup_object):
+    def hard_remove_volume_backup(self, backup_object, skip_inc_err=False):
         try:
             project_id = backup_object.project_id
             if project_id not in self.project_list:
@@ -251,16 +251,19 @@ class Backup(object):
             backup_object.delete_backup()
 
         except Exception as e:
-            LOG.warn(
-                _(
-                    "Backup %s deletion failed. Need to delete manually."
-                    "%s" % (backup_object.backup_id, str(e))
+            if skip_inc_err and "Incremental backups exist for this backup" in str(e):
+                pass
+            else:
+                LOG.warn(
+                    _(
+                        "Backup %s deletion failed. Need to delete manually."
+                        "%s" % (backup_object.backup_id, str(e))
+                    )
                 )
-            )
 
-            # TODO(Alex): Add it into the notification queue
-            # remove from the backup table
-            backup_object.delete_backup()
+                # TODO(Alex): Add it into the notification queue
+                # remove from the backup table
+                backup_object.delete_backup()
 
     def update_project_list(self):
         projects = self.openstacksdk.get_projects()
