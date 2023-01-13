@@ -5,7 +5,7 @@ sudo apt-get update
 
 # Setup folders for DevStack
 sudo mkdir -p /opt/stack
-sudo chown -R ${USER}. /opt/stack
+sudo chown -R "${USER}". /opt/stack
 
 # Clone repository if not present, otherwise update
 if [ ! -f /opt/stack/stack.sh ]; then
@@ -71,7 +71,7 @@ mysql -e 'GRANT ALL PRIVILEGES ON staffeln.* TO "staffeln"@"%";'
 
 # Install staffeln
 pip install -U setuptools pip
-$HOME/.local/bin/pip3 install -e .
+"${HOME}"/.local/bin/pip3 install -e .
 
 # Start staffeln conductor
 staffeln-db-manager create_schema
