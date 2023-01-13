@@ -179,8 +179,14 @@ class Backup(object):
             task.save()
 
         except OpenstackSDKException as e:
-            reason = _("Backup %s deletion failed. %s" % (task.backup_id, str(e)[:64]))
-            log_msg = _("Backup %s deletion failed. %s" % (task.backup_id, str(e)))
+            reason = _(
+                "Backup %s deletion failed. Need delete manually: %s"
+                % (task.backup_id, str(e)[:64])
+            )
+            log_msg = _(
+                "Backup %s deletion failed. Need delete manually: %s"
+                % (task.backup_id, str(e))
+            )
             LOG.warn(log_msg)
             task.reason = reason
             task.backup_status = constants.BACKUP_FAILED
@@ -231,6 +237,13 @@ class Backup(object):
         try:
             project_id = backup_object.project_id
             if project_id not in self.project_list:
+                LOG.info(
+                    _(
+                        "Project %s for backup %s is not existing in Openstack."
+                        "Start removing backup object from Staffeln."
+                        % (project_id, backup_object.backup_id)
+                    )
+                )
                 backup_object.delete_backup()
 
             self.openstacksdk.set_project(self.project_list[project_id])
@@ -242,6 +255,7 @@ class Backup(object):
                     _(
                         "Backup %s is not existing in Openstack."
                         "Or cinder-backup is not existing in the cloud."
+                        "Start removing backup object from Staffeln."
                         % backup_object.backup_id
                     )
                 )
@@ -257,6 +271,7 @@ class Backup(object):
                 LOG.warn(
                     _(
                         "Backup %s deletion failed. Need to delete manually."
+                        "Start removing backup object from Staffeln."
                         "%s" % (backup_object.backup_id, str(e))
                     )
                 )
