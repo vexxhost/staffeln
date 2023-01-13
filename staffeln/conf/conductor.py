@@ -27,7 +27,7 @@ backup_opts = [
         "report_period",
         default=1440,
         min=10,
-        help=_("The time of report period, the unit is one second."),
+        help=_("The time of report period, the unit is one minute."),
     ),
     cfg.StrOpt(
         "backup_cycle_timout",
@@ -58,7 +58,7 @@ backup_opts = [
     cfg.IntOpt(
         "full_backup_depth",
         default=2,
-        min=1,
+        min=0,
         help=_("Number of incremental backups between full backups."),
     ),
 ]

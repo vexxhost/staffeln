@@ -286,6 +286,8 @@ class Backup(object):
         """
         # select * from backup order by Id DESC LIMIT 2;
         try:
+            if CONF.conductor.full_backup_depth == 0:
+                return False
             backups = self.get_backups(
                 filters={"volume_id__eq": volume_id},
                 limit=CONF.conductor.full_backup_depth,
