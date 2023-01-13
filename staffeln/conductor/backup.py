@@ -1,5 +1,5 @@
 import collections
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import staffeln.conf
 from openstack.exceptions import HttpException as OpenstackHttpException
@@ -285,6 +285,44 @@ class Backup(object):
         for project in projects:
             self.project_list[project.id] = project
 
+    def _is_backup_required(self, volume_id):
+        """
+        Decide if the backup required based on the backup history
+
+        If there is any backup created during certain time,
+        will not trigger new backup request.
+        This will judge on CONF.conductor.backup_min_interval
+
+        :param volume_id: Target volume id
+        :type: uuid string
+
+        :return: if new backup required
+        :return type: bool
+        """
+        # select * from backup order by Id;
+        try:
+            if CONF.conductor.backup_min_interval == 0:
+                # Ignore backup interval
+                return True
+            interval = CONF.conductor.backup_min_interval
+            threshold_strtime = datetime.now() - timedelta(minutes=interval)
+            backups = self.get_backups(
+                filters={
+                    "volume_id__eq": volume_id,
+                    "created_at__ge": threshold_strtime.astimezone(),
+                }
+            )
+            if backups:
+                return False
+        except Exception as e:
+            LOG.debug(
+                _(
+                    "Failed to get backup history to decide backup is "
+                    "required or not. Reason: %s" % str(e)
+                )
+            )
+        return True
+
     def _is_incremental(self, volume_id):
         """
         Decide the backup method based on the backup history
@@ -330,6 +368,8 @@ class Backup(object):
         Get the list of all the volumes from the project using openstacksdk.
         Function first list all the servers in the project and get the volumes
         that are attached to the instance.
+
+        Generate backup candidate list for later create tasks in queue
         """
         queues_map = []
         self.refresh_openstacksdk()
@@ -360,6 +400,10 @@ class Backup(object):
 
                     if not filter_result:
                         continue
+                    backup_required = self._is_backup_required(volume["id"])
+                    if not backup_required:
+                        continue
+
                     if "name" not in volume or not volume["name"]:
                         volume_name = volume["id"]
                     else:
