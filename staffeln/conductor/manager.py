@@ -267,6 +267,7 @@ class RotationManager(cotyledon.Service):
                                 self.controller.hard_remove_volume_backup(
                                     backup, skip_inc_err=True
                                 )
+                                time.sleep(2)
             except coordination.LockAcquireFailed:
                 LOG.debug("Failed to lock for retention")
 
