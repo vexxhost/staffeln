@@ -24,6 +24,16 @@ backup_opts = [
         help=_("The time of bakup period, the unit is one second."),
     ),
     cfg.IntOpt(
+        "backup_min_interval",
+        default=30,
+        min=0,
+        help=_(
+            "The time of minum guaranteed interval between Staffeln "
+            "created backups, the unit is one minute. set to 0 if don't "
+            "need to enable this feature."
+        ),
+    ),
+    cfg.IntOpt(
         "report_period",
         default=1440,
         min=10,
