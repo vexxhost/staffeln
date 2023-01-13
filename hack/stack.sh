@@ -1,4 +1,5 @@
 #!/bin/bash -xe
+# shellcheck disable=SC1091
 
 # Install dependencies
 sudo apt-get update
@@ -78,5 +79,7 @@ pip install -U setuptools pip
 # Start staffeln conductor
 staffeln-db-manage create_schema
 #staffeln-db-manage upgrade head
+set +x
 source /opt/stack/openrc admin admin
+set -x
 staffeln-conductor &
