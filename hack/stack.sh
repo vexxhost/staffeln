@@ -17,6 +17,8 @@ else
 fi
 
 # Create DevStack configuration file
+sudo mkdir /etc/staffeln
+sudo chown -R "${USER}". /etc/staffeln
 cat <<EOF > /opt/stack/local.conf
 [[local|localrc]]
 KEYSTONE_ADMIN_ENDPOINT=true
@@ -65,8 +67,8 @@ mysql_engine = InnoDB
 EOF
 
 # Create staffeln database
-mysql -e 'CREATE DATABASE staffeln;'
-mysql -e 'CREATE USER "staffeln"@"%" IDENTIFIED BY "password";'
+mysql -e 'CREATE DATABASE staffeln;' || echo "Database for staffeln already exists."
+mysql -e 'CREATE USER "staffeln"@"%" IDENTIFIED BY "password";' || echo "DB user staffeln already exists."
 mysql -e 'GRANT ALL PRIVILEGES ON staffeln.* TO "staffeln"@"%";'
 
 # Install staffeln
@@ -74,6 +76,7 @@ pip install -U setuptools pip
 "${HOME}"/.local/bin/pip3 install -e .
 
 # Start staffeln conductor
-staffeln-db-manager create_schema
-staffeln-db-manager upgrade head
+staffeln-db-manage create_schema
+#staffeln-db-manage upgrade head
+source /opt/stack/openrc admin admin
 staffeln-conductor &
