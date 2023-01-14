@@ -309,7 +309,7 @@ class Backup(object):
             backups = self.get_backups(
                 filters={
                     "volume_id__eq": volume_id,
-                    "created_at__ge": threshold_strtime.astimezone(),
+                    "created_at__gt": threshold_strtime.astimezone(),
                 }
             )
             if backups:

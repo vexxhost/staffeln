@@ -28,7 +28,7 @@ backup_opts = [
         default=30,
         min=0,
         help=_(
-            "The time of minum guaranteed interval between Staffeln "
+            "The time of minimum guaranteed interval between Staffeln "
             "created backups, the unit is one minute. set to 0 if don't "
             "need to enable this feature."
         ),
