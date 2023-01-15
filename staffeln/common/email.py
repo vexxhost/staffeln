@@ -1,35 +1,36 @@
-# Email notification package
-# This should be upgraded by integrating with mail server to send batch
+""" Email module with SMTP"""
+
 import smtplib
-from email.mime.multipart import MIMEMultipart
+from email.header import Header
 from email.mime.text import MIMEText
 
-__DRY_RUN__ = False
+from oslo_log import log
+
+LOG = log.getLogger(__name__)
 
 
-def send(
-    src_email,
-    src_pwd,
-    dest_email,
-    subject,
-    content,
-    smtp_server_domain,
-    smtp_server_port,
-):
-    message = MIMEMultipart("alternative")
-    message["Subject"] = subject
-    # This part is commented as it won't be able to parce the items in list.
-    # message["From"] = src_email
-    # message["To"] = dest_email
-    part = MIMEText(content, "html")
-    message.attach(part)
-    if __DRY_RUN__:
-        print(part)
-        return
-    s = smtplib.SMTP(host=smtp_server_domain, port=smtp_server_port)
-    # s.ehlo()
-    # s.starttls()
-    # we can comment this auth func when use the trusted ip without authentication against the smtp server
-    # s.login(src_email, src_pwd)
-    s.sendmail(src_email, dest_email, message.as_string())
-    s.close()
+def send(smtp_profile):
+    """Email send with SMTP"""
+    message = MIMEText(smtp_profile["content"], "html", "utf-8")
+    message["From"] = Header(smtp_profile["src_name"], "utf-8")
+    message["To"] = Header(smtp_profile["dest_email"], "utf-8")
+    message["Subject"] = Header(smtp_profile["subject"], "utf-8")
+    try:
+        smtp_obj = smtplib.SMTP(
+            smtp_profile["smtp_server_domain"], smtp_profile["smtp_server_port"]
+        )
+        smtp_obj.connect(
+            smtp_profile["smtp_server_domain"], smtp_profile["smtp_server_port"]
+        )
+        smtp_obj.ehlo()
+        smtp_obj.starttls()
+        smtp_obj.ehlo()
+        # SMTP Login
+        smtp_obj.login(smtp_profile["src_email"], smtp_profile["src_pwd"])
+        smtp_obj.sendmail(
+            smtp_profile["src_email"], smtp_profile["dest_email"], message.as_string()
+        )
+        # Email Sent
+    except smtplib.SMTPException as error:
+        LOG.info(f"again this name is {str(error)}")
+        raise

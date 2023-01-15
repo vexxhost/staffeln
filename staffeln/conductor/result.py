@@ -23,19 +23,25 @@ class BackupResult(object):
         self.project_list.add((project_id, project_name))
 
     def send_result_email(self):
-        subject = "Backup result"
+        subject = "Staffeln Backup result"
         try:
             if len(CONF.notification.receiver) == 0:
+                LOG.info(
+                    "Directly record report in log as no receiver "
+                    "email provided. Report: %s" % self.content
+                )
                 return
-            email.send(
-                src_email=CONF.notification.sender_email,
-                src_pwd=CONF.notification.sender_pwd,
-                dest_email=CONF.notification.receiver,
-                subject=subject,
-                content=self.content,
-                smtp_server_domain=CONF.notification.smtp_server_domain,
-                smtp_server_port=CONF.notification.smtp_server_port,
-            )
+            smtp_profile = {
+                "src_email": CONF.notification.sender_email,
+                "src_name": "Staffeln",
+                "src_pwd": CONF.notification.sender_pwd,
+                "dest_email": CONF.notification.receiver,
+                "subject": subject,
+                "content": self.content,
+                "smtp_server_domain": CONF.notification.smtp_server_domain,
+                "smtp_server_port": CONF.notification.smtp_server_port,
+            }
+            email.send(smtp_profile)
             LOG.info(_("Backup result email sent"))
         except Exception as e:
             LOG.error(
@@ -74,13 +80,14 @@ class BackupResult(object):
             quota = backup_mgt.get_backup_quota(project_id)
 
             html += (
-                "<h3>Project: ${PROJECT}</h3><br>"
-                "<h3>Quota Usage</h3><br>"
-                "<h4>Limit: ${QUOTA_LIMIT}, In Use: ${QUOTA_IN_USE}, Reserved: ${QUOTA_RESERVED}</h4><br>"
-                "<h3>Success List</h3><br>"
-                "<h4>${SUCCESS_VOLUME_LIST}</h4><br>"
-                "<h3>Failed List</h3><br>"
-                "<h4>${FAILED_VOLUME_LIST}</h4><br>"
+                "<h3>Project: ${PROJECT}</h3><h3>Quota Usage</h3>"
+                "<FONT COLOR=${QUOTA_COLLOR}><h4>Limit: ${QUOTA_LIMIT}, In Use: "
+                "${QUOTA_IN_USE}, Reserved: ${QUOTA_RESERVED}, Total "
+                "rate: ${QUOTA_USAGE}</h4></FONT>"
+                "<h3>Success List</h3>"
+                "<FONT COLOR=GREEN><h4>${SUCCESS_VOLUME_LIST}</h4></FONT><br>"
+                "<h3>Failed List</h3>"
+                "<FONT COLOR=RED><h4>${FAILED_VOLUME_LIST}</h4></FONT><br>"
             )
 
             if project_id in project_success:
@@ -106,7 +113,15 @@ class BackupResult(object):
                 )
             else:
                 failed_volumes = "<br>"
-
+            quota_usage = (quota["in_use"] + quota["reserved"]) / quota["limit"]
+            if quota_usage > 0.8:
+                quota_color = "RED"
+            elif quota_usage > 0.5:
+                quota_color = "YALLOW"
+            else:
+                quota_color = "GREEN"
+            html = html.replace("${QUOTA_USAGE}", quota_usage)
+            html = html.replace("${QUOTA_COLLOR}", quota_color)
             html = html.replace("${QUOTA_LIMIT}", str(quota["limit"]))
             html = html.replace("${QUOTA_IN_USE}", str(quota["in_use"]))
             html = html.replace("${QUOTA_RESERVED}", str(quota["reserved"]))
