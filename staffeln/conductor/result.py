@@ -93,11 +93,11 @@ class BackupResult(object):
             if project_id in project_success:
                 success_volumes = "<br>".join(
                     [
-                        "Volume ID: %s, Backup ID: %s, backup mode: %s"
-                        % (
-                            str(e.volume_id),
-                            str(e.backup_id),
-                            "Incremental" if e.incremental else "Full",
+                        (
+                            f"Volume ID: {str(e.volume_id)}, Backup ID: {str(e.backup_id)}, "
+                            f"Backup mode: {'Incremental' if e.incremental else 'Full'}, "
+                            f"Created at: {str(e.created_at)}, Last updated at: "
+                            f"{str(e.updated_at)}"
                         )
                         for e in project_success[project_id]
                     ]
@@ -107,7 +107,11 @@ class BackupResult(object):
             if project_id in project_failed:
                 failed_volumes = "<br>".join(
                     [
-                        "Volume ID: %s, Reason: %s" % (str(e.volume_id), str(e.reason))
+                        (
+                            f"Volume ID: {str(e.volume_id)}, Reason: {str(e.reason)}, "
+                            f"Created at: {str(e.created_at)}, Last updated at: "
+                            f"{str(e.updated_at)}"
+                        )
                         for e in project_failed[project_id]
                     ]
                 )
@@ -120,7 +124,7 @@ class BackupResult(object):
                 quota_color = "YALLOW"
             else:
                 quota_color = "GREEN"
-            html = html.replace("${QUOTA_USAGE}", quota_usage)
+            html = html.replace("${QUOTA_USAGE}", str(quota_usage))
             html = html.replace("${QUOTA_COLLOR}", quota_color)
             html = html.replace("${QUOTA_LIMIT}", str(quota["limit"]))
             html = html.replace("${QUOTA_IN_USE}", str(quota["in_use"]))
