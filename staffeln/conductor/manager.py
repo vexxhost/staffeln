@@ -121,27 +121,27 @@ class BackupManager(cotyledon.Service):
         LOG.info(_("Updating backup task queue..."))
         self.controller.refresh_openstacksdk()
         self.controller.refresh_backup_result()
-        current_tasks = self.controller.get_queues()
-        self.controller.create_queue(current_tasks)
+        filters = {"backup_status": constants.BACKUP_WIP}
+        current_wip_tasks = self.controller.get_queues(filters=filters)
+        filters["backup_status"] = constants.BACKUP_PLANNED
+        current_plan_tasks = self.controller.get_queues(filters=filters)
+        self.controller.create_queue(current_plan_tasks + current_wip_tasks)
 
     def _report_backup_result(self):
         report_period_mins = CONF.conductor.report_period
         threshold_strtime = datetime.now() - timedelta(minutes=report_period_mins)
-        filters = {
-            "created_at__lt": threshold_strtime.astimezone(),
-        }
+        filters = {"created_at__lt": threshold_strtime.astimezone()}
         old_tasks = self.controller.get_queues(filters=filters)
-        if old_tasks:
-            filters = {
-                "backup_status": constants.BACKUP_COMPLETED,
-            }
-            success_tasks = self.controller.get_queues(filters=filters)
-            filters["backup_status"] = constants.BACKUP_FAILED
-            failed_tasks = self.controller.get_queues(filters=filters)
-            if success_tasks or failed_tasks:
+        for task in old_tasks:
+            if task.backup_status in (
+                constants.BACKUP_COMPLETED,
+                constants.BACKUP_FAILED,
+            ):
+                LOG.info(_("Reporting finished backup tasks..."))
                 self.controller.publish_backup_result()
                 # Purge backup queue tasks
                 self.controller.purge_backups()
+                return
 
     def backup_engine(self, backup_service_period):
         LOG.info("Backup manager started %s" % str(time.time()))

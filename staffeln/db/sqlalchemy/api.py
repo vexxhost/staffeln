@@ -132,6 +132,7 @@ class Connection(object):
             "volume_id",
             "instance_id",
             "backup_status",
+            "created_at",
         ]
 
         return self._add_filters(
