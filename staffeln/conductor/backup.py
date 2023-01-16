@@ -209,10 +209,8 @@ class Backup(object):
                 self.openstacksdk.delete_backup(backup_object.backup_id)
                 backup_object.delete_backup()
             elif backup["status"] in ("error", "error_restoring"):
-                # TODO(Alex): need to discuss
-                #  now if backup is in error status, then retention service
-                #  does not remove it from openstack but removes it from the
-                #  backup table so user can delete it on Horizon.
+                # Try to remove it from cinder
+                self.openstacksdk.delete_backup(backup_object.backup_id)
                 backup_object.delete_backup()
             else:  # "deleting", "restoring"
                 LOG.info(
@@ -224,12 +222,9 @@ class Backup(object):
                 )
 
         except OpenstackSDKException as e:
-            LOG.warn(
-                _("Backup %s deletion failed." "%s" % (backup_object.backup_id, str(e)))
-            )
-            # TODO(Alex): Add it into the notification queue
-            # remove from the backup table
-            backup_object.delete_backup()
+            LOG.warn(_(f"Backup {backup_object.backup_id} deletion failed. {str(e)}"))
+            # We don't delete backup object if any exception occured
+            # backup_object.delete_backup()
             return False
 
     #  delete all backups forcily regardless of the status
@@ -237,14 +232,17 @@ class Backup(object):
         try:
             project_id = backup_object.project_id
             if project_id not in self.project_list:
-                LOG.info(
+                LOG.warn(
                     _(
-                        "Project %s for backup %s is not existing in Openstack."
-                        "Start removing backup object from Staffeln."
-                        % (project_id, backup_object.backup_id)
+                        f"Project {project_id} for backup "
+                        f"{backup_object.backup_id} is not existing in "
+                        "Openstack. Please check your access right to this project. "
+                        "Skip this backup from remove now and will retry later."
                     )
                 )
-                backup_object.delete_backup()
+                # Don't remove backup object, keep it and retry on next periodic task
+                # backup_object.delete_backup()
+                return
 
             self.openstacksdk.set_project(self.project_list[project_id])
             backup = self.openstacksdk.get_backup(
@@ -264,21 +262,22 @@ class Backup(object):
             self.openstacksdk.delete_backup(uuid=backup_object.backup_id)
             backup_object.delete_backup()
 
+            # TODO(ricolin) should check if backup delete completed
+
         except Exception as e:
             if skip_inc_err and "Incremental backups exist for this backup" in str(e):
                 pass
             else:
                 LOG.warn(
                     _(
-                        "Backup %s deletion failed. Need to delete manually."
-                        "Start removing backup object from Staffeln."
-                        "%s" % (backup_object.backup_id, str(e))
+                        f"Backup {backup_object.backup_id} deletion failed. "
+                        f"Please check into the exception: {str(e)}."
+                        "Skip this backup from remove now and will retry later."
                     )
                 )
 
-                # TODO(Alex): Add it into the notification queue
-                # remove from the backup table
-                backup_object.delete_backup()
+                # Don't remove backup object, keep it and retry on next periodic task
+                # backup_object.delete_backup()
 
     def update_project_list(self):
         projects = self.openstacksdk.get_projects()
