@@ -305,7 +305,7 @@ class Backup(object):
                 # Ignore backup interval
                 return True
             interval = CONF.conductor.backup_min_interval
-            threshold_strtime = datetime.now() - timedelta(minutes=interval)
+            threshold_strtime = datetime.now() - timedelta(seconds=interval)
             backups = self.get_backups(
                 filters={
                     "volume_id__eq": volume_id,
