@@ -20,24 +20,24 @@ backup_opts = [
     cfg.IntOpt(
         "backup_service_period",
         default=1800,
-        min=10,
+        min=60,
         help=_("The time of bakup period, the unit is one second."),
     ),
     cfg.IntOpt(
         "backup_min_interval",
-        default=30,
+        default=1800,
         min=0,
         help=_(
             "The time of minimum guaranteed interval between Staffeln "
-            "created backups, the unit is one minute. set to 0 if don't "
+            "created backups, the unit is one seconds. Set to 0 if don't "
             "need to enable this feature."
         ),
     ),
     cfg.IntOpt(
         "report_period",
-        default=1440,
-        min=10,
-        help=_("The time of report period, the unit is one minute."),
+        default=86400,
+        min=600,
+        help=_("The time of report period, the unit is one seconds."),
     ),
     cfg.StrOpt(
         "backup_cycle_timout",
@@ -85,7 +85,7 @@ rotation_opts = [
     cfg.IntOpt(
         "retention_service_period",
         default=1200,
-        min=10,
+        min=60,
         help=_("The period of the retention service, the unit is one second."),
     ),
     cfg.IntOpt(

@@ -128,8 +128,8 @@ class BackupManager(cotyledon.Service):
         self.controller.create_queue(current_plan_tasks + current_wip_tasks)
 
     def _report_backup_result(self):
-        report_period_mins = CONF.conductor.report_period
-        threshold_strtime = datetime.now() - timedelta(minutes=report_period_mins)
+        report_period = CONF.conductor.report_period
+        threshold_strtime = datetime.now() - timedelta(seconds=report_period)
         filters = {"created_at__lt": threshold_strtime.astimezone()}
         old_tasks = self.controller.get_queues(filters=filters)
         for task in old_tasks:
