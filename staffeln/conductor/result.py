@@ -50,6 +50,7 @@ class BackupResult(object):
                     % (str(e))
                 )
             )
+            raise
 
     def publish(self):
         # 1. get quota

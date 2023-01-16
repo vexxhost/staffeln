@@ -32,5 +32,5 @@ def send(smtp_profile):
         )
         # Email Sent
     except smtplib.SMTPException as error:
-        LOG.info(f"again this name is {str(error)}")
+        LOG.info(f"Email send error with SMTP fail: {str(error)}")
         raise
