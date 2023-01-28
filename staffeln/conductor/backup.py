@@ -70,8 +70,19 @@ class Backup(object):
     def refresh_openstacksdk(self):
         self.openstacksdk = openstack.OpenstackSDK()
 
-    def publish_backup_result(self):
-        self.result.publish()
+    def publish_backup_result(self, purge_on_success=False):
+        for project_id, project_name in self.result.project_list:
+            try:
+                publish_result = self.result.publish(project_id, project_name)
+                if publish_result and purge_on_success:
+                    # Purge backup queue tasks
+                    self.purge_backups(project_id)
+            except Exception as ex:  # pylint: disable=W0703
+                LOG.warn(
+                    "Failed to publish backup result or "
+                    f"purge backup tasks for project {project_id} "
+                    f"{str(ex)}"
+                )
 
     def refresh_backup_result(self):
         self.result.initialize()
@@ -144,13 +155,20 @@ class Backup(object):
         except OpenstackResourceNotFound:
             return False
 
-    def purge_backups(self):
+    def purge_backups(self, project_id=None):
+        LOG.info(f"Start pruge backup tasks for project {project_id}")
         # TODO make all this in a single DB command
         success_tasks = self.get_queues(
-            filters={"backup_status": constants.BACKUP_COMPLETED}
+            filters={
+                "backup_status": constants.BACKUP_COMPLETED,
+                "project_id": project_id,
+            }
         )
         failed_tasks = self.get_queues(
-            filters={"backup_status": constants.BACKUP_FAILED}
+            filters={
+                "backup_status": constants.BACKUP_FAILED,
+                "project_id": project_id,
+            }
         )
         for queue in success_tasks:
             LOG.info("Start purge completed tasks.")
