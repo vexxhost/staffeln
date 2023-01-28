@@ -138,9 +138,7 @@ class BackupManager(cotyledon.Service):
                 constants.BACKUP_FAILED,
             ):
                 LOG.info(_("Reporting finished backup tasks..."))
-                self.controller.publish_backup_result()
-                # Purge backup queue tasks
-                self.controller.purge_backups()
+                self.controller.publish_backup_result(purge_on_success=True)
                 return
 
     def backup_engine(self, backup_service_period):

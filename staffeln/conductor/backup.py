@@ -70,8 +70,19 @@ class Backup(object):
     def refresh_openstacksdk(self):
         self.openstacksdk = openstack.OpenstackSDK()
 
-    def publish_backup_result(self):
-        self.result.publish()
+    def publish_backup_result(self, purge_on_success=False):
+        for project_id, project_name in self.result.project_list:
+            try:
+                publish_result = self.result.publish(project_id, project_name)
+                if publish_result and purge_on_success:
+                    # Purge backup queue tasks
+                    self.purge_backups(project_id)
+            except Exception as ex:  # pylint: disable=W0703
+                LOG.warn(
+                    "Failed to publish backup result or "
+                    f"purge backup tasks for project {project_id} "
+                    f"{str(ex)}"
+                )
 
     def refresh_backup_result(self):
         self.result.initialize()
@@ -144,13 +155,20 @@ class Backup(object):
         except OpenstackResourceNotFound:
             return False
 
-    def purge_backups(self):
+    def purge_backups(self, project_id=None):
+        LOG.info(f"Start pruge backup tasks for project {project_id}")
         # TODO make all this in a single DB command
         success_tasks = self.get_queues(
-            filters={"backup_status": constants.BACKUP_COMPLETED}
+            filters={
+                "backup_status": constants.BACKUP_COMPLETED,
+                "project_id": project_id,
+            }
         )
         failed_tasks = self.get_queues(
-            filters={"backup_status": constants.BACKUP_FAILED}
+            filters={
+                "backup_status": constants.BACKUP_FAILED,
+                "project_id": project_id,
+            }
         )
         for queue in success_tasks:
             LOG.info("Start purge completed tasks.")
@@ -207,11 +225,13 @@ class Backup(object):
                 return backup_object.delete_backup()
             if backup["status"] in ("available"):
                 self.openstacksdk.delete_backup(backup_object.backup_id)
-                backup_object.delete_backup()
+                # Don't remove backup until it's officially removed from Cinder
+                # backup_object.delete_backup()
             elif backup["status"] in ("error", "error_restoring"):
                 # Try to remove it from cinder
                 self.openstacksdk.delete_backup(backup_object.backup_id)
-                backup_object.delete_backup()
+                # Don't remove backup until it's officially removed from Cinder
+                # backup_object.delete_backup()
             else:  # "deleting", "restoring"
                 LOG.info(
                     _(
@@ -259,22 +279,20 @@ class Backup(object):
                 )
                 return backup_object.delete_backup()
 
-            self.openstacksdk.delete_backup(uuid=backup_object.backup_id)
-            backup_object.delete_backup()
-
-            # TODO(ricolin) should check if backup delete completed
-
+            self.openstacksdk.delete_backup(uuid=backup_object.backup_id, force=True)
+            # Don't remove backup until it's officially removed from Cinder
+            # backup_object.delete_backup()
         except Exception as e:
             if skip_inc_err and "Incremental backups exist for this backup" in str(e):
-                pass
+                LOG.debug(str(e))
             else:
-                LOG.warn(
+                LOG.info(
                     _(
-                        f"Backup {backup_object.backup_id} deletion failed. "
-                        f"Please check into the exception: {str(e)}."
+                        f"Backup {backup_object.backup_id} deletion failed."
                         "Skip this backup from remove now and will retry later."
                     )
                 )
+                LOG.debug(f"deletion failed {str(e)}")
 
                 # Don't remove backup object, keep it and retry on next periodic task
                 # backup_object.delete_backup()
