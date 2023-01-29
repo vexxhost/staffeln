@@ -178,6 +178,28 @@ class Backup(object):
             LOG.info("Start purge failed tasks.")
             queue.delete_queue()
 
+    def create_failed_backup_obj(self, task):
+        # Create backup object for failed backups, to make sure we
+        # will review the delete later when retention triggered.
+        # Set the created_at time to retention_time ago,
+        # so it might get check on next retention cycle.
+        # For customerized retention instances, the backup might check later
+        # but the process to check the remove will eventually starts.
+        # Note: 315360000 = 10 years. The create time of an backup object will
+        # not affect report.
+        threshold_strtime = datetime.now() - timedelta(seconds=315360000)
+        self._volume_backup(
+            BackupMapping(
+                volume_id=task.volume_id,
+                project_id=task.project_id,
+                backup_id=task.backup_id,
+                instance_id=task.instance_id,
+                backup_completed=0,
+                incremental=task.incremental,
+                created_at=threshold_strtime,
+            )
+        )
+
     #  delete all backups forcily regardless of the status
     def hard_cancel_backup_task(self, task):
         try:
@@ -192,6 +214,8 @@ class Backup(object):
             if backup is None:
                 return task.delete_queue()
             self.openstacksdk.delete_backup(task.backup_id, force=True)
+            self.create_failed_backup_obj(task)
+
             task.reason = reason
             task.backup_status = constants.BACKUP_FAILED
             task.save()
@@ -605,6 +629,7 @@ class Backup(object):
         # 2. delete backup generator
         try:
             self.openstacksdk.delete_backup(uuid=task.backup_id, force=True)
+            self.create_failed_backup_obj(task)
         except OpenstackHttpException as ex:
             LOG.warn(
                 _(
