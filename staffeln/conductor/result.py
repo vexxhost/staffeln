@@ -22,7 +22,7 @@ class BackupResult(object):
     def add_project(self, project_id, project_name):
         self.project_list.add((project_id, project_name))
 
-    def send_result_email(self, subject=None, receiver=None):
+    def send_result_email(self, subject=None, project_name=None):
         if not CONF.notification.sender_email:
             LOG.info(
                 "Directly record report in log as sender email "
@@ -34,6 +34,16 @@ class BackupResult(object):
         if len(CONF.notification.receiver) != 0:
             # Found receiver in config, override report receiver.
             receiver = CONF.notification.receiver
+        elif not CONF.notification.project_receiver_domain:
+            LOG.info(
+                "Directly record report in log as no receiver email "
+                "or project receiver domain are not configed. "
+                f"Report: {self.content}"
+            )
+            return
+        else:
+            receiver_domain = CONF.notification.project_receiver_domain
+            receiver = f"{project_name}@{receiver_domain}"
         try:
             smtp_profile = {
                 "src_email": CONF.notification.sender_email,
@@ -135,5 +145,5 @@ class BackupResult(object):
         html = html.replace("${PROJECT_ID}", project_id)
         self.content += html
         subject = f"Staffeln Backup result: {project_id}"
-        self.send_result_email(subject=subject, receiver=f"{project_name}@cgm.com")
+        self.send_result_email(subject=subject, project_name=project_name)
         return True

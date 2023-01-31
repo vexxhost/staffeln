@@ -18,6 +18,14 @@ email_opts = [
         ),
     ),
     cfg.StrOpt(
+        "project_receiver_domain",
+        help=_(
+            "The project receiver domain that will be combine with project "
+            "name as project report receive target email address. "
+            "Format: $(project_name)@project_receiver_domain"
+        ),
+    ),
+    cfg.StrOpt(
         "sender_email",
         help=_(
             "Log in on an SMTP server that requires authentication."
