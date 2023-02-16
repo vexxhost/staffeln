@@ -13,7 +13,7 @@ LOG = log.getLogger(__name__)
 
 class BackupResult(object):
     def __init__(self):
-        pass
+        self.backup_mgt = backup.Backup()
 
     def initialize(self):
         self.content = ""
@@ -22,7 +22,7 @@ class BackupResult(object):
     def add_project(self, project_id, project_name):
         self.project_list.add((project_id, project_name))
 
-    def send_result_email(self, subject=None, project_name=None):
+    def send_result_email(self, project_id, subject=None, project_name=None):
         if not CONF.notification.sender_email:
             LOG.info(
                 "Directly record report in log as sender email "
@@ -35,12 +35,23 @@ class BackupResult(object):
             # Found receiver in config, override report receiver.
             receiver = CONF.notification.receiver
         elif not CONF.notification.project_receiver_domain:
-            LOG.info(
-                "Directly record report in log as no receiver email "
-                "or project receiver domain are not configed. "
-                f"Report: {self.content}"
-            )
-            return
+            try:
+                receiver = self.backup_mgt.openstacksdk.get_project_member_emails(
+                    project_id
+                )
+                if not receiver:
+                    LOG.warn(
+                        f"No email can be found from members of project {project_id}. "
+                        "Skip report now and will try to report later."
+                    )
+                    return
+            except Exception as ex:
+                LOG.warn(
+                    f"Failed to fetch emails from project members with exception: {ex}"
+                    "As also no receiver email or project receiver domain are "
+                    "configured. Will try to report later."
+                )
+                return
         else:
             receiver_domain = CONF.notification.project_receiver_domain
             receiver = f"{project_name}@{receiver_domain}"
@@ -70,14 +81,13 @@ class BackupResult(object):
         # 1. get quota
         self.content = "<h3>${TIME}</h3><br>"
         self.content = self.content.replace("${TIME}", xtime.get_current_strtime())
-        backup_mgt = backup.Backup()
-        success_tasks = backup_mgt.get_queues(
+        success_tasks = self.backup_mgt.get_queues(
             filters={
                 "backup_status": constants.BACKUP_COMPLETED,
                 "project_id": project_id,
             }
         )
-        failed_tasks = backup_mgt.get_queues(
+        failed_tasks = self.backup_mgt.get_queues(
             filters={
                 "backup_status": constants.BACKUP_FAILED,
                 "project_id": project_id,
@@ -87,7 +97,7 @@ class BackupResult(object):
             return False
 
         html = ""
-        quota = backup_mgt.get_backup_quota(project_id)
+        quota = self.backup_mgt.get_backup_quota(project_id)
 
         html += (
             "<h3>Project: ${PROJECT} (ID: ${PROJECT_ID})</h3><h3>Quota Usage</h3>"
@@ -145,5 +155,5 @@ class BackupResult(object):
         html = html.replace("${PROJECT_ID}", project_id)
         self.content += html
         subject = f"Staffeln Backup result: {project_id}"
-        self.send_result_email(subject=subject, project_name=project_name)
+        self.send_result_email(project_id, subject=subject, project_name=project_name)
         return True
