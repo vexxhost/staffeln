@@ -35,6 +35,24 @@ class OpenstackSDK:
             user = self.conn.get_user(name_or_id=user_name)
         return user.id
 
+    def get_role_assignments(self, project_id, user_id=None):
+        filters = {"project": project_id}
+        if user_id:
+            filters["user"] = user_id
+        return self.conn.list_role_assignments(filters=filters)
+
+    def get_user(self, user_id):
+        return self.conn.get_user(name_or_id=user_id)
+
+    def get_project_member_emails(self, project_id):
+        members = self.get_role_assignments(project_id)
+        emails = []
+        for member in members:
+            user = self.get_user(member.user)
+            if user and user.email:
+                emails.append(user.email)
+        return emails
+
     def get_projects(self):
         return self.conn.list_projects()
 
