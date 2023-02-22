@@ -33,11 +33,11 @@ class BackupResult(object):
             subject = "Staffeln Backup result"
         if len(CONF.notification.receiver) != 0:
             # Found receiver in config, override report receiver.
-            receiver = CONF.notification.receiver
+            receiver = ",".join(CONF.notification.receiver)
         elif not CONF.notification.project_receiver_domain:
             try:
-                receiver = self.backup_mgt.openstacksdk.get_project_member_emails(
-                    project_id
+                receiver = ",".join(
+                    self.backup_mgt.openstacksdk.get_project_member_emails(project_id)
                 )
                 if not receiver:
                     LOG.warn(
