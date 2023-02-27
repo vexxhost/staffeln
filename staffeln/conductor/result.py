@@ -4,7 +4,6 @@ import staffeln.conf
 from oslo_log import log
 from staffeln.common import constants, email
 from staffeln.common import time as xtime
-from staffeln.conductor import backup
 from staffeln.i18n import _
 
 CONF = staffeln.conf.CONF
@@ -12,8 +11,8 @@ LOG = log.getLogger(__name__)
 
 
 class BackupResult(object):
-    def __init__(self):
-        self.backup_mgt = backup.Backup()
+    def __init__(self, backup_mgt):
+        self.backup_mgt = backup_mgt
 
     def initialize(self):
         self.content = ""

@@ -63,8 +63,8 @@ class Backup(object):
 
     def __init__(self):
         self.ctx = context.make_context()
-        self.result = result.BackupResult()
         self.refresh_openstacksdk()
+        self.result = result.BackupResult(self)
         self.project_list = {}
 
     def refresh_openstacksdk(self):
