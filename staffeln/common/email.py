@@ -11,9 +11,14 @@ LOG = log.getLogger(__name__)
 
 def send(smtp_profile):
     """Email send with SMTP"""
+    dest_header = (
+        smtp_profile["dest_email"]
+        if isinstance(smtp_profile["dest_email"], str)
+        else str(smtp_profile["dest_email"])
+    )
     message = MIMEText(smtp_profile["content"], "html", "utf-8")
     message["From"] = Header(smtp_profile["src_name"], "utf-8")
-    message["To"] = Header(smtp_profile["dest_email"], "utf-8")
+    message["To"] = Header(dest_header, "utf-8")
     message["Subject"] = Header(smtp_profile["subject"], "utf-8")
     try:
         smtp_obj = smtplib.SMTP(
