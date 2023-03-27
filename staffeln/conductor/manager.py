@@ -1,11 +1,12 @@
 import threading
 import time
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import cotyledon
 import staffeln.conf
 from futurist import periodics
 from oslo_log import log
+from oslo_utils import timeutils
 from staffeln.common import constants, context, lock
 from staffeln.common import time as xtime
 from staffeln.conductor import backup as backup_controller
@@ -129,7 +130,7 @@ class BackupManager(cotyledon.Service):
 
     def _report_backup_result(self):
         report_period = CONF.conductor.report_period
-        threshold_strtime = datetime.now() - timedelta(seconds=report_period)
+        threshold_strtime = timeutils.utcnow() - timedelta(seconds=report_period)
         filters = {"created_at__lt": threshold_strtime.astimezone()}
         old_tasks = self.controller.get_queues(filters=filters)
         for task in old_tasks:
@@ -202,8 +203,8 @@ class RotationManager(cotyledon.Service):
             self.controller.hard_remove_volume_backup(retention_backup)
 
     def is_retention(self, backup):
-        now = datetime.now()
-        backup_age = now.astimezone() - backup.created_at
+        now = timeutils.utcnow()
+        backup_age = now - backup.created_at
         # see if need to be delete.
         if backup.instance_id in self.instance_retention_map:
             retention_time = now - self.get_time_from_str(
