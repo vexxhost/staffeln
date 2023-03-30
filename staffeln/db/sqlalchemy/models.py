@@ -71,3 +71,12 @@ class Queue_data(Base):
     instance_name = Column(String(100))
     incremental = Column(Boolean, default=False)
     reason = Column(String(255), nullable=True)
+
+
+class Report_timestamp(Base):
+    """Represent the report_timestamp"""
+
+    __tablename__ = "report_timestamp"
+    __table_args__ = table_args()
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    sender = Column(String(255), nullable=True)
