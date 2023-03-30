@@ -10,6 +10,7 @@ from oslo_utils import timeutils
 from staffeln.common import constants, context, lock
 from staffeln.common import time as xtime
 from staffeln.conductor import backup as backup_controller
+from staffeln import objects
 from staffeln.i18n import _
 from tooz import coordination
 
@@ -131,16 +132,25 @@ class BackupManager(cotyledon.Service):
     def _report_backup_result(self):
         report_period = CONF.conductor.report_period
         threshold_strtime = timeutils.utcnow() - timedelta(seconds=report_period)
-        filters = {"created_at__lt": threshold_strtime.astimezone()}
-        old_tasks = self.controller.get_queues(filters=filters)
-        for task in old_tasks:
-            if task.backup_status in (
-                constants.BACKUP_COMPLETED,
-                constants.BACKUP_FAILED,
-            ):
-                LOG.info(_("Reporting finished backup tasks..."))
-                self.controller.publish_backup_result(purge_on_success=True)
-                return
+
+        filters = {"created_at__gt": threshold_strtime.astimezone()}
+        report_tss = objects.ReportTimestamp.list(  # pylint: disable=E1120
+            context=self.ctx, filters=filters
+        )
+        # If there are no reports that generated within report_period seconds,
+        # generate and publish one.
+        if not report_tss:
+            LOG.info(_("Reporting finished backup tasks..."))
+            self.controller.publish_backup_result(purge_on_success=True)
+
+            # Purge records that live longer than 10 report cycles
+            threshold_strtime = timeutils.utcnow() - timedelta(seconds=report_period*10)
+            filters = {"created_at__lt": threshold_strtime.astimezone()}
+            old_report_tss = objects.ReportTimestamp.list(  # pylint: disable=E1120
+                context=self.ctx, filters=filters
+            )
+            for report_ts in old_report_tss:
+                report_ts.delete()
 
     def backup_engine(self, backup_service_period):
         LOG.info("Backup manager started %s" % str(time.time()))

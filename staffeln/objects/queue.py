@@ -1,3 +1,5 @@
+from oslo_versionedobjects import fields as ovoo_fields
+
 from staffeln.db import api as db_api
 from staffeln.objects import base
 from staffeln.objects import fields as sfeild
@@ -7,9 +9,10 @@ from staffeln.objects import fields as sfeild
 class Queue(
     base.StaffelnPersistentObject, base.StaffelnObject, base.StaffelnObjectDictCompat
 ):
-    VERSION = "1.1"
+    VERSION = "1.2"
     # Version 1.0: Initial version
     # Version 1.1: Add 'incremental' and 'reason' field
+    # Version 1.2: Add 'created_at' field
 
     dbapi = db_api.get_instance()
 
@@ -24,6 +27,7 @@ class Queue(
         "instance_name": sfeild.StringField(),
         "incremental": sfeild.BooleanField(),
         "reason": sfeild.StringField(nullable=True),
+        "created_at": ovoo_fields.DateTimeField(),
     }
 
     @base.remotable_classmethod
