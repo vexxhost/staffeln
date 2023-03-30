@@ -113,6 +113,11 @@ class OpenstackSDK:
         quota = self._get_volume_quotas(project_id)
         return quota.backups
 
+    def get_backup_gigabytes_quota(self, project_id):
+        # quota = conn.get_volume_quotas(project_id)
+        quota = self._get_volume_quotas(project_id)
+        return quota.backup_gigabytes
+
     # rewrite openstasdk._block_storage.get_volume_quotas
     # added usage flag
     # ref: https://docs.openstack.org/api-ref/block-storage/v3/?expanded=#show-quota-usage-for-a-project

@@ -96,6 +96,9 @@ class Backup(object):
     def get_backup_quota(self, project_id):
         return self.openstacksdk.get_backup_quota(project_id)
 
+    def get_backup_gigabytes_quota(self, project_id):
+        return self.openstacksdk.get_backup_gigabytes_quota(project_id)
+
     def get_queues(self, filters=None):
         """Get the list of volume queue columns from the queue_data table"""
         queues = objects.Queue.list(  # pylint: disable=E1120
