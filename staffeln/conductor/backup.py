@@ -1,5 +1,5 @@
 import collections
-from datetime import timedelta
+from datetime import timedelta, timezone
 
 import staffeln.conf
 from openstack.exceptions import HttpException as OpenstackHttpException
@@ -245,8 +245,8 @@ class Backup(object):
             if backup is None:
                 LOG.info(
                     _(
-                        "Backup %s is not existing in Openstack."
-                        "Or cinder-backup is not existing in the cloud."
+                        "Backup %s is not existing in Openstack "
+                        "or cinder-backup is not existing in the cloud."
                         % backup_object.backup_id
                     )
                 )
@@ -354,7 +354,7 @@ class Backup(object):
             backups = self.get_backups(
                 filters={
                     "volume_id__eq": volume_id,
-                    "created_at__gt": threshold_strtime.astimezone(),
+                    "created_at__gt": threshold_strtime.astimezone(timezone.utc),
                 }
             )
             if backups:

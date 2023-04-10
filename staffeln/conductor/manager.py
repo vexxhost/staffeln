@@ -1,6 +1,6 @@
 import threading
 import time
-from datetime import timedelta
+from datetime import timedelta, timezone
 
 import cotyledon
 import staffeln.conf
@@ -133,7 +133,7 @@ class BackupManager(cotyledon.Service):
         report_period = CONF.conductor.report_period
         threshold_strtime = timeutils.utcnow() - timedelta(seconds=report_period)
 
-        filters = {"created_at__gt": threshold_strtime.astimezone()}
+        filters = {"created_at__gt": threshold_strtime.astimezone(timezone.utc)}
         report_tss = objects.ReportTimestamp.list(  # pylint: disable=E1120
             context=self.ctx, filters=filters
         )
@@ -145,7 +145,7 @@ class BackupManager(cotyledon.Service):
 
             # Purge records that live longer than 10 report cycles
             threshold_strtime = timeutils.utcnow() - timedelta(seconds=report_period*10)
-            filters = {"created_at__lt": threshold_strtime.astimezone()}
+            filters = {"created_at__lt": threshold_strtime.astimezone(timezone.utc)}
             old_report_tss = objects.ReportTimestamp.list(  # pylint: disable=E1120
                 context=self.ctx, filters=filters
             )
@@ -213,8 +213,8 @@ class RotationManager(cotyledon.Service):
             self.controller.hard_remove_volume_backup(retention_backup)
 
     def is_retention(self, backup):
-        now = timeutils.utcnow()
-        backup_age = now - backup.created_at
+        now = timeutils.utcnow().astimezone(timezone.utc)
+        backup_age = now - backup.created_at.astimezone(timezone.utc)
         # see if need to be delete.
         if backup.instance_id in self.instance_retention_map:
             retention_time = now - self.get_time_from_str(
@@ -240,7 +240,7 @@ class RotationManager(cotyledon.Service):
                     # get the threshold time
                     self.threshold_strtime = self.get_time_from_str(
                         CONF.conductor.retention_time
-                    )
+                    ).astimezone(timezone.utc)
                     self.instance_retention_map = (
                         self.controller.collect_instance_retention_map()
                     )
