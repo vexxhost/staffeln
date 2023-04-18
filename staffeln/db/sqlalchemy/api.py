@@ -112,7 +112,7 @@ class Connection(object):
 
         return self._add_filters(
             query=query,
-            model=models.Backup_data,
+            model=models.Report_timestamp,
             filters=filters,
             plain_fields=plain_fields,
         )

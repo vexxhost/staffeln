@@ -7,10 +7,10 @@ import staffeln.conf
 from futurist import periodics
 from oslo_log import log
 from oslo_utils import timeutils
+from staffeln import objects
 from staffeln.common import constants, context, lock
 from staffeln.common import time as xtime
 from staffeln.conductor import backup as backup_controller
-from staffeln import objects
 from staffeln.i18n import _
 from tooz import coordination
 
@@ -144,7 +144,9 @@ class BackupManager(cotyledon.Service):
             self.controller.publish_backup_result(purge_on_success=True)
 
             # Purge records that live longer than 10 report cycles
-            threshold_strtime = timeutils.utcnow() - timedelta(seconds=report_period*10)
+            threshold_strtime = timeutils.utcnow() - timedelta(
+                seconds=report_period * 10
+            )
             filters = {"created_at__lt": threshold_strtime.astimezone(timezone.utc)}
             old_report_tss = objects.ReportTimestamp.list(  # pylint: disable=E1120
                 context=self.ctx, filters=filters

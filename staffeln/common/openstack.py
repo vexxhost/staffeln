@@ -102,6 +102,7 @@ class OpenstackSDK:
         # conn.block_storage.delete_backup(
         #     project_id=project_id, backup_id=uuid,
         # )
+        LOG.debug(f"Start deleting backup {uuid} in OpenStack.")
         try:
             self.conn.delete_volume_backup(uuid, force=force)
             # TODO(Alex): After delete the backup generator, need to set the volume status again

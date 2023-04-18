@@ -3,9 +3,9 @@
 import staffeln.conf
 from oslo_log import log
 from oslo_utils import timeutils
+from staffeln import objects
 from staffeln.common import constants, email
 from staffeln.common import time as xtime
-from staffeln import objects
 from staffeln.i18n import _
 
 CONF = staffeln.conf.CONF
@@ -80,8 +80,11 @@ class BackupResult(object):
             raise
 
     def create_report_record(self):
-        sender = CONF.notification.sender_email \
-            if CONF.notification.sender_email else "RecordInLog"
+        sender = (
+            CONF.notification.sender_email
+            if CONF.notification.sender_email
+            else "RecordInLog"
+        )
         report_ts = objects.ReportTimestamp(self.backup_mgt.ctx)
         report_ts.sender = sender
         report_ts.created_at = timeutils.utcnow()
@@ -155,8 +158,9 @@ class BackupResult(object):
         )
         self.content += html
         subject = f"Staffeln Backup result: {project_id}"
-        reported = self.send_result_email(project_id, subject=subject,
-                                          project_name=project_name)
+        reported = self.send_result_email(
+            project_id, subject=subject, project_name=project_name
+        )
         if reported:
             # Record success report
             self.create_report_record()
