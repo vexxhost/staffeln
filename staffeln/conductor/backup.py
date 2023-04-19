@@ -1,11 +1,12 @@
 import collections
-from datetime import datetime, timedelta
+from datetime import timedelta, timezone
 
 import staffeln.conf
 from openstack.exceptions import HttpException as OpenstackHttpException
 from openstack.exceptions import ResourceNotFound as OpenstackResourceNotFound
 from openstack.exceptions import SDKException as OpenstackSDKException
 from oslo_log import log
+from oslo_utils import timeutils
 from staffeln import objects
 from staffeln.common import constants, context, openstack
 from staffeln.conductor import result
@@ -94,6 +95,9 @@ class Backup(object):
 
     def get_backup_quota(self, project_id):
         return self.openstacksdk.get_backup_quota(project_id)
+
+    def get_backup_gigabytes_quota(self, project_id):
+        return self.openstacksdk.get_backup_gigabytes_quota(project_id)
 
     def get_queues(self, filters=None):
         """Get the list of volume queue columns from the queue_data table"""
@@ -187,7 +191,7 @@ class Backup(object):
         # but the process to check the remove will eventually starts.
         # Note: 315360000 = 10 years. The create time of an backup object will
         # not affect report.
-        threshold_strtime = datetime.now() - timedelta(seconds=315360000)
+        threshold_strtime = timeutils.utcnow() - timedelta(seconds=315360000)
         self._volume_backup(
             BackupMapping(
                 volume_id=task.volume_id,
@@ -241,8 +245,8 @@ class Backup(object):
             if backup is None:
                 LOG.info(
                     _(
-                        "Backup %s is not existing in Openstack."
-                        "Or cinder-backup is not existing in the cloud."
+                        "Backup %s is not existing in Openstack "
+                        "or cinder-backup is not existing in the cloud."
                         % backup_object.backup_id
                     )
                 )
@@ -295,7 +299,7 @@ class Backup(object):
             if backup is None:
                 LOG.info(
                     _(
-                        "Backup %s is not existing in Openstack."
+                        "Backup %s is not existing in Openstack. "
                         "Or cinder-backup is not existing in the cloud."
                         "Start removing backup object from Staffeln."
                         % backup_object.backup_id
@@ -346,11 +350,11 @@ class Backup(object):
                 # Ignore backup interval
                 return True
             interval = CONF.conductor.backup_min_interval
-            threshold_strtime = datetime.now() - timedelta(seconds=interval)
+            threshold_strtime = timeutils.utcnow() - timedelta(seconds=interval)
             backups = self.get_backups(
                 filters={
                     "volume_id__eq": volume_id,
-                    "created_at__gt": threshold_strtime.astimezone(),
+                    "created_at__gt": threshold_strtime.astimezone(timezone.utc),
                 }
             )
             if backups:
@@ -536,7 +540,7 @@ class Backup(object):
         backup_status and backup_id in the task queue table.
         """
         project_id = task.project_id
-        timestamp = int(datetime.now().timestamp())
+        timestamp = int(timeutils.utcnow().timestamp())
         # Backup name allows max 255 chars of string
         backup_name = ("%(instance_name)s_%(volume_name)s_%(timestamp)s") % {
             "instance_name": task.instance_name,
@@ -655,7 +659,7 @@ class Backup(object):
                 instance_id=task.instance_id,
                 backup_completed=1,
                 incremental=task.incremental,
-                created_at=datetime.now(),
+                created_at=timeutils.utcnow(),
             )
         )
         task.backup_status = constants.BACKUP_COMPLETED

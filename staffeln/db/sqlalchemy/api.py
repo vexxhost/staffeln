@@ -100,6 +100,23 @@ class Connection(object):
     def _get_relationships(model):
         return inspect(model).relationships
 
+    def _add_report_filters(self, query, filters):
+        """Add filters while listing report_timestamp table"""
+        if filters is None:
+            filters = {}
+
+        plain_fields = [
+            "sender",
+            "created_at",
+        ]
+
+        return self._add_filters(
+            query=query,
+            model=models.Report_timestamp,
+            filters=filters,
+            plain_fields=plain_fields,
+        )
+
     def _add_backup_filters(self, query, filters):
         """Add filters while listing the columns from the backup_data table"""
         if filters is None:
@@ -336,3 +353,28 @@ class Connection(object):
             return self._soft_delete(models.Backup_data, id)
         except:  # noqa: E722
             LOG.error("Backup Not found.")
+
+    def get_report_timestamp_list(self, *args, **kwargs):
+        return self._get_model_list(
+            models.Report_timestamp, self._add_report_filters, *args, **kwargs
+        )
+
+    def create_report_timestamp(self, values):
+        try:
+            report_timestamp_data = self._create(models.Report_timestamp, values)
+        except db_exc.DBDuplicateEntry:
+            LOG.error("Report Timestamp ID already exists.")
+        return report_timestamp_data
+
+    def update_report_timestamp(self, id, values):
+
+        try:
+            return self._update(models.Report_timestamp, id, values)
+        except:  # noqa: E722
+            LOG.error("Report Timestamp resource not found.")
+
+    def soft_delete_report_timestamp(self, id):
+        try:
+            return self._soft_delete(models.Report_timestamp, id)
+        except:  # noqa: E722
+            LOG.error("Report Timestamp Not found.")

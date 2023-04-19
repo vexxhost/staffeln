@@ -1,7 +1,7 @@
 import re
-from datetime import datetime
 
 from dateutil.relativedelta import relativedelta
+from oslo_utils import timeutils
 
 DEFAULT_TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
@@ -36,11 +36,11 @@ def parse_timedelta_string(time_str):
 
 
 def get_current_time():
-    return datetime.now()
+    return timeutils.utcnow()
 
 
 def get_current_strtime():
-    now = datetime.now()
+    now = timeutils.utcnow()
     return now.strftime(DEFAULT_TIME_FORMAT)
 
 
@@ -48,7 +48,7 @@ def timeago(
     years=0, months=0, weeks=0, days=0, hours=0, minutes=0, seconds=0, from_date=None
 ):
     if from_date is None:
-        from_date = datetime.now()
+        from_date = timeutils.utcnow()
     return from_date - relativedelta(
         years=years,
         months=months,

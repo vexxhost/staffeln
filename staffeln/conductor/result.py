@@ -2,6 +2,8 @@
 # This should be upgraded by integrating with mail server to send batch
 import staffeln.conf
 from oslo_log import log
+from oslo_utils import timeutils
+from staffeln import objects
 from staffeln.common import constants, email
 from staffeln.common import time as xtime
 from staffeln.i18n import _
@@ -27,7 +29,7 @@ class BackupResult(object):
                 "Directly record report in log as sender email "
                 f"are not configed. Report: {self.content}"
             )
-            return
+            return True
         if not subject:
             subject = "Staffeln Backup result"
         if len(CONF.notification.receiver) != 0:
@@ -67,6 +69,7 @@ class BackupResult(object):
             }
             email.send(smtp_profile)
             LOG.info(_(f"Backup result email sent to {receiver}"))
+            return True
         except Exception as e:
             LOG.warn(
                 _(
@@ -76,10 +79,20 @@ class BackupResult(object):
             )
             raise
 
+    def create_report_record(self):
+        sender = (
+            CONF.notification.sender_email
+            if CONF.notification.sender_email
+            else "RecordInLog"
+        )
+        report_ts = objects.ReportTimestamp(self.backup_mgt.ctx)
+        report_ts.sender = sender
+        report_ts.created_at = timeutils.utcnow()
+        return report_ts.create()
+
     def publish(self, project_id=None, project_name=None):
         # 1. get quota
-        self.content = "<h3>${TIME}</h3><br>"
-        self.content = self.content.replace("${TIME}", xtime.get_current_strtime())
+        self.content = f"<h3>{xtime.get_current_strtime()}</h3><br>"
         success_tasks = self.backup_mgt.get_queues(
             filters={
                 "backup_status": constants.BACKUP_COMPLETED,
@@ -95,20 +108,16 @@ class BackupResult(object):
         if not success_tasks and not failed_tasks:
             return False
 
+        # Geneerate HTML Content
         html = ""
-        quota = self.backup_mgt.get_backup_quota(project_id)
-
-        html += (
-            "<h3>Project: ${PROJECT} (ID: ${PROJECT_ID})</h3><h3>Quota Usage</h3>"
-            "<FONT COLOR=${QUOTA_COLLOR}><h4>Limit: ${QUOTA_LIMIT}, In Use: "
-            "${QUOTA_IN_USE}, Reserved: ${QUOTA_RESERVED}, Total "
-            "rate: ${QUOTA_USAGE}</h4></FONT>"
-            "<h3>Success List</h3>"
-            "<FONT COLOR=GREEN><h4>${SUCCESS_VOLUME_LIST}</h4></FONT><br>"
-            "<h3>Failed List</h3>"
-            "<FONT COLOR=RED><h4>${FAILED_VOLUME_LIST}</h4></FONT><br>"
-        )
-
+        quota = self.backup_mgt.get_backup_gigabytes_quota(project_id)
+        quota_usage = (quota["in_use"] + quota["reserved"]) / quota["limit"]
+        if quota_usage > 0.8:
+            quota_color = "RED"
+        elif quota_usage > 0.5:
+            quota_color = "YALLOW"
+        else:
+            quota_color = "GREEN"
         if success_tasks:
             success_volumes = "<br>".join(
                 [
@@ -136,23 +145,23 @@ class BackupResult(object):
             )
         else:
             failed_volumes = "<br>"
-        quota_usage = (quota["in_use"] + quota["reserved"]) / quota["limit"]
-        if quota_usage > 0.8:
-            quota_color = "RED"
-        elif quota_usage > 0.5:
-            quota_color = "YALLOW"
-        else:
-            quota_color = "GREEN"
-        html = html.replace("${QUOTA_USAGE}", str(quota_usage))
-        html = html.replace("${QUOTA_COLLOR}", quota_color)
-        html = html.replace("${QUOTA_LIMIT}", str(quota["limit"]))
-        html = html.replace("${QUOTA_IN_USE}", str(quota["in_use"]))
-        html = html.replace("${QUOTA_RESERVED}", str(quota["reserved"]))
-        html = html.replace("${SUCCESS_VOLUME_LIST}", success_volumes)
-        html = html.replace("${FAILED_VOLUME_LIST}", failed_volumes)
-        html = html.replace("${PROJECT}", project_name)
-        html = html.replace("${PROJECT_ID}", project_id)
+        html += (
+            f"<h3>Project: {project_name} (ID: {project_id})</h3>"
+            "<h3>Quota Usage (Backup Gigabytes)</h3>"
+            f"<FONT COLOR={quota_color}><h4>Limit: {str(quota['limit'])} GB, In Use: "
+            f"{str(quota['in_use'])} GB, Reserved: {str(quota['reserved'])} GB, Total "
+            f"rate: {str(quota_usage)}</h4></FONT>"
+            "<h3>Success List</h3>"
+            f"<FONT COLOR=GREEN><h4>{success_volumes}</h4></FONT><br>"
+            "<h3>Failed List</h3>"
+            f"<FONT COLOR=RED><h4>{failed_volumes}</h4></FONT><br>"
+        )
         self.content += html
         subject = f"Staffeln Backup result: {project_id}"
-        self.send_result_email(project_id, subject=subject, project_name=project_name)
+        reported = self.send_result_email(
+            project_id, subject=subject, project_name=project_name
+        )
+        if reported:
+            # Record success report
+            self.create_report_record()
         return True

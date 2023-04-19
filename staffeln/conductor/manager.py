@@ -1,11 +1,13 @@
 import threading
 import time
-from datetime import datetime, timedelta
+from datetime import timedelta, timezone
 
 import cotyledon
 import staffeln.conf
 from futurist import periodics
 from oslo_log import log
+from oslo_utils import timeutils
+from staffeln import objects
 from staffeln.common import constants, context, lock
 from staffeln.common import time as xtime
 from staffeln.conductor import backup as backup_controller
@@ -129,17 +131,28 @@ class BackupManager(cotyledon.Service):
 
     def _report_backup_result(self):
         report_period = CONF.conductor.report_period
-        threshold_strtime = datetime.now() - timedelta(seconds=report_period)
-        filters = {"created_at__lt": threshold_strtime.astimezone()}
-        old_tasks = self.controller.get_queues(filters=filters)
-        for task in old_tasks:
-            if task.backup_status in (
-                constants.BACKUP_COMPLETED,
-                constants.BACKUP_FAILED,
-            ):
-                LOG.info(_("Reporting finished backup tasks..."))
-                self.controller.publish_backup_result(purge_on_success=True)
-                return
+        threshold_strtime = timeutils.utcnow() - timedelta(seconds=report_period)
+
+        filters = {"created_at__gt": threshold_strtime.astimezone(timezone.utc)}
+        report_tss = objects.ReportTimestamp.list(  # pylint: disable=E1120
+            context=self.ctx, filters=filters
+        )
+        # If there are no reports that generated within report_period seconds,
+        # generate and publish one.
+        if not report_tss:
+            LOG.info(_("Reporting finished backup tasks..."))
+            self.controller.publish_backup_result(purge_on_success=True)
+
+            # Purge records that live longer than 10 report cycles
+            threshold_strtime = timeutils.utcnow() - timedelta(
+                seconds=report_period * 10
+            )
+            filters = {"created_at__lt": threshold_strtime.astimezone(timezone.utc)}
+            old_report_tss = objects.ReportTimestamp.list(  # pylint: disable=E1120
+                context=self.ctx, filters=filters
+            )
+            for report_ts in old_report_tss:
+                report_ts.delete()
 
     def backup_engine(self, backup_service_period):
         LOG.info("Backup manager started %s" % str(time.time()))
@@ -202,8 +215,8 @@ class RotationManager(cotyledon.Service):
             self.controller.hard_remove_volume_backup(retention_backup)
 
     def is_retention(self, backup):
-        now = datetime.now()
-        backup_age = now.astimezone() - backup.created_at
+        now = timeutils.utcnow().astimezone(timezone.utc)
+        backup_age = now - backup.created_at.astimezone(timezone.utc)
         # see if need to be delete.
         if backup.instance_id in self.instance_retention_map:
             retention_time = now - self.get_time_from_str(
@@ -229,7 +242,7 @@ class RotationManager(cotyledon.Service):
                     # get the threshold time
                     self.threshold_strtime = self.get_time_from_str(
                         CONF.conductor.retention_time
-                    )
+                    ).astimezone(timezone.utc)
                     self.instance_retention_map = (
                         self.controller.collect_instance_retention_map()
                     )

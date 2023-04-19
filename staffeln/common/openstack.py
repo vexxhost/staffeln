@@ -102,6 +102,7 @@ class OpenstackSDK:
         # conn.block_storage.delete_backup(
         #     project_id=project_id, backup_id=uuid,
         # )
+        LOG.debug(f"Start deleting backup {uuid} in OpenStack.")
         try:
             self.conn.delete_volume_backup(uuid, force=force)
             # TODO(Alex): After delete the backup generator, need to set the volume status again
@@ -112,6 +113,11 @@ class OpenstackSDK:
         # quota = conn.get_volume_quotas(project_id)
         quota = self._get_volume_quotas(project_id)
         return quota.backups
+
+    def get_backup_gigabytes_quota(self, project_id):
+        # quota = conn.get_volume_quotas(project_id)
+        quota = self._get_volume_quotas(project_id)
+        return quota.backup_gigabytes
 
     # rewrite openstasdk._block_storage.get_volume_quotas
     # added usage flag
