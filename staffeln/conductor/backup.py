@@ -174,12 +174,12 @@ class Backup(object):
                 "project_id": project_id,
             }
         )
+        LOG.info("Start purge completed tasks.")
         for queue in success_tasks:
-            LOG.info("Start purge completed tasks.")
             queue.delete_queue()
 
+        LOG.info("Start purge failed tasks.")
         for queue in failed_tasks:
-            LOG.info("Start purge failed tasks.")
             queue.delete_queue()
 
     def create_failed_backup_obj(self, task):

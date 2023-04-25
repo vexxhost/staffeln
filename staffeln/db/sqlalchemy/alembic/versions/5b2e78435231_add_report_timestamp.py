@@ -20,7 +20,9 @@ LOG = log.getLogger(__name__)
 def upgrade():
     op.create_table(
         "report_timestamp",
-        sa.Column("id", sa.String(36), primary_key=True, nullable=False),
+        sa.Column(
+            "id", sa.String(36), primary_key=True, nullable=False, autoincrement=True
+        ),
         sa.Column("created_at", sa.DateTime),
         sa.Column("updated_at", sa.DateTime),
         sa.Column("sender", sa.String(length=255), nullable=True),
