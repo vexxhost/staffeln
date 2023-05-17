@@ -174,11 +174,11 @@ class Backup(object):
                 "project_id": project_id,
             }
         )
-        LOG.info("Start purge completed tasks.")
+        LOG.debug(f"Start purge completed tasks for project {project_id}")
         for queue in success_tasks:
             queue.delete_queue()
 
-        LOG.info("Start purge failed tasks.")
+        LOG.debug(f"Start purge failed tasks for project {project_id}")
         for queue in failed_tasks:
             queue.delete_queue()
 
