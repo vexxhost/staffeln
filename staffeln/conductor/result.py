@@ -45,14 +45,14 @@ class BackupResult(object):
                         f"No email can be found from members of project {project_id}. "
                         "Skip report now and will try to report later."
                     )
-                    return
+                    return False
             except Exception as ex:
                 LOG.warn(
                     f"Failed to fetch emails from project members with exception: {ex}"
                     "As also no receiver email or project receiver domain are "
                     "configured. Will try to report later."
                 )
-                return
+                return False
         else:
             receiver_domain = CONF.notification.project_receiver_domain
             receiver = f"{project_name}@{receiver_domain}"
@@ -164,4 +164,6 @@ class BackupResult(object):
         if reported:
             # Record success report
             self.create_report_record()
-        return True
+            return True
+        else:
+            return False
