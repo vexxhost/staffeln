@@ -48,10 +48,16 @@ class OpenstackSDK:
         members = self.get_role_assignments(project_id)
         emails = []
         for member in members:
-            if member.user and "id" in member.user:
-                user = self.get_user(member.user["id"])
-                if user and hasattr(user, "email"):
-                    emails.append(user.email)
+            if hasattr(member, "user"):
+                user_id = None
+                if type(member.user) is dict and "id" in member.user:
+                    user_id = member.user["id"]
+                elif type(member.user) is str:
+                    user_id = member.user
+                if user_id:
+                    user = self.get_user(user_id)
+                    if user and hasattr(user, "email") and user.email:
+                        emails.append(user.email)
         return emails
 
     def get_projects(self):
