@@ -48,7 +48,7 @@ class BackupResult(object):
                     return False
             except Exception as ex:
                 LOG.warn(
-                    f"Failed to fetch emails from project members with exception: {ex}"
+                    f"Failed to fetch emails from project members with exception: {str(ex)} "
                     "As also no receiver email or project receiver domain are "
                     "configured. Will try to report later."
                 )
