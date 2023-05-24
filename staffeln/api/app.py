@@ -34,5 +34,14 @@ def backup_id():
         return Response("False", status=401, mimetype="text/plain")
 
 
+@app.route("/v1/health", methods=["GET"])
+def health():
+    return Response(
+        "True",
+        status=200,
+        mimetype="text/plain",
+    )
+
+
 def run(host, port, ssl_context):
     app.run(host=host, port=port, ssl_context=ssl_context)
