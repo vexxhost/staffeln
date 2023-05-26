@@ -211,12 +211,16 @@ class Connection(object):
         return obj
 
     def _create(self, model, values):
-        obj = model()
-        cleaned_values = {
-            k: v for k, v in values.items() if k not in self._get_relationships(model)
-        }
-        obj.update(cleaned_values)
-        obj.save()
+        session = get_session()
+        with session.begin():
+            obj = model()
+            cleaned_values = {
+                k: v
+                for k, v in values.items()
+                if k not in self._get_relationships(model)
+            }
+            obj.update(cleaned_values)
+            obj.save(session=session)
         return obj
 
     @staticmethod
