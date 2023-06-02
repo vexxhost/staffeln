@@ -217,7 +217,7 @@ class Backup(object):
             backup = self.openstacksdk.get_backup(task.backup_id)
             if backup is None:
                 return task.delete_queue()
-            self.openstacksdk.delete_backup(task.backup_id, force=True)
+            self.openstacksdk.delete_backup(task.backup_id)
             self.create_failed_backup_obj(task)
 
             task.reason = reason
@@ -307,7 +307,7 @@ class Backup(object):
                 )
                 return backup_object.delete_backup()
 
-            self.openstacksdk.delete_backup(uuid=backup_object.backup_id, force=True)
+            self.openstacksdk.delete_backup(uuid=backup_object.backup_id)
             # Don't remove backup until it's officially removed from Cinder
             # backup_object.delete_backup()
         except Exception as e:
@@ -316,7 +316,7 @@ class Backup(object):
             else:
                 LOG.info(
                     _(
-                        f"Backup {backup_object.backup_id} deletion failed."
+                        f"Backup {backup_object.backup_id} deletion failed. "
                         "Skip this backup from remove now and will retry later."
                     )
                 )
@@ -632,7 +632,7 @@ class Backup(object):
         LOG.warn(reason)
         # 2. delete backup generator
         try:
-            self.openstacksdk.delete_backup(uuid=task.backup_id, force=True)
+            self.openstacksdk.delete_backup(uuid=task.backup_id)
             self.create_failed_backup_obj(task)
         except OpenstackHttpException as ex:
             LOG.warn(
