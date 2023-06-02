@@ -300,7 +300,7 @@ class Backup(object):
                 LOG.info(
                     _(
                         "Backup %s is not existing in Openstack. "
-                        "Or cinder-backup is not existing in the cloud."
+                        "Or cinder-backup is not existing in the cloud. "
                         "Start removing backup object from Staffeln."
                         % backup_object.backup_id
                     )
