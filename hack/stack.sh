@@ -59,6 +59,7 @@ retention_time = 2w3d
 backup_metadata_key="__automated_backup"
 retention_metadata_key="__staffeln_retention"
 full_backup_depth = 4
+lock_timeout = 7200
 
 [database]
 backend = sqlalchemy

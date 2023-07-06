@@ -7,6 +7,13 @@ conductor_group = cfg.OptGroup(
     title="Conductor Options",
     help=_("Options under this group are used " "to define Conductor's configuration."),
 )
+lock_opts = [
+    cfg.IntOpt(
+        "lock_timeout",
+        default=7200,
+        help=_("The timeout seconds before released a tooz lock."),
+    ),
+]
 
 backup_opts = [
     cfg.IntOpt(
@@ -113,6 +120,7 @@ def register_opts(conf):
     conf.register_group(conductor_group)
     conf.register_opts(backup_opts, group=conductor_group)
     conf.register_opts(rotation_opts, group=conductor_group)
+    conf.register_opts(lock_opts, group=conductor_group)
 
 
 def list_opts():
