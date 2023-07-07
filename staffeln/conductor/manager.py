@@ -189,24 +189,24 @@ class RotationManager(cotyledon.Service):
         self.conf = conf
         self.lock_mgt = lock.LockManager()
         self.controller = backup_controller.Backup()
-        LOG.info("%s init" % self.name)
+        LOG.info(f"{self.name} init")
 
     def run(self):
-        LOG.info("%s run" % self.name)
+        LOG.info(f"{self.name} run")
         self.rotation_engine(CONF.conductor.retention_service_period)
 
     def terminate(self):
-        LOG.info("%s terminate" % self.name)
+        LOG.info(f"{self.name} terminate")
         super(RotationManager, self).terminate()
 
     def reload(self):
-        LOG.info("%s reload" % self.name)
+        LOG.info(f"{self.name} reload")
 
     def get_backup_list(self, filters=None):
         return self.controller.get_backups(filters=filters)
 
     def remove_backups(self, retention_backups):
-        LOG.info(_("Backups to be removed: %s" % retention_backups))
+        LOG.info(f"Backups to be removed: {retention_backups}")
         for retention_backup in retention_backups:
             self.controller.hard_remove_volume_backup(retention_backup)
 
@@ -217,16 +217,20 @@ class RotationManager(cotyledon.Service):
         if backup.instance_id in self.instance_retention_map:
             retention_time = now - self.get_time_from_str(
                 self.instance_retention_map[backup.instance_id]
-            )
+            ).astimezone(timezone.utc)
             if backup_age > retention_time:
                 # Backup remain longer than retention, need to purge it.
+                LOG.debug(
+                    f"Found potential volume backup for retention: Backup ID: {backup.backup_id} "
+                    f"with backup age: {backup_age} (Target retention time: {retention_time})."
+                )
                 return True
         elif now - self.threshold_strtime < backup_age:
             return True
         return False
 
     def rotation_engine(self, retention_service_period):
-        LOG.info("%s rotation_engine" % self.name)
+        LOG.info(f"{self.name} rotation_engine")
 
         @periodics.periodic(spacing=retention_service_period, run_immediately=True)
         def rotation_tasks():
@@ -234,6 +238,8 @@ class RotationManager(cotyledon.Service):
                 with lock.Lock(self.lock_mgt, constants.RETENTION) as retention:
                     if not retention.acquired:
                         return
+
+                    LOG.info("Starting task to check rotation...")
                     self.controller.refresh_openstacksdk()
                     # get the threshold time
                     self.threshold_strtime = self.get_time_from_str(
@@ -274,6 +280,9 @@ class RotationManager(cotyledon.Service):
                         )
                         for backup in sorted_backup_list:
                             if self.is_retention(backup):
+                                LOG.debug(
+                                    f"Retention: Try to remove volume backup {backup.backup_id}"
+                                )
                                 # Try to delete and skip any incremental exist error.
                                 self.controller.hard_remove_volume_backup(
                                     backup, skip_inc_err=True
