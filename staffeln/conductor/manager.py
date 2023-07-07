@@ -12,7 +12,6 @@ from staffeln.common import constants, context, lock
 from staffeln.common import time as xtime
 from staffeln.conductor import backup as backup_controller
 from staffeln.i18n import _
-from tooz import coordination
 
 LOG = log.getLogger(__name__)
 CONF = staffeln.conf.CONF
@@ -58,13 +57,12 @@ class BackupManager(cotyledon.Service):
             if not self._backup_cycle_timeout():  # time in
                 LOG.info(_("cycle timein"))
                 for queue in queues_started:
-                    try:
-                        with self.lock_mgt.coordinator.get_lock(queue.volume_id):
+                    LOG.debug(
+                        f"try to get lock and run task for volume: {queue.volume_id}."
+                    )
+                    with lock.Lock(self.lock_mgt, queue.volume_id) as q_lock:
+                        if q_lock.acquired:
                             self.controller.check_volume_backup_status(queue)
-                    except coordination.LockAcquireFailed:
-                        LOG.debug(
-                            "Failed to lock task for volume: %s." % queue.volume_id
-                        )
             else:  # time out
                 LOG.info(_("cycle timeout"))
                 for queue in queues_started:
@@ -112,11 +110,9 @@ class BackupManager(cotyledon.Service):
         )
         if len(tasks_to_start) != 0:
             for task in tasks_to_start:
-                try:
-                    with self.lock_mgt.coordinator.get_lock(task.volume_id):
+                with lock.Lock(self.lock_mgt, task.volume_id) as t_lock:
+                    if t_lock.acquired:
                         self.controller.create_volume_backup(task)
-                except coordination.LockAcquireFailed:
-                    LOG.debug("Failed to lock task for volume: %s." % task.volume_id)
 
     # Refresh the task queue
     def _update_task_queue(self):
@@ -161,17 +157,17 @@ class BackupManager(cotyledon.Service):
         @periodics.periodic(spacing=backup_service_period, run_immediately=True)
         def backup_tasks():
             with self.lock_mgt:
-                try:
-                    with self.lock_mgt.coordinator.get_lock(constants.PULLER):
+                with lock.Lock(self.lock_mgt, constants.PULLER) as puller:
+                    if puller.acquired:
                         LOG.info("Running as puller role")
                         self._update_task_queue()
                         self._process_todo_tasks()
                         self._process_wip_tasks()
                         self._report_backup_result()
-                except coordination.LockAcquireFailed:
-                    LOG.info("Running as non-puller role")
-                    self._process_todo_tasks()
-                    self._process_wip_tasks()
+                    else:
+                        LOG.info("Running as non-puller role")
+                        self._process_todo_tasks()
+                        self._process_wip_tasks()
 
         periodic_callables = [
             (backup_tasks, (), {}),
@@ -234,10 +230,10 @@ class RotationManager(cotyledon.Service):
 
         @periodics.periodic(spacing=retention_service_period, run_immediately=True)
         def rotation_tasks():
-            try:
-                # TODO(rlin): change to use decorator for this
-                # Make sure only one retention at a time
-                with self.lock_mgt.coordinator.get_lock("retention"):
+            with self.lock_mgt:
+                with lock.Lock(self.lock_mgt, constants.RETENTION) as retention:
+                    if not retention.acquired:
+                        return
                     self.controller.refresh_openstacksdk()
                     # get the threshold time
                     self.threshold_strtime = self.get_time_from_str(
@@ -283,8 +279,6 @@ class RotationManager(cotyledon.Service):
                                     backup, skip_inc_err=True
                                 )
                                 time.sleep(2)
-            except coordination.LockAcquireFailed:
-                LOG.debug("Failed to lock for retention")
 
         periodic_callables = [
             (rotation_tasks, (), {}),
