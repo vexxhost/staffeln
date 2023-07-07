@@ -245,9 +245,8 @@ class Backup(object):
             if backup is None:
                 LOG.info(
                     _(
-                        "Backup %s is not existing in Openstack "
-                        "or cinder-backup is not existing in the cloud."
-                        % backup_object.backup_id
+                        f"Backup {backup_object.backup_id} is removed from "
+                        "Openstack or cinder-backup is not existing in the cloud."
                     )
                 )
                 return backup_object.delete_backup()
@@ -299,8 +298,8 @@ class Backup(object):
             if backup is None:
                 LOG.info(
                     _(
-                        "Backup %s is not existing in Openstack. "
-                        "Or cinder-backup is not existing in the cloud. "
+                        "Backup %s is removed from Openstack "
+                        "or cinder-backup is not existing in the cloud. "
                         "Start removing backup object from Staffeln."
                         % backup_object.backup_id
                     )
