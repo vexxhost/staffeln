@@ -226,6 +226,10 @@ class RotationManager(cotyledon.Service):
                 )
                 return True
         elif now - self.threshold_strtime < backup_age:
+            LOG.debug(
+                f"Found potential volume backup for retention: Backup ID: {backup.backup_id} "
+                f"with backup age: {backup_age} (Default retention time: {self.threshold_strtime})."
+            )
             return True
         return False
 
