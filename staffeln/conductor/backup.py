@@ -9,6 +9,7 @@ from oslo_log import log
 from oslo_utils import timeutils
 from staffeln import objects
 from staffeln.common import constants, context, openstack
+from staffeln.common import time as xtime
 from staffeln.conductor import result
 from staffeln.i18n import _
 
@@ -498,9 +499,21 @@ class Backup(object):
 
         for server in servers:
             if CONF.conductor.retention_metadata_key in server.metadata:
-                retention_map[server.id] = server.metadata[
+                server_retention_time = server.metadata[
                     CONF.conductor.retention_metadata_key
                 ].lower()
+                if xtime.regex.fullmatch(server_retention_time):
+                    LOG.debug(
+                        f"Found retention time ({server_retention_time}) defined for "
+                        f"server {server.id}, Adding it retention reference map."
+                    )
+                    retention_map[server.id] = server_retention_time
+                else:
+                    LOG.info(
+                        f"Server retention time for instance {server.id} is incorrect. "
+                        "Please follow '<YEARS>y<MONTHS>m<WEEKS>w<DAYS>d<HOURS>"
+                        "h<MINUTES>min<SECONDS>s' format."
+                    )
         return retention_map
 
     def _volume_queue(self, task):
