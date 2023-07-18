@@ -17,7 +17,7 @@ regex = re.compile(
 def parse_timedelta_string(time_str):
     empty_flag = True
     try:
-        parts = regex.match(time_str)
+        parts = regex.fullmatch(time_str)
         if not parts:
             return None
         parts = parts.groupdict()
