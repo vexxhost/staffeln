@@ -30,12 +30,15 @@ def backup_id():
             status=200,
             mimetype="text/plain",
         )
-    else:
-        return Response("False", status=401, mimetype="text/plain")
+    return Response("False", status=200, mimetype="text/plain")
 
 
 @app.route("/v1/health", methods=["GET"])
 def health():
+    # Make sure API service can access to DB with no error.
+    objects.Volume.get_backup_by_backup_id(  # pylint: disable=E1120
+        context=ctx, backup_id="api-health-check"
+    )
     return Response(
         "True",
         status=200,
