@@ -56,7 +56,7 @@ backup_service_period = 1200
 retention_service_period = 1200
 backup_cycle_timout = 5min
 retention_time = 2w3d
-backup_metadata_key="__automated_backup"
+backup_metadata_key="__staffeln_backup"
 retention_metadata_key="__staffeln_retention"
 full_backup_depth = 4
 
@@ -77,9 +77,9 @@ pip install -U setuptools pip
 "${HOME}"/.local/bin/pip3 install -e .
 
 # Start staffeln conductor
-staffeln-db-manage create_schema
-#staffeln-db-manage upgrade head
-set +x
-source /opt/stack/openrc admin admin
-set -x
-staffeln-conductor &
+"${HOME}"/.local/bin/staffeln-db-manage --config-file /etc/staffeln/staffeln.conf create_schema
+ #staffeln-db-manage upgrade head
+
+echo You can fetch authroize with command: source /opt/stack/openrc admin admin
+echo You can now run staffeln conductor with: "${HOME}"/.local/bin/staffeln-conductor --config-file /etc/staffeln/staffeln.conf
+echo You can now run staffeln api with: "${HOME}"/.local/bin/staffeln-api --config-file /etc/staffeln/staffeln.conf
