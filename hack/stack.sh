@@ -49,6 +49,8 @@ EOF
 
 # Create staffeln configuration file
 cat <<EOF > /etc/staffeln/staffeln.conf
+[DEFAULT]
+debug = True
 [conductor]
 backup_workers = 1
 rotation_workers = 1
