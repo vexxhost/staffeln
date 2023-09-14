@@ -107,6 +107,13 @@ class Backup(object):
         )
         return queues
 
+    def get_queue_task_by_id(self, task_id):
+        """Get single volume queue task from the queue_data table"""
+        queue = objects.Queue.get_by_id(  # pylint: disable=E1120
+            context=self.ctx, id=task_id
+        )
+        return queue
+
     def create_queue(self, old_tasks):
         """
         Create the queue of all the volumes for backup
