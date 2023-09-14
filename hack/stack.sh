@@ -47,6 +47,7 @@ EOF
 # Start DevStack deployment
 /opt/stack/stack.sh
 
+export HOST_IP=$(hostname -I| awk '{print $1}')
 # Create staffeln configuration file
 cat <<EOF > /etc/staffeln/staffeln.conf
 [DEFAULT]
@@ -65,7 +66,7 @@ full_backup_depth = 4
 [database]
 backend = sqlalchemy
 connection = "mysql+pymysql://staffeln:password@localhost:3306/staffeln"
-tooz_connection = "mysql://staffeln:password@localhost:3306/staffeln"
+tooz_connection = "etcd3+http://$HOST_IP:2379?api_version=v3
 mysql_engine = InnoDB
 EOF
 
