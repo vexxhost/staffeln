@@ -10,5 +10,5 @@ BACKUP_RESULT_CHECK_INTERVAL = 60  # second
 # default config values
 DEFAULT_BACKUP_CYCLE_TIMEOUT = "5min"
 
-PULLER = "puller"
-RETENTION = "retention"
+PULLER = b"puller"
+RETENTION = b"retention"
