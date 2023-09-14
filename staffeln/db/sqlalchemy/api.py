@@ -314,7 +314,7 @@ class Connection(object):
             LOG.error("Queue resource not found.")
 
     def get_queue_by_id(self, context, id):
-        """Get the column from queue_data with matching backup_id"""
+        """Get the column from queue_data with matching id"""
         return self._get_queue(context, fieldname="id", value=id)
 
     def _get_queue(self, context, fieldname, value):

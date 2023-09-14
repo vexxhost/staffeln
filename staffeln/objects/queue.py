@@ -36,7 +36,7 @@ class Queue(
 
     @base.remotable_classmethod
     def get_by_id(cls, context, id):  # pylint: disable=E0213
-        """Find a backup based on backup_id
+        """Find a queue task based on id
         :param context: Security context. NOTE: This should only
                         be used internally by the indirection_api.
                         Unfortunately, RPC requires context as the first

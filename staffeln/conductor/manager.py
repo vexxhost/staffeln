@@ -112,7 +112,12 @@ class BackupManager(cotyledon.Service):
             for task in tasks_to_start:
                 with lock.Lock(self.lock_mgt, task.volume_id) as t_lock:
                     if t_lock.acquired:
-                        self.controller.create_volume_backup(task)
+                        # Re-pulling status and make it's up-to-date
+                        task = self.controller.get_queue_task_by_id(task_id=task.id)
+                        if task.backup_status == constants.BACKUP_PLANNED:
+                            task.backup_status = constants.BACKUP_INIT
+                            task.save()
+                            self.controller.create_volume_backup(task)
 
     # Refresh the task queue
     def _update_task_queue(self):
