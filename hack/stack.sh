@@ -18,6 +18,7 @@ else
 fi
 
 # Create DevStack configuration file
+
 sudo mkdir /etc/staffeln
 sudo chown -R "${USER}". /etc/staffeln
 cat <<EOF > /opt/stack/local.conf
@@ -65,8 +66,10 @@ full_backup_depth = 4
 [database]
 backend = sqlalchemy
 connection = "mysql+pymysql://staffeln:password@localhost:3306/staffeln"
-tooz_connection = "mysql://staffeln:password@localhost:3306/staffeln"
 mysql_engine = InnoDB
+
+[coordination]
+backend_url = "file:///tmp/staffeln_locks"
 EOF
 
 # Create staffeln database
