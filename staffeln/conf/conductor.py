@@ -115,7 +115,9 @@ coordination_group = cfg.OptGroup(
 
 
 coordination_opts = [
-    cfg.StrOpt("backend_url", default="", help=_("lock coordination connection backend URL.")),
+    cfg.StrOpt(
+        "backend_url", default="", help=_("lock coordination connection backend URL.")
+    ),
 ]
 
 
@@ -133,5 +135,5 @@ def list_opts():
     return {
         "DEFAULT": rotation_opts,
         conductor_group: backup_opts,
-        coordination_group: coordination_opts
+        coordination_group: coordination_opts,
     }

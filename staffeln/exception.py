@@ -17,8 +17,8 @@
 """Staffeln base exception handling."""
 
 from typing import Optional, Union  # noqa: H301
-from oslo_log import log as logging
 
+from oslo_log import log as logging
 
 LOG = logging.getLogger(__name__)
 
@@ -27,10 +27,11 @@ class StaffelnException(Exception):
     """Base Staffeln Exception
 
     To correctly use this class, inherit from it and define
-    a 'message' property. That message will get printf'd
+    a "message" property. That message will get printf'd
     with the keyword arguments provided to the constructor.
 
     """
+
     message = "An unknown exception occurred."
     code = 500
     headers: dict = {}
@@ -38,11 +39,11 @@ class StaffelnException(Exception):
 
     def __init__(self, message: Optional[Union[str, tuple]] = None, **kwargs):
         self.kwargs = kwargs
-        self.kwargs['message'] = message
+        self.kwargs["message"] = message
 
-        if 'code' not in self.kwargs:
+        if "code" not in self.kwargs:
             try:
-                self.kwargs['code'] = self.code
+                self.kwargs["code"] = self.code
             except AttributeError:
                 pass
 
@@ -61,22 +62,21 @@ class StaffelnException(Exception):
 
         self.msg = message
         super(StaffelnException, self).__init__(message)
-        # Oslo.messaging use the argument 'message' to rebuild exception
+        # Oslo.messaging use the argument "message" to rebuild exception
         # directly at the rpc client side, therefore we should not use it
         # in our keyword arguments, otherwise, the rebuild process will fail
         # with duplicate keyword exception.
-        self.kwargs.pop('message', None)
+        self.kwargs.pop("message", None)
 
     def _log_exception(self) -> None:
         # kwargs doesn't match a variable in the message
         # log the issue and the kwargs
-        LOG.exception('Exception in string format operation:')
+        LOG.exception("Exception in string format operation:")
         for name, value in self.kwargs.items():
-            LOG.error("%(name)s: %(value)s",
-                      {'name': name, 'value': value})
+            LOG.error(f"{name}: {value}")
 
     def _should_format(self) -> bool:
-        return self.kwargs['message'] is None or '%(message)' in self.message
+        return self.kwargs["message"] is None or "%(message)" in self.message
 
 
 class LockCreationFailed(StaffelnException):
