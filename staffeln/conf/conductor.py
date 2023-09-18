@@ -106,6 +106,21 @@ rotation_opts = [
     ),
 ]
 
+
+coordination_group = cfg.OptGroup(
+    "coordination",
+    title="Coordination Options",
+    help=_("Options under this group are used to define Coordination's configuration."),
+)
+
+
+coordination_opts = [
+    cfg.StrOpt(
+        "backend_url", default="", help=_("lock coordination connection backend URL.")
+    ),
+]
+
+
 CONDUCTOR_OPTS = (backup_opts, rotation_opts)
 
 
@@ -113,7 +128,12 @@ def register_opts(conf):
     conf.register_group(conductor_group)
     conf.register_opts(backup_opts, group=conductor_group)
     conf.register_opts(rotation_opts, group=conductor_group)
+    conf.register_opts(coordination_opts, group=coordination_group)
 
 
 def list_opts():
-    return {"DEFAULT": rotation_opts, conductor_group: backup_opts}
+    return {
+        "DEFAULT": rotation_opts,
+        conductor_group: backup_opts,
+        coordination_group: coordination_opts,
+    }

@@ -60,7 +60,9 @@ class BackupManager(cotyledon.Service):
                     LOG.debug(
                         f"try to get lock and run task for volume: {queue.volume_id}."
                     )
-                    with lock.Lock(self.lock_mgt, queue.volume_id) as q_lock:
+                    with lock.Lock(
+                        self.lock_mgt, queue.volume_id, remove_lock=True
+                    ) as q_lock:
                         if q_lock.acquired:
                             self.controller.check_volume_backup_status(queue)
             else:  # time out
@@ -110,7 +112,9 @@ class BackupManager(cotyledon.Service):
         )
         if len(tasks_to_start) != 0:
             for task in tasks_to_start:
-                with lock.Lock(self.lock_mgt, task.volume_id) as t_lock:
+                with lock.Lock(
+                    self.lock_mgt, task.volume_id, remove_lock=True
+                ) as t_lock:
                     if t_lock.acquired:
                         # Re-pulling status and make it's up-to-date
                         task = self.controller.get_queue_task_by_id(task_id=task.id)

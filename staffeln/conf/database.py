@@ -15,7 +15,6 @@ database = cfg.OptGroup(
 
 SQL_OPTS = [
     cfg.StrOpt("mysql_engine", default="InnoDB", help=_("MySQL engine to use.")),
-    cfg.StrOpt("tooz_connection", default="", help=_("Tooz MySQL connection URL.")),
 ]
 
 
