@@ -16,8 +16,11 @@ LOG = log.getLogger(__name__)
 
 
 class LockManager(object):
-    def __init__(self, backend="k8s"):
-        self.coordinator = COORDINATOR if backend == "tooz" else K8SCOORDINATOR
+    def __init__(self):
+        backend_url = CONF.coordination.backend_url
+        # This is for now using to check if any backend_url setup
+        # for tooz backends as K8s should not need one.any
+        self.coordinator = COORDINATOR if backend_url else K8SCOORDINATOR
 
     def __enter__(self):
         self.coordinator.start()
