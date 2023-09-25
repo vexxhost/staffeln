@@ -6,6 +6,7 @@ import sys
 import uuid
 from typing import Optional  # noqa: H301
 
+import sherlock
 from oslo_log import log
 from staffeln import conf, exception
 from tooz import coordination
@@ -16,7 +17,10 @@ LOG = log.getLogger(__name__)
 
 class LockManager(object):
     def __init__(self):
-        self.coordinator = COORDINATOR
+        backend_url = CONF.coordination.backend_url
+        # This is for now using to check if any backend_url setup
+        # for tooz backends as K8s should not need one.any
+        self.coordinator = COORDINATOR if backend_url else K8SCOORDINATOR
 
     def __enter__(self):
         self.coordinator.start()
@@ -132,4 +136,43 @@ class Coordinator(object):
                     _err(file_name, exc)
 
 
+class K8sCoordinator(object):
+    """Sherlock kubernetes coordination wrapper.
+
+    :param int expire: Set lock expire seconds
+    :param int timeout: Set lock acquire action timeout seconds
+    :param str namespace: Set lock namespace.
+    """
+
+    def __init__(
+        self, expire: int = 3600, timeout: int = 10, namespace: str = "staffeln"
+    ):
+        self.timeout = timeout
+        self.expire = expire
+        self.namespace = namespace
+        self.started = False
+
+    def start(self) -> None:
+        if self.started:
+            return
+        sherlock.configure(expire=self.expire, timeout=self.timeout)
+        self.started = True
+
+    def stop(self) -> None:
+        """Disconnect from coordination backend and stop heartbeat."""
+        pass
+
+    def get_lock(self, name: str):
+        """Return a kubernetes lease lock.
+
+        :param str name: The lock name that is used to identify it
+            across all nodes.
+        """
+        return sherlock.KubernetesLock(name, self.namespace)
+
+    def remove_lock(self, glob_name):
+        pass
+
+
 COORDINATOR = Coordinator(prefix="staffeln-")
+K8SCOORDINATOR = K8sCoordinator()
