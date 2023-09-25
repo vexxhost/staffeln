@@ -18,5 +18,6 @@ openstacksdk>0.28.0
 pymysql
 parse
 tooz # Apache-2.0
+sherlock>=0.4.1 # MIT
 # email
 # smtplib

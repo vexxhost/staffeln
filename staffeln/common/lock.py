@@ -7,6 +7,7 @@ import uuid
 from typing import Optional  # noqa: H301
 
 from oslo_log import log
+import sherlock
 from staffeln import conf, exception
 from tooz import coordination
 
@@ -15,8 +16,9 @@ LOG = log.getLogger(__name__)
 
 
 class LockManager(object):
-    def __init__(self):
-        self.coordinator = COORDINATOR
+    def __init__(self, lock_backend="k8s"):
+        self.coordinator = COORDINATOR if (
+            lock_backend == "tooz") else K8SCOORDINATOR
 
     def __enter__(self):
         self.coordinator.start()
@@ -131,5 +133,42 @@ class Coordinator(object):
                 except Exception as exc:
                     _err(file_name, exc)
 
+class K8sCoordinator(object):
+    """Sherlock kubernetes coordination wrapper.
+
+    :param int expire: Set lock expire seconds
+    :param int timeout: Set lock acquire action timeout seconds
+    :param str namespace: Set lock namespace.
+    """
+
+    def __init__(self, expire: int = 3600, timeout: int = 10,
+                 namespace: str = "staffeln"):
+        self.timeout = timeout
+        self.expire = expire
+        self.namespace = namespace
+        self.started = False
+
+    def start(self) -> None:
+        if self.started:
+            return
+        sherlock.configure(expire=self.expire, timeout=self.timeout)
+        self.started = True
+
+    def stop(self) -> None:
+        """Disconnect from coordination backend and stop heartbeat."""
+        pass
+
+    def get_lock(self, name: str):
+        """Return a kubernetes lease lock.
+
+        :param str name: The lock name that is used to identify it
+            across all nodes.
+        """
+        return sherlock.KubernetesLock(name, self.namespace)
+
+    def remove_lock(self, glob_name):
+        pass
+
 
 COORDINATOR = Coordinator(prefix="staffeln-")
+K8SCOORDINATOR = K8sCoordinator()
