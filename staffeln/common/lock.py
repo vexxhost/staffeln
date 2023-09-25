@@ -6,8 +6,8 @@ import sys
 import uuid
 from typing import Optional  # noqa: H301
 
-from oslo_log import log
 import sherlock
+from oslo_log import log
 from staffeln import conf, exception
 from tooz import coordination
 
@@ -16,9 +16,8 @@ LOG = log.getLogger(__name__)
 
 
 class LockManager(object):
-    def __init__(self, lock_backend="k8s"):
-        self.coordinator = COORDINATOR if (
-            lock_backend == "tooz") else K8SCOORDINATOR
+    def __init__(self, backend="k8s"):
+        self.coordinator = COORDINATOR if backend == "tooz" else K8SCOORDINATOR
 
     def __enter__(self):
         self.coordinator.start()
@@ -133,6 +132,7 @@ class Coordinator(object):
                 except Exception as exc:
                     _err(file_name, exc)
 
+
 class K8sCoordinator(object):
     """Sherlock kubernetes coordination wrapper.
 
@@ -141,8 +141,9 @@ class K8sCoordinator(object):
     :param str namespace: Set lock namespace.
     """
 
-    def __init__(self, expire: int = 3600, timeout: int = 10,
-                 namespace: str = "staffeln"):
+    def __init__(
+        self, expire: int = 3600, timeout: int = 10, namespace: str = "staffeln"
+    ):
         self.timeout = timeout
         self.expire = expire
         self.namespace = namespace
