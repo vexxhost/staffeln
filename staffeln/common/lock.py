@@ -43,7 +43,8 @@ class Lock(object):
         self.acquired = self.lock.acquire(blocking=False)
         if not self.acquired:
             LOG.debug(f"Failed to lock for {self.lock_name}")
-        LOG.debug(f"acquired lock for {self.lock_name}")
+        else:
+            LOG.debug(f"acquired lock for {self.lock_name}")
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
