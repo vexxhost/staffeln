@@ -146,12 +146,13 @@ class K8sCoordinator(object):
     """
 
     def __init__(
-        self, expire: int = 3600, timeout: int = 10, namespace: str = "staffeln"
+        self, expire: int = 3600, timeout: int = 10, namespace: str = "openstack"
     ):
         self.timeout = timeout
         self.expire = expire
         self.namespace = namespace
         self.started = False
+        self.prefix = "staffeln-"
 
     def start(self) -> None:
         if self.started:
@@ -169,7 +170,7 @@ class K8sCoordinator(object):
         :param str name: The lock name that is used to identify it
             across all nodes.
         """
-        return sherlock.KubernetesLock(name, self.namespace)
+        return sherlock.KubernetesLock(self.prefix + name, self.namespace)
 
     def remove_lock(self, glob_name):
         pass
