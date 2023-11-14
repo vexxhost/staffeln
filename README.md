@@ -2,111 +2,264 @@
 
 ## Project Description
 
-This solution is a volume-level scheduled backup to implement a non-intrusive automatic backup for Openstack VMs.
+This solution is a volume-level scheduled backup to implement a non-intrusive
+automatic backup for Openstack VMs.
 
 All volumes attached to the specified VMs are backed up periodically.
 
-File-level backup will not be provided. The volume can be restored and attached to the target VM to restore any needed files. Users can restore through Horizon or the cli in self-service.
+File-level backup will not be provided. The volume can be restored and attached
+to the target VM to restore any needed files. Users can restore through Horizon
+or the cli in self-service.
 
-## Functions
+## Staffeln Conductor Functions
 
-### Function Overview
+Staffeln conductor manage all perodic tasks like backup, retention, and
+notification.  It's possible to have multiple staffeln conductor services
+running.  There will only be one service pulling volume and server information
+from OpenStack and schedule backups.  All conductor on the other hand, will be
+able to take scheduled backup tasks and run backups and also check for backup
+to completed.  For single volume, only one backup task will be generated, and
+only one of staffeln conductor service will be able to pick up that task that
+the same time.  Same as retention tasks.
 
-The solution backs up all volumes attached to VMs which have a predefined metadata set, for
-example, `backup=yes`.
-First, it gets the list of VMs which have backup metadata and the list of volumes attached to the
-VMs in the given project by consuming the Openstack API (nova-api and cinder-api). Once the
-volume list is prepared, then it consumes cinder-backup API to perform the backup.
-Once the backup is successful, the backup time is updated in the metadata - `last-backup-time` of
-the VM.
+### Backup
 
-* *Filtering volumes:* It skips specific volumes if the volume metadata includes a specific
-`skip-volume-backup` flag.
-* *Limitation:* The number of volumes which users can backup is limited. Once the backup
-count exceeds the quota which is defined per project, the backup job would fail.
-* *Naming convention:* The backup volume name would be
-{VOLUME_NAME}-{BACKUP_DATE}.
-* Compression: all backup volumes are compressed at the ceph level. The compression
-mode, compression algorithm and required parameters are configured by the user.
+Staffeln is a service to help perform backup. What it does is with provided
+authorization, Staffeln find a volume list with go through instance list from
+OpenStack, and find instances has `backup_metadata_key` (which configured under
+`[conductor]` section in `/etc/staffeln/staffeln.conf`) defined in metadata and
+got volume attached. Collect those attached volumes into a list.  Follow by
+using that volume list to generate volume backup tasks in Staffeln.  And do
+backups, check work-in-progress backups accordingly.  With role control, there
+is only one Staffeln service that can perform volume collection and backup task
+schedules at the same time. But all services can do backup action, and check
+progress in parallel.  Backup schedule trigger time is controlled by periodic
+jobs separately across all Staffeln nodes.  It’s possible a following backup
+plan starts from a different node near previous success backup (with less than
+`backup_service_period` of time) in Staffeln V1, but it’s fixed with
+`backup_min_interval` config. And in either case, the Full and Incremental
+backup order (config with `full_backup_depth`) is still be honored.
+`backup_min_interval` is value that you config for how many seconds you like as
+minimum interval between backups for same volume from Staffeln.  The
+configuration `full_backup_depth` under  `[conductor]` section in
+`/etc/staffeln/staffeln.conf` will decide how incremental backups are going to
+perform. If `full_backup_depth` is set to 1. For each Full backup will follow
+by only one incremental backup(not counting ). And 2 incremental if
+`full_backup_depth` set to 2. Set to `0` if want all full backups.
+
+To avoid long stucking backup action, config `backup_cycle_timout` should be
+set with a reasonable time that long enough for backups to complete but good
+enough to judge the backup process is stucking. When a backup process reach
+this timeout, it will remove the backup task and try to delete the volume
+backup. A followup backup object (marked as not completed) will be create and
+set the create time to 10 years old so the remove progress will be observe and
+retry on next retention job.
+
+`backup_service_period` is no longer the only fector that reflect how long
+volume should backup. It’s recommended to set `backup_min_interval` and
+`report_period`(see in Report part) and config a related shorter
+`backup_service_period`. For example if we set `backup_min_interval` to 3600
+seconds and set `backup_service_period` to 600 seconds, the backup job will
+trigger roughly every 10 minutes, and only create new backup when previous
+backup for same volume created for more than 1 hours ago.
 
 ### Retention
 
-Based on the configured retention policy, the volumes are removed.
-Openstack API access policies are customized to make only the retention service be able to delete
-the backups and users not.
+On retention, backups which has creation time longer than retention time
+(defined by `retention_time` from `/etc/staffeln/staffeln.conf` or
+`retention_metadata_key` which added to metadata of instances) will put in list
+and try to delete by Staffeln.  Note: the actual key value of
+`retention_metadata_key` is customizable. Like in test doc, you can see
+following property been added to instance ` --property
+__staffeln_retention=20min`.  Customized `retention_metadata_key` has larger
+priority than `retention_time`. If no `retention_metadata_key` defined for
+instance, `retention_time` will be used.  With incremental backup exist,
+retention will honored full and incremental backup order.  That means some
+backups might stay longer than it’s designed retention time as there are
+incremental backups depends on earlier backups. The chain will stop when next
+full backup created.  Now retention only delete backup object from Staffeln DB
+when backup not found in Cinder backup service.
 
-### Scaling
+For honor backups dependencies. When collected retention list for one volumes,
+retention will start delete the later created one. And go through that order
+till the very early created one.  However, as Cinder might not honor the delete
+request order. It’s possible that some of delete request in that situation
+might failed. In Staffeln, will try to delete those failed request in next
+periodic time. 
 
-Cinder backup service is running on the dedicated backup host and it can be scaled across multiple
-backup hosts.
+It’s recommended to config `retention_time` according your default retention
+needs, and well setup `retention_metadata_key` and update instance metadata to
+schedule for the actual rentnetion for volumes from each instance.
+`retention_service_period` is only for trigger checking if there are any
+backups should be delete. So no need to set it to a too long period of time.
 
-### Notification
+### Report
 
-Once the backup is finished, the results are notified to the specified users by email regardless of
-whether it was successful or not (the email will be one digest of all backups).
-Backup result HTML Template
-- Backup time
-- Current quota usage(Quota/used number/percentage) with proper colors
-  - 50% <= Quota usage : Green
-  - 80% > Quota > 50% usage : Yellow
-  - Quota usage > 80% : Red
-- Volume list
-- Success/fail: true/false with proper colors
-  - Fail: Red
-  - Success: Green
-- Fail reason
+Report process is part of backup cron job. When one of Staffeln service got
+backup schedule role and finish with backup schedule, trigger, and check work
+in progress backup are done in this period. It will check if any successed or
+failed backup task has not been reported for `report_period` seconds after it
+created. It will trigger the report process.  `report_period` is defined under
+`[conductor]` with unit to seconds.  Report will generate an html format of
+string with quota, success and failed backup task list with proper html color
+format for each specific project that has success or failed backup to report.
+As for how the report will sent is base on your config and environment.
 
-### Settings
+And if email sending failed, it will not send that report but provide message
+for email failed in log. Staffeln will try to regenerate and resent report on
+next periodic cycle.  On the other hand, you can avoid config `sender_email`
+from above, and make the report goes to logs directly.  If you have specific
+email addresses you wish to send to instead of using project name. You can
+provide `receiver` config so it will send all project report to receiver list
+instead.  And if neither `recveiver` or `project_receiver_domain` are set, the
+project report will try to grap project member list and gather user emails to
+send report to. If no user email can be found from project member, Staffeln
+will ignore this report cycle and retry the next cycle.  Notice that, to
+improve Staffeln performance and to reduce old backup result exist in Staffeln
+DB, properly config email is recommended. Otherwise, not config any sender
+information and make the reports goes to logs can be considered.  When report
+successfully sent to email or logs for specific project. all success/failed
+tasks for that project will be purged from Staffeln.
 
-Users can configure the settings to control the backup process. The parameters are;
-- Backup period
-- Volume filtering tag
-- Volume skip filter metadata tag
-- Volume limit number
-- Retention time
-- Archival rules
-- Compression mode, algorithm and parameters
-- Notification receiver list
-- Notification email HTML template
-- Openstack Credential
+The report interval might goes a bit longer than `report_period` base on the
+backup service interval and previous backup works. For example on each backup
+schedule role granted, it start all the backup schedule works also check bacup
+in progress tasks with other staffeln services. And counting cron job sleep
+interval, the report time might take longer than what configed in
+`report_period`. But it will never goes earlier than `report_period`.
 
-### User Interface
+For report format. It’s written in html format and categorized by  projects.
+Collect information from all projects into one report, and sent it through
+email or directly to log. And in each project, will provide information about
+project name, quote status, backup succeeded list, and backup failed list. And
+follow by second project and so on.
 
-- Users can get the list of backup volumes on the Horizon cinder-backup panel. This panel
-has filtering and pagination functions which are not default ones of Horizon.
-- Users cannot delete the volumes on the UI. “Delete Volume Backup” button is disabled on
-the cinder-backup panel.
+### Staffeln-API
 
-## Dependencies
+Staffeln API service allows we defined cinder policy check and make sure all
+Cinder volume backups are deleted only when that backup is not makaged by
+Staffeln.  Once staffeln api service is up. You can define similar policy as
+following to `/etc/cinder/policy.yaml`: "backup:delete" : "rule:admin_api or
+(project_id:%(project_id)s and
+http://Staffeln-api-url:8808/v1/backup?backup_id=%(id)s)"
 
-* openstacksdk (API calls)
-* Flask (HTTP API)
-* oslo.service (long-running daemon)
-* pbr (using setup.cfg for build tooling)
-* oslo.db (database connections)
-* oslo.config (configuration files)
+And when backup not exist in staffeln, that API will return TRUE and make the
+policy allows the backup delete.  Else will return False and only allow backup
+delete when it's admin in above case.
+
+## Settings
+
+Users can configure the settings to control the backup process.  Most of
+functions are controlled through configurations.  You will be able to find all
+configurations under
+https://github.com/vexxhost/staffeln/tree/main/staffeln/conf
+
+And defined them in `/etc/staffeln/staffeln.conf` before restart
+staffeln-conductor service.
+
+## User Interface
+
+Users can get the list of backup volumes on the Horizon cinder-backup panel.
+This panel has filtering and pagination functions which are not default ones of
+Horizon.  Users cannot delete the volumes on the UI if “Delete Volume Backup”
+button is disabled on the cinder-backup panel from horizon.
+
+## Service dependencies
+
+* openstacksdk that can reach to Cinder, Nova, and Keystone
+
+  Staffeln heavily depends on Cinder backup. So need to make sure that Cinder
+  Backup service is stable.  On the other hand, as backup create or delete
+  request amount might goes high when staffeln processed with large amount of
+  volume backup. It’s possible API request is not well processed or the request
+  order is mixed. For delete backup, Staffeln might not be able to delete a
+  backup right away if any process failed (like full backup delete request sent
+  to Cinder, but it’s depends incremental backup delete request still not), but
+  will keep that backup resource in Staffeln, and try to delete it again in
+  later periodic job.  Avoid unnecessary frequent of backup/retention interval
+  will help to maintain the overall performance of Cinder.
+
+  Make sure the metadata key that config through `backup_metadata_key` and
+  `retention_metadata_key` are not conflict to any other services/ user who
+  using Nova metadata.
+
+* kubernetes lease (default lock backend)
+
+  Staffeln depends on kubernetes lease that allow multiple services cowork
+  together.
+
+## Authentication dependencies
+
+Staffeln by default uses regular openstack authentication methods. File
+`/etc/staffeln/openrc` is usually the authentication file. Staffeln heavily
+depends on authentication. Make sure the authentication method you provide
+contains the following authorization in OpenStack:
+* token authentication get user id set authentication project get project list
+* get server list get volume get backup create backup create barbican secret
+* (this might required for backup create) delete backup delete barbican secret
+* (this might required for backup delete) get backup quota get volume quota get
+* user get role assignments
+
+Notice all authorization required by above operation in OpenStack services
+might need to be also granted to login user. It’s possible to switch
+authentication when restarting staffeln service, but which work might lead to
+unstoppable backup failure (with unauthorized warning) that will not block
+services to run. You can resolve the warning by manually deleting the backup.
+
+Note: Don’t use different authorizations for multiple staffeln services across
+nodes. That will be chances lead to unexpected behavior like all other
+OpenStack services. For example, staffeln on one node is done with backup
+schedule plan and staffeln on another node picks it up and proceeds with it.
+That might follow with Create failed from Cinder and lead to warning log pop-up
+with no action achieved.
+
+## Commands
+
+List of available commands: staffeln-conductor: trigger major staffeln backup
+service.  staffeln-api: trigger staffeln api service staffeln-db-manage
+create_schema staffeln-db-manage upgrade head
 
 
-## Architecture
+## Simple verify
 
-### HTTP API (staffeln-api)
+After Staffeln well installed. First thing is to check Staffeln service logs to
+see it’s well running.
 
-This project will need a basic HTTP API.  The primary reason for this is because when a user will attempt to delete a backup, we will use [oslo.policy via HTTP](https://docs.openstack.org/oslo.policy/victoria/user/plugins.html) to make sure that the backup they are attempting to delete is not an automated backup.
+First we need is something to backup on: In test scenario we will use cirros or
+any smaller image to observe behavor Prepare your test OpenStack environment
+with following steps: Make sure cinder backup service is running Make sure your
+openrc under `/etc/staffeln/staffeln.conf` provide required authorization shows
+in `Authentication` section openstack volume create --size 1 --image {IMAGE_ID}
+test-volume openstack server create --flavor {FLAVOR_ID} --volume {VOLUME_ID}
+--property __staffeln_backup=true --property __staffeln_retention=20min
+--network {NETWROK_ID} staffeln-test openstack volume create --size 1 --image
+{IMAGE_ID} test-volume-no-retention openstack server create --flavor
+{FLAVOR_ID} --volume {VOLUME_ID} --property __staffeln_backup=true --network
+{NETWROK_ID} staffeln-test-no-retention Now you can watch the result with
+`watch openstack volume backup list` to check and observe how backup going.
 
-This API will be unauthenticated and stateless, due to the fact that it is simply going to return the plain-text string True or fail with 401 Unauthorized.  Because of the simplicity of this API, [Flask](https://flask.palletsprojects.com/en/1.1.x/) is an excellent tool to be able to build it out.
+Staffeln majorly depends on how it’s configuration and authentication provides.
+When testing, make sure reference configurations list above in each section.
+And it required a service restart to make the configuration/authentication
+change works.  If using systemd, you can use this example: `systemctl restart
+staffeln-conductor staffeln-api`
 
-The flow of the HTTP call will look like the following:
+And awared that if you have multiple nodes that running staffeln on, the backup
+or retention check might goes a bit randomly some time, because it’s totally
+depends on how the periodic period config in each node, and also depends on how
+long the node been process previous cron job.
 
-1. HTTP request received through oslo.policy when backup being deleted with ID
-2. Server look up backup ID using OpenStack API
-3. If backup metadata contains `__automated_backup=True` then deny, otherwise allow.
+The email report testing is heavily depends on how your email system works.
+Staffeln might behave differently or even raise error if your system didn’t
+support it’s current process.  The email part can directly tests against gmail
+if you like. You can use application password for allow python sent email with
+google’s smtp. To directly test email sending process. You can directly import
+email from staffeln and use it as directly testing method.
 
-With that flow, we’ll be able to protect automated backups from being deleted automatically.  In order to build a proper architecture, this application will be delivered as a WSGI application so it can be hosted via something like uWSGI later.
 
-### Daemon (staffeln-conductor)
+To verify the setting for staffeln-api.  you can directly using api calls to
+check if backup check is properly running through `curl -X POST
+Staffeln-api-url:8808/v1/backup?backup_id=BACKUP_ID` or `wget --method=POST
+Staffeln-api-url:8808/v1/backup?backup_id=BACKUP_ID`.
 
-The conductor will be an independent daemon that will essentially scan all the virtual machines (grouped by project) which are marked to have automatic backups and then automatically start queueing up backups for them to be executed by Cinder.
-
-Once backups for a project are done, it should be able to start running the rotation policy that is configured on all the existing volumes and then send out a notification email afterwards to the user.
-
-The daemon should be stateful and ensure that it has its own state which is stored inside of a database.
+It should return TRUE when BACKUP_ID is not exist in staffeln, else FALSE.
