@@ -141,7 +141,7 @@ Staffeln API service allows we defined cinder policy check and make sure all
 Cinder volume backups are deleted only when that backup is not makaged by
 Staffeln. Once staffeln API service is up. You can define similar policy as
 following to `/etc/cinder/policy.yaml`:
-```
+```yaml
 "backup:delete" : "rule:admin_api or (project_id:%(project_id)s and
 http://Staffeln-api-url:8808/v1/backup?backup_id=%(id)s)"
 ```
@@ -235,7 +235,7 @@ Make sure your openrc under `/etc/staffeln/staffeln.conf`
 provide required authorization shows in `Authentication` section.
 Run
 
-```
+```shell
 openstack volume create --size 1 --image {IMAGE_ID} test-volume
 openstack server create --flavor {FLAVOR_ID} --volume {VOLUME_ID} \
 --property __staffeln_backup=true --property __staffeln_retention=20min \
