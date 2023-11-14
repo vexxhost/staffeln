@@ -21,7 +21,7 @@ backup_opts = [
         "backup_service_period",
         default=1800,
         min=60,
-        help=_("The time of bakup period, the unit is one second."),
+        help=_("The time of backup period, the unit is one second."),
     ),
     cfg.IntOpt(
         "backup_min_interval",
