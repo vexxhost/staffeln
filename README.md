@@ -14,12 +14,12 @@ or the cli in self-service.
 ## Staffeln Conductor Functions
 
 Staffeln conductor manage all perodic tasks like backup, retention, and
-notification. It's possible to have multiple staffeln conductor services
+notification. It's possible to have multiple Staffeln conductor services
 running. There will only be one service pulling volume and server information
 from OpenStack and do the backup scheduling. All conductors, will be
 able to take scheduled backup tasks and run backups. They will also check for
 backup to be completed. For single a volume, only one backup task will be
-generated, and only one of the staffeln conductor service will be able to pick up
+generated, and only one of the Staffeln conductor service will be able to pick up
 that task at the same time. Same as retention tasks.
 
 ### Backup
@@ -175,7 +175,7 @@ button is disabled on the cinder-backup panel from horizon.
 
   Staffeln heavily depends on Cinder backup. So need to make sure that Cinder
   Backup service is stable. On the other hand, as backup create or delete
-  request amount might goes high when staffeln processed with large amount of
+  request amount might goes high when Staffeln processed with large amount of
   volume backup. It’s possible API request is not well processed or the request
   order is mixed. For delete backup, Staffeln might not be able to delete a
   backup right away if any process failed (like full backup delete request sent
@@ -207,21 +207,21 @@ contains the following authorization in OpenStack:
 
 Notice all authorization required by above operation in OpenStack services
 might need to be also granted to login user. It’s possible to switch
-authentication when restarting staffeln service, but which work might lead to
+authentication when restarting Staffeln service, but which work might lead to
 unstoppable backup failure (with unauthorized warning) that will not block
 services to run. You can resolve the warning by manually deleting the backup.
 
-Note: Don’t use different authorizations for multiple staffeln services across
+Note: Don’t use different authorizations for multiple Staffeln services across
 nodes. That will be chances lead to unexpected behavior like all other
-OpenStack services. For example, staffeln on one node is done with backup
-schedule plan and staffeln on another node picks it up and proceeds with it.
+OpenStack services. For example, Staffeln on one node is done with backup
+schedule plan and Staffeln on another node picks it up and proceeds with it.
 That might follow with Create failed from Cinder and lead to warning log pop-up
 with no action achieved.
 
 ## Commands
 
-List of available commands: staffeln-conductor: trigger major staffeln backup
-service. staffeln-api: trigger staffeln API service staffeln-db-manage
+List of available commands: staffeln-conductor: trigger major Staffeln backup
+service. staffeln-api: trigger Staffeln API service staffeln-db-manage
 create_schema staffeln-db-manage upgrade head
 
 ## Simple verify
@@ -257,7 +257,7 @@ And it required a service restart to make the configuration/authentication
 change works. If using systemd, you can use this example: `systemctl restart
 staffeln-conductor staffeln-api`
 
-And awared that if you have multiple nodes that running staffeln on, the backup
+And awared that if you have multiple nodes that running Staffeln on, the backup
 or retention check might goes a bit randomly some time, because it’s totally
 depends on how the periodic period config in each node, and also depends on how
 long the node been process previous cron job.
@@ -267,11 +267,11 @@ Staffeln might behave differently or even raise error if your system didn’t
 support it’s current process. The email part can directly tests against gmail
 if you like. You can use application password for allow python sent email with
 google’s smtp. To directly test email sending process. You can directly import
-email from staffeln and use it as directly testing method.
+email from Staffeln and use it as directly testing method.
 
 To verify the setting for staffeln-api. you can directly using API calls to
 check if backup check is properly running through `curl -X POST
 Staffeln-api-url:8808/v1/backup?backup_id=BACKUP_ID` or `wget --method=POST
 Staffeln-api-url:8808/v1/backup?backup_id=BACKUP_ID`.
 
-It should return TRUE when BACKUP_ID is not exist in staffeln, else FALSE.
+It should return TRUE when BACKUP_ID is not exist in Staffeln, else FALSE.
