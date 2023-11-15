@@ -50,7 +50,7 @@ perform. If `full_backup_depth` is set to 1. For each Full backup will follow
 by only one incremental backup(not counting ). And 2 incremental if
 `full_backup_depth` set to 2. Set to `0` if want all full backups.
 
-To avoid long stucking backup action, config `backup_cycle_timeout` should be
+To avoid long stucking backup action, config `backup_cycle_timout` should be
 set with a reasonable time that long enough for backups to complete but good
 enough to judge the backup process is stucking. When a backup process reach
 this timeout, it will remove the backup task and try to delete the volume
