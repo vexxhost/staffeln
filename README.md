@@ -141,8 +141,8 @@ follow by second project and so on.
 
 ### Staffeln-API
 
-Staffeln API service allows we defined cinder policy check and make sure all
-Cinder volume backups are deleted only when that backup is not makaged by
+Staffeln API service allows defined cinder policy check and make sure all
+Cinder volume backups are deleted only when that backup is not marked by
 Staffeln. Once staffeln API service is up. You can define similar policy as
 following to `/etc/cinder/policy.yaml`:
 ```yaml
@@ -150,9 +150,9 @@ following to `/etc/cinder/policy.yaml`:
 http://Staffeln-api-url:8808/v1/backup?backup_id=%(id)s)"
 ```
 
-And when backup not exist in staffeln, that API will return TRUE and make the
-policy allows the backup delete. Else will return False and only allow backup
-delete when it's admin in above case.
+And when backup does not exist in Staffeln, that API will return TRUE and make the
+policy allows the backup to delete, if thr API returns False, then only a admin
+is allowed to delete.
 
 ## Settings
 
