@@ -16,30 +16,33 @@ or the cli in self-service.
 Staffeln conductor manage all perodic tasks like backup, retention, and
 notification. It's possible to have multiple staffeln conductor services
 running. There will only be one service pulling volume and server information
-from OpenStack and schedule backups. All conductor on the other hand, will be
-able to take scheduled backup tasks and run backups and also check for backup
-to completed. For single volume, only one backup task will be generated, and
-only one of staffeln conductor service will be able to pick up that task that
-the same time. Same as retention tasks.
+from OpenStack and do the backup scheduling. All conductors, will be
+able to take scheduled backup tasks and run backups. They will also check for
+backup to be completed. For single a volume, only one backup task will be
+generated, and only one of the staffeln conductor service will be able to pick up
+that task at the same time. Same as retention tasks.
 
 ### Backup
 
-Staffeln is a service to help perform backup. What it does is with provided
-authorization, Staffeln find a volume list with go through instance list from
-OpenStack, and find instances has `backup_metadata_key` (which configured under
-`[conductor]` section in `/etc/staffeln/staffeln.conf`) defined in metadata and
-got volume attached. Collect those attached volumes into a list. Follow by
-using that volume list to generate volume backup tasks in Staffeln. And do
-backups, check work-in-progress backups accordingly. With role control, there
+Staffeln is a service to help perform backups. With the provided
+authorization, Staffeln uses the cinder volume list from OpenStack and searches
+for instances that has `backup_metadata_key` defined in metadata and has volumes attached.
+> this is configured under the `[conductor]` section in `/etc/staffeln/staffeln.conf`
+
+From these attached volumes it will generate volume backup tasks in Staffeln.
+It checks work-in-progress backups accordingly. With role control, there
 is only one Staffeln service that can perform volume collection and backup task
-schedules at the same time. But all services can do backup action, and check
-progress in parallel. Backup schedule trigger time is controlled by periodic
-jobs separately across all Staffeln nodes. It’s possible a following backup
-plan starts from a different node near previous success backup (with less than
+scheduling at the same time.
+
+But all services can do backup action, and check progress in parallel. Backup
+schedule trigger time is controlled by periodic jobs separately across
+all Staffeln nodes. It’s possible that a following backup
+plan starts from a different node near previous succeeded backup (with less than
 `backup_service_period` of time) in Staffeln V1, but it’s fixed with
-`backup_min_interval` config. And in either case, the Full and Incremental
+`backup_min_interval` config. And in either cases, the Full and Incremental
 backup order (config with `full_backup_depth`) is still be honored.
-`backup_min_interval` is value that you config for how many seconds you like as
+
+With `backup_min_interval` you can config for how many seconds you like as
 minimum interval between backups for same volume from Staffeln. The
 configuration `full_backup_depth` under `[conductor]` section in
 `/etc/staffeln/staffeln.conf` will decide how incremental backups are going to
@@ -55,7 +58,6 @@ backup. A followup backup object (marked as not completed) will be create and
 set the create time to 10 years old so the remove progress will be observe and
 retry on next retention job.
 
-`backup_service_period` is no longer the only fector that reflect how long
 `backup_service_period` is no longer the only factor that reflect how long
 volume should backup. It’s recommended to set `backup_min_interval` and
 `report_period`(see in Report part) and config a related shorter
