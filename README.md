@@ -56,6 +56,7 @@ set the create time to 10 years old so the remove progress will be observe and
 retry on next retention job.
 
 `backup_service_period` is no longer the only fector that reflect how long
+`backup_service_period` is no longer the only factor that reflect how long
 volume should backup. It’s recommended to set `backup_min_interval` and
 `report_period`(see in Report part) and config a related shorter
 `backup_service_period`. For example if we set `backup_min_interval` to 3600
