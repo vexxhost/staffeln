@@ -116,7 +116,7 @@ from above, and make the report goes to logs directly. If you have specific
 email addresses you wish to send to instead of using project name. You can
 provide `receiver` config so it will send all project report to receiver list
 instead. And if neither `recveiver` or `project_receiver_domain` are set, the
-project report will try to grap project member list and gather user emails to
+project report will try to grep project member list and gather user emails to
 send report to. If no user email can be found from project member, Staffeln
 will ignore this report cycle and retry the next cycle. Notice that, to
 improve Staffeln performance and to reduce old backup result exist in Staffeln
