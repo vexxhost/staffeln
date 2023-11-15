@@ -71,9 +71,10 @@ backup for same volume created for more than 1 hours ago.
 On retention, backups which has creation time longer than retention time
 (defined by `retention_time` from `/etc/staffeln/staffeln.conf` or
 `retention_metadata_key` which added to metadata of instances) will put in list
-and try to delete by Staffeln. Note: the actual key-value of
-`retention_metadata_key` is customizable. Like in test doc, you can see
-following property been added to instance
+and try to delete by Staffeln.
+> The actual key-value of `retention_metadata_key` is customizable.
+
+Like in test doc, you can see following property been added to instance
 `--property __staffeln_retention=20min`.
 Customized `retention_metadata_key` has larger
 priority than `retention_time`. If no `retention_metadata_key` defined for
@@ -99,9 +100,9 @@ backups should be delete. So no need to set it to a too long period of time.
 
 ### Report
 
-Report process is part of backup cron job. When one of Staffeln service got
-backup schedule role and finish with backup schedule, trigger, and check work
-in progress backup are done in this period. It will check if any successed or
+Report process is part of backup cron job. When one of Staffeln services got
+the backup schedule role and finish with backup schedule, trigger and check work
+in progress backup are done in this period. It will check if any succeeded or
 failed backup task has not been reported for `report_period` seconds after it
 created. It will trigger the report process. `report_period` is defined under
 `[conductor]` with unit to seconds. Report will generate an HTML format of
