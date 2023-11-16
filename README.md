@@ -14,32 +14,35 @@ or the cli in self-service.
 ## Staffeln Conductor Functions
 
 Staffeln conductor manage all perodic tasks like backup, retention, and
-notification. It's possible to have multiple staffeln conductor services
+notification. It's possible to have multiple Staffeln conductor services
 running. There will only be one service pulling volume and server information
-from OpenStack and schedule backups. All conductor on the other hand, will be
-able to take scheduled backup tasks and run backups and also check for backup
-to completed. For single volume, only one backup task will be generated, and
-only one of staffeln conductor service will be able to pick up that task that
-the same time. Same as retention tasks.
+from OpenStack and do the backup scheduling. All conductors, will be
+able to take scheduled backup tasks and run backups. They will also check for
+backup to be completed. For single a volume, only one backup task will be
+generated, and only one of the Staffeln conductor service will be able to pick up
+that task at the same time. Same as retention tasks.
 
 ### Backup
 
-Staffeln is a service to help perform backup. What it does is with provided
-authorization, Staffeln find a volume list with go through instance list from
-OpenStack, and find instances has `backup_metadata_key` (which configured under
-`[conductor]` section in `/etc/staffeln/staffeln.conf`) defined in metadata and
-got volume attached. Collect those attached volumes into a list. Follow by
-using that volume list to generate volume backup tasks in Staffeln. And do
-backups, check work-in-progress backups accordingly. With role control, there
+Staffeln is a service to help perform backups. With the provided
+authorization, Staffeln uses the cinder volume list from OpenStack and searches
+for instances that has `backup_metadata_key` defined in metadata and has volumes attached.
+> this is configured under the `[conductor]` section in `/etc/staffeln/staffeln.conf`
+
+From these attached volumes it will generate volume backup tasks in Staffeln.
+It checks work-in-progress backups accordingly. With role control, there
 is only one Staffeln service that can perform volume collection and backup task
-schedules at the same time. But all services can do backup action, and check
-progress in parallel. Backup schedule trigger time is controlled by periodic
-jobs separately across all Staffeln nodes. It’s possible a following backup
-plan starts from a different node near previous success backup (with less than
+scheduling at the same time.
+
+But all services can do backup action, and check progress in parallel. Backup
+schedule trigger time is controlled by periodic jobs separately across
+all Staffeln nodes. It’s possible that a following backup
+plan starts from a different node near previous succeeded backup (with less than
 `backup_service_period` of time) in Staffeln V1, but it’s fixed with
-`backup_min_interval` config. And in either case, the Full and Incremental
+`backup_min_interval` config. And in either cases, the Full and Incremental
 backup order (config with `full_backup_depth`) is still be honored.
-`backup_min_interval` is value that you config for how many seconds you like as
+
+With `backup_min_interval` you can config for how many seconds you like as
 minimum interval between backups for same volume from Staffeln. The
 configuration `full_backup_depth` under `[conductor]` section in
 `/etc/staffeln/staffeln.conf` will decide how incremental backups are going to
@@ -55,7 +58,7 @@ backup. A followup backup object (marked as not completed) will be create and
 set the create time to 10 years old so the remove progress will be observe and
 retry on next retention job.
 
-`backup_service_period` is no longer the only fector that reflect how long
+`backup_service_period` is no longer the only factor that reflect how long
 volume should backup. It’s recommended to set `backup_min_interval` and
 `report_period`(see in Report part) and config a related shorter
 `backup_service_period`. For example if we set `backup_min_interval` to 3600
@@ -68,9 +71,10 @@ backup for same volume created for more than 1 hours ago.
 On retention, backups which has creation time longer than retention time
 (defined by `retention_time` from `/etc/staffeln/staffeln.conf` or
 `retention_metadata_key` which added to metadata of instances) will put in list
-and try to delete by Staffeln. Note: the actual key-value of
-`retention_metadata_key` is customizable. Like in test doc, you can see
-following property been added to instance
+and try to delete by Staffeln.
+> The actual key-value of `retention_metadata_key` is customizable.
+
+Like in test doc, you can see following property been added to instance
 `--property __staffeln_retention=20min`.
 Customized `retention_metadata_key` has larger
 priority than `retention_time`. If no `retention_metadata_key` defined for
@@ -96,9 +100,9 @@ backups should be delete. So no need to set it to a too long period of time.
 
 ### Report
 
-Report process is part of backup cron job. When one of Staffeln service got
-backup schedule role and finish with backup schedule, trigger, and check work
-in progress backup are done in this period. It will check if any successed or
+Report process is part of backup cron job. When one of Staffeln services got
+the backup schedule role and finish with backup schedule, trigger and check work
+in progress backup are done in this period. It will check if any succeeded or
 failed backup task has not been reported for `report_period` seconds after it
 created. It will trigger the report process. `report_period` is defined under
 `[conductor]` with unit to seconds. Report will generate an HTML format of
@@ -113,7 +117,7 @@ from above, and make the report goes to logs directly. If you have specific
 email addresses you wish to send to instead of using project name. You can
 provide `receiver` config so it will send all project report to receiver list
 instead. And if neither `recveiver` or `project_receiver_domain` are set, the
-project report will try to grap project member list and gather user emails to
+project report will try to grep project member list and gather user emails to
 send report to. If no user email can be found from project member, Staffeln
 will ignore this report cycle and retry the next cycle. Notice that, to
 improve Staffeln performance and to reduce old backup result exist in Staffeln
@@ -137,8 +141,8 @@ follow by second project and so on.
 
 ### Staffeln-API
 
-Staffeln API service allows we defined cinder policy check and make sure all
-Cinder volume backups are deleted only when that backup is not makaged by
+Staffeln API service allows defined cinder policy check and make sure all
+Cinder volume backups are deleted only when that backup is not marked by
 Staffeln. Once staffeln API service is up. You can define similar policy as
 following to `/etc/cinder/policy.yaml`:
 ```yaml
@@ -146,9 +150,9 @@ following to `/etc/cinder/policy.yaml`:
 http://Staffeln-api-url:8808/v1/backup?backup_id=%(id)s)"
 ```
 
-And when backup not exist in staffeln, that API will return TRUE and make the
-policy allows the backup delete. Else will return False and only allow backup
-delete when it's admin in above case.
+And when backup does not exist in Staffeln, that API will return TRUE and make the
+policy allows the backup to delete, if thr API returns False, then only a admin
+is allowed to delete.
 
 ## Settings
 
@@ -172,7 +176,7 @@ button is disabled on the cinder-backup panel from horizon.
 
   Staffeln heavily depends on Cinder backup. So need to make sure that Cinder
   Backup service is stable. On the other hand, as backup create or delete
-  request amount might goes high when staffeln processed with large amount of
+  request amount might goes high when Staffeln processed with large amount of
   volume backup. It’s possible API request is not well processed or the request
   order is mixed. For delete backup, Staffeln might not be able to delete a
   backup right away if any process failed (like full backup delete request sent
@@ -204,21 +208,21 @@ contains the following authorization in OpenStack:
 
 Notice all authorization required by above operation in OpenStack services
 might need to be also granted to login user. It’s possible to switch
-authentication when restarting staffeln service, but which work might lead to
+authentication when restarting Staffeln service, but which work might lead to
 unstoppable backup failure (with unauthorized warning) that will not block
 services to run. You can resolve the warning by manually deleting the backup.
 
-Note: Don’t use different authorizations for multiple staffeln services across
+Note: Don’t use different authorizations for multiple Staffeln services across
 nodes. That will be chances lead to unexpected behavior like all other
-OpenStack services. For example, staffeln on one node is done with backup
-schedule plan and staffeln on another node picks it up and proceeds with it.
+OpenStack services. For example, Staffeln on one node is done with backup
+schedule plan and Staffeln on another node picks it up and proceeds with it.
 That might follow with Create failed from Cinder and lead to warning log pop-up
 with no action achieved.
 
 ## Commands
 
-List of available commands: staffeln-conductor: trigger major staffeln backup
-service. staffeln-api: trigger staffeln API service staffeln-db-manage
+List of available commands: staffeln-conductor: trigger major Staffeln backup
+service. staffeln-api: trigger Staffeln API service staffeln-db-manage
 create_schema staffeln-db-manage upgrade head
 
 ## Simple verify
@@ -254,7 +258,7 @@ And it required a service restart to make the configuration/authentication
 change works. If using systemd, you can use this example: `systemctl restart
 staffeln-conductor staffeln-api`
 
-And awared that if you have multiple nodes that running staffeln on, the backup
+And awared that if you have multiple nodes that running Staffeln on, the backup
 or retention check might goes a bit randomly some time, because it’s totally
 depends on how the periodic period config in each node, and also depends on how
 long the node been process previous cron job.
@@ -264,11 +268,11 @@ Staffeln might behave differently or even raise error if your system didn’t
 support it’s current process. The email part can directly tests against gmail
 if you like. You can use application password for allow python sent email with
 google’s smtp. To directly test email sending process. You can directly import
-email from staffeln and use it as directly testing method.
+email from Staffeln and use it as directly testing method.
 
 To verify the setting for staffeln-api. you can directly using API calls to
 check if backup check is properly running through `curl -X POST
 Staffeln-api-url:8808/v1/backup?backup_id=BACKUP_ID` or `wget --method=POST
 Staffeln-api-url:8808/v1/backup?backup_id=BACKUP_ID`.
 
-It should return TRUE when BACKUP_ID is not exist in staffeln, else FALSE.
+It should return TRUE when BACKUP_ID is not exist in Staffeln, else FALSE.
