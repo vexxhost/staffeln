@@ -12,7 +12,7 @@ email_opts = [
         "receiver",
         default=[],
         help=_(
-            "The receivers of the bakcup result by email."
+            "The receivers of the backup result by email."
             "A list of addresses to receive backup result emails to.  A bare"
             " string will be treated as a list with 1 address."
         ),
