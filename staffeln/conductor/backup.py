@@ -238,12 +238,8 @@ class Backup(object):
             try:
                 servers = self.openstacksdk.get_servers(project_id=project.id)
             except OpenstackHttpException as ex:
-                LOG.warn(
-                    _(
-                        "Failed to list servers in project %s. %s"
-                        % (project.id, str(ex))
-                    )
-                )
+                LOG.warn(f"Failed to list servers in project {project.id}. "
+                         f"{str(ex)} (status code: {ex.status_code}).")
                 continue
             for server in servers:
                 if not self.filter_by_server_metadata(server.metadata):
@@ -349,18 +345,16 @@ class Backup(object):
 
     def process_failed_backup(self, task):
         # 1. notify via email
-        reason = _("The status of backup for the volume %s is error." % task.volume_id)
+        reason = f"The status of backup for the volume {task.volume_id} is error."
         self.result.add_failed_backup(task.project_id, task.volume_id, reason)
         LOG.warn(reason)
         # 2. delete backup generator
         try:
             self.openstacksdk.delete_backup(uuid=task.backup_id, force=True)
         except OpenstackHttpException as ex:
-            LOG.error(
-                _(
-                    "Failed to delete volume backup %s. %s. Need to delete manually."
-                    % (task.backup_id, str(ex))
-                )
+            LOG.warn(
+                f"Failed to delete volume backup {task.backup_id}. {ex} "
+                f"(status code: {ex.status_code}). Need to delete manually."
             )
         # 3. remove failed task from the task queue
         task.delete_queue()
