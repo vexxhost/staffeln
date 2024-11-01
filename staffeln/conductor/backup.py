@@ -675,8 +675,8 @@ class Backup(object):
         except OpenstackHttpException as ex:
             LOG.warn(
                 _(
-                    "Failed to delete volume backup %s. %s. Need to delete manually."
-                    % (task.backup_id, str(ex))
+                    "Failed to delete volume backup %s. %s. Need "
+                    "to delete manually." % (task.backup_id, str(ex))
                 )
             )
         task.reason = reason

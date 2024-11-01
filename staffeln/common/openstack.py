@@ -3,7 +3,6 @@ from __future__ import annotations
 from openstack import exceptions
 from openstack import proxy
 from oslo_log import log
-import tenacity
 
 from staffeln.common import auth
 from staffeln.i18n import _
