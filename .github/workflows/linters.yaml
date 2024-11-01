@@ -1,5 +1,15 @@
 name: linters
-on: push
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'main'
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - 'main'
 
 jobs:
   super-lint:
@@ -14,3 +24,18 @@ jobs:
           VALIDATE_DOCKERFILE_HADOLINT: false
           VALIDATE_PYTHON_MYPY: false
           VALIDATE_JSCPD: false
+  pep8:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tox
+
+      - name: Run tox -e pep8
+        run: tox -e pep8
