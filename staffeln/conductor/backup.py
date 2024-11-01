@@ -252,10 +252,8 @@ class Backup(object):
             backup = self.openstacksdk.get_backup(backup_object.backup_id)
             if backup is None:
                 LOG.info(
-                    _(
-                        f"Backup {backup_object.backup_id} is removed from "
-                        "Openstack or cinder-backup is not existing in the cloud."
-                    )
+                    f"Backup {backup_object.backup_id} is removed from "
+                    "Openstack or cinder-backup is not existing in the cloud."
                 )
                 return backup_object.delete_backup()
             if backup["status"] in ("available"):
@@ -269,15 +267,13 @@ class Backup(object):
                 # backup_object.delete_backup()
             else:  # "deleting", "restoring"
                 LOG.info(
-                    _(
-                        "Rotation for the backup %s is skipped in this cycle "
-                        "because it is in %s status"
-                    )
-                    % (backup_object.backup_id, backup["status"])
+                    f"Rotation for the backup {backup_object.backup_id} "
+                    "is skipped in this cycle "
+                    f"because it is in {backup['status']} status"
                 )
 
         except OpenstackSDKException as e:
-            LOG.warn(_(f"Backup {backup_object.backup_id} deletion failed. {str(e)}"))
+            LOG.warn(f"Backup {backup_object.backup_id} deletion failed. {str(e)}")
             # We don't delete backup object if any exception occured
             # backup_object.delete_backup()
             return False
@@ -288,12 +284,10 @@ class Backup(object):
             project_id = backup_object.project_id
             if project_id not in self.project_list:
                 LOG.warn(
-                    _(
-                        f"Project {project_id} for backup "
-                        f"{backup_object.backup_id} is not existing in "
-                        "Openstack. Please check your access right to this project. "
-                        "Skip this backup from remove now and will retry later."
-                    )
+                    f"Project {project_id} for backup "
+                    f"{backup_object.backup_id} is not existing in "
+                    "Openstack. Please check your access right to this project. "
+                    "Skip this backup from remove now and will retry later."
                 )
                 # Don't remove backup object, keep it and retry on next periodic task
                 # backup_object.delete_backup()
@@ -305,12 +299,9 @@ class Backup(object):
             )
             if backup is None:
                 LOG.info(
-                    _(
-                        "Backup %s is removed from Openstack "
-                        "or cinder-backup is not existing in the cloud. "
-                        "Start removing backup object from Staffeln."
-                        % backup_object.backup_id
-                    )
+                    f"Backup {backup_object.backup_id} is removed from Openstack "
+                    "or cinder-backup is not existing in the cloud. "
+                    "Start removing backup object from Staffeln."
                 )
                 return backup_object.delete_backup()
 
@@ -322,10 +313,8 @@ class Backup(object):
                 LOG.debug(str(e))
             else:
                 LOG.info(
-                    _(
-                        f"Backup {backup_object.backup_id} deletion failed. "
-                        "Skip this backup from remove now and will retry later."
-                    )
+                    f"Backup {backup_object.backup_id} deletion failed. "
+                    "Skip this backup from remove now and will retry later."
                 )
                 LOG.debug(f"deletion failed {str(e)}")
 

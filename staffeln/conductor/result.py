@@ -68,14 +68,12 @@ class BackupResult(object):
                 "smtp_server_port": CONF.notification.smtp_server_port,
             }
             email.send(smtp_profile)
-            LOG.info(_(f"Backup result email sent to {receiver}"))
+            LOG.info(f"Backup result email sent to {receiver}")
             return True
         except Exception as e:
             LOG.warn(
-                _(
-                    f"Backup result email send to {receiver} failed. "
-                    f"Please check email configuration. {str(e)}"
-                )
+                f"Backup result email send to {receiver} failed. "
+                f"Please check email configuration. {str(e)}"
             )
             raise
 
