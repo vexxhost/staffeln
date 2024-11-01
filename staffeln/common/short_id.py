@@ -2,10 +2,13 @@
 The IDs each comprise 12 (lower-case) alphanumeric characters.
 """
 
+from __future__ import annotations
+
 import base64
 import uuid
 
 import six
+
 from staffeln.i18n import _
 
 

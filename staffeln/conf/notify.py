@@ -1,10 +1,15 @@
+from __future__ import annotations
+
 from oslo_config import cfg
+
 from staffeln.i18n import _
 
 notify_group = cfg.OptGroup(
     "notification",
     title="Notification options",
-    help=_("Options under this group are used to define notification settings."),
+    help=_(
+        "Options under this group are used to define notification settings."
+    ),
 )
 
 email_opts = [
@@ -32,7 +37,8 @@ email_opts = [
             "The user name to authenticate with."
         ),
     ),
-    # We can remove the sender password as we are using postfix to send mail and we won't be authenticating.
+    # We can remove the sender password as we are using postfix to send
+    # mail and we won't be authenticating.
     cfg.StrOpt(
         "sender_pwd",
         help=_(

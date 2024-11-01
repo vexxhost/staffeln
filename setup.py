@@ -12,8 +12,9 @@
 # implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 # THIS FILE IS MANAGED BY THE GLOBAL REQUIREMENTS REPO - DO NOT EDIT
+from __future__ import annotations
+
 import setuptools
 
 setuptools.setup(setup_requires=["pbr"], pbr=True)

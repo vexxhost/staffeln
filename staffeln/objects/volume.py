@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from oslo_versionedobjects import fields as ovoo_fields
+
 from staffeln.db import api as db_api
 from staffeln.objects import base
 from staffeln.objects import fields as sfeild
@@ -6,7 +9,9 @@ from staffeln.objects import fields as sfeild
 
 @base.StaffelnObjectRegistry.register
 class Volume(
-    base.StaffelnPersistentObject, base.StaffelnObject, base.StaffelnObjectDictCompat
+    base.StaffelnPersistentObject,
+    base.StaffelnObject,
+    base.StaffelnObjectDictCompat,
 ):
     VERSION = "1.1"
     # Version 1.0: Initial version
@@ -31,7 +36,9 @@ class Volume(
 
         :param filters: dict mapping the filter to a value.
         """
-        db_backups = cls.dbapi.get_backup_list(context, filters=filters, **kwargs)
+        db_backups = cls.dbapi.get_backup_list(
+            context, filters=filters, **kwargs
+        )
 
         return [cls._from_db_object(cls(context), obj) for obj in db_backups]
 
@@ -58,6 +65,7 @@ class Volume(
     @base.remotable
     def refresh(self):
         """Loads updates for this :class:`Backup_data`.
+
         Loads a backup with the same backup_id from the database and
         checks for updated attributes. Updates are applied from
         the loaded backup column by column, if there are any updates.
@@ -71,8 +79,11 @@ class Volume(
         self.dbapi.soft_delete_backup(self.id)
 
     @base.remotable_classmethod
-    def get_backup_by_backup_id(cls, context, backup_id):  # pylint: disable=E0213
+    def get_backup_by_backup_id(
+        cls, context, backup_id
+    ):  # pylint: disable=E0213
         """Find a backup based on backup_id
+
         :param context: Security context. NOTE: This should only
                         be used internally by the indirection_api.
                         Unfortunately, RPC requires context as the first

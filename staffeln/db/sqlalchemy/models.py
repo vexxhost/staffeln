@@ -1,11 +1,15 @@
 """
 SQLAlchemy models for staffeln service
 """
+
+from __future__ import annotations
+
 import urllib.parse as urlparse
 
 from oslo_db.sqlalchemy import models
 from sqlalchemy import Boolean, Column, Integer, String, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
+
 from staffeln import conf
 
 CONF = conf.CONF
@@ -14,7 +18,10 @@ CONF = conf.CONF
 def table_args():
     engine_name = urlparse.urlparse(CONF.database.connection).scheme
     if engine_name == "mysql":
-        return {"mysql_engine": CONF.database.mysql_engine, "mysql_charset": "utf8"}
+        return {
+            "mysql_engine": CONF.database.mysql_engine,
+            "mysql_charset": "utf8",
+        }
     return None
 
 

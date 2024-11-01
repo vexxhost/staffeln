@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from oslo_config import cfg
+
 from staffeln.i18n import _
 
 api_group = cfg.OptGroup(
@@ -16,7 +19,9 @@ connection_opts = [
     cfg.PortOpt(
         "port",
         default=8808,
-        help=_("Staffeln API listens on this port number for incoming requests."),
+        help=_(
+            "Staffeln API listens on this port number for incoming requests."
+        ),
     ),
     cfg.BoolOpt("enabled_ssl", default=False, help=_("ssl enabled")),
     cfg.StrOpt("ssl_key_file", default=False, help=_("ssl key file path")),

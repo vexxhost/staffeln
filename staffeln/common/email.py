@@ -1,10 +1,12 @@
 """ Email module with SMTP"""
 
-import smtplib
-from email import utils
+from __future__ import annotations
+
 from email.header import Header
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email import utils
+import smtplib
 
 from oslo_log import log
 
@@ -32,10 +34,12 @@ def send(smtp_profile):
 
     try:
         smtp_obj = smtplib.SMTP(
-            smtp_profile["smtp_server_domain"], smtp_profile["smtp_server_port"]
+            smtp_profile["smtp_server_domain"],
+            smtp_profile["smtp_server_port"],
         )
         smtp_obj.connect(
-            smtp_profile["smtp_server_domain"], smtp_profile["smtp_server_port"]
+            smtp_profile["smtp_server_domain"],
+            smtp_profile["smtp_server_port"],
         )
         smtp_obj.ehlo()
         smtp_obj.starttls()
@@ -43,7 +47,9 @@ def send(smtp_profile):
         # SMTP Login
         smtp_obj.login(smtp_profile["src_email"], smtp_profile["src_pwd"])
         smtp_obj.sendmail(
-            smtp_profile["src_email"], smtp_profile["dest_email"], msg.as_string()
+            smtp_profile["src_email"],
+            smtp_profile["dest_email"],
+            msg.as_string(),
         )
         # Email Sent
     except smtplib.SMTPException as error:

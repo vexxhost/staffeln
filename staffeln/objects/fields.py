@@ -1,4 +1,7 @@
 """Utility method for objects"""
+
+from __future__ import annotations
+
 from oslo_serialization import jsonutils
 from oslo_versionedobjects import fields
 

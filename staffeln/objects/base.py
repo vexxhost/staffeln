@@ -1,8 +1,11 @@
 """Staffeln common internal object model"""
 
+from __future__ import annotations
+
 from oslo_utils import versionutils
 from oslo_versionedobjects import base as ovoo_base
 from oslo_versionedobjects import fields as ovoo_fields
+
 from staffeln import objects
 
 remotable_classmethod = ovoo_base.remotable_classmethod
@@ -30,7 +33,9 @@ class StaffelnObject(ovoo_base.VersionedObject):
     OBJ_PROJECT_NAMESPACE = "staffeln"
 
     def as_dict(self):
-        return {k: getattr(self, k) for k in self.fields if self.obj_attr_is_set(k)}
+        return {
+            k: getattr(self, k) for k in self.fields if self.obj_attr_is_set(k)
+        }
 
 
 class StaffelnObjectSerializer(ovoo_base.VersionedObjectSerializer):
@@ -48,9 +53,14 @@ class StaffelnPersistentObject(ovoo_base.VersionedObject):
     object_fields = {}
 
     def obj_refresh(self, loaded_object):
-        fields = (field for field in self.fields if field not in self.object_fields)
+        fields = (
+            field for field in self.fields if field not in self.object_fields
+        )
         for field in fields:
-            if self.obj_attr_is_set(field) and self[field] != loaded_object[field]:
+            if (
+                self.obj_attr_is_set(field) and (
+                    self[field] != loaded_object[field])
+            ):
                 self[field] = loaded_object[field]
 
     @staticmethod

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 BACKUP_INIT = 4
 BACKUP_FAILED = 3
 BACKUP_COMPLETED = 2

@@ -1,15 +1,19 @@
+from __future__ import annotations
+
 import errno
 import glob
 import os
 import re
 import sys
-import uuid
 from typing import Optional  # noqa: H301
+import uuid
 
-import sherlock
 from oslo_log import log
-from staffeln import conf, exception
+import sherlock
 from tooz import coordination
+
+from staffeln import conf
+from staffeln import exception
 
 CONF = conf.CONF
 LOG = log.getLogger(__name__)
@@ -146,7 +150,10 @@ class K8sCoordinator(object):
     """
 
     def __init__(
-        self, expire: int = 3600, timeout: int = 10, namespace: str = "openstack"
+        self,
+        expire: int = 3600,
+        timeout: int = 10,
+        namespace: str = "openstack",
     ):
         self.timeout = timeout
         self.expire = expire

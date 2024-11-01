@@ -17,8 +17,10 @@ response with one formatted so the client can parse it.
 
 Based on pecan.middleware.errordocument
 """
+from __future__ import annotations
 
 from oslo_serialization import jsonutils
+
 from staffeln.i18n import _
 
 
@@ -78,7 +80,10 @@ class ParsableErrorMiddleware(object):
                 state["status_code"] = status_code
             except (ValueError, TypeError):  # pragma: nocover
                 raise Exception(
-                    _("ErrorDocumentMiddleware received an invalid " "status %s")
+                    _(
+                        "ErrorDocumentMiddleware received an invalid "
+                        "status %s"
+                    )
                     % status
                 )
             else:

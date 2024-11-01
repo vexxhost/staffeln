@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 from oslo_config import cfg
 from oslo_db import options as oslo_db_options
+
 from staffeln.conf import paths
 from staffeln.i18n import _
 
@@ -14,7 +17,9 @@ database = cfg.OptGroup(
 )
 
 SQL_OPTS = [
-    cfg.StrOpt("mysql_engine", default="InnoDB", help=_("MySQL engine to use.")),
+    cfg.StrOpt(
+        "mysql_engine", default="InnoDB", help=_("MySQL engine to use.")
+    ),
 ]
 
 

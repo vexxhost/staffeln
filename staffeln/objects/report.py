@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from oslo_versionedobjects import fields as ovoo_fields
+
 from staffeln.db import api as db_api
 from staffeln.objects import base
 from staffeln.objects import fields as sfeild
@@ -6,7 +9,9 @@ from staffeln.objects import fields as sfeild
 
 @base.StaffelnObjectRegistry.register
 class ReportTimestamp(
-    base.StaffelnPersistentObject, base.StaffelnObject, base.StaffelnObjectDictCompat
+    base.StaffelnPersistentObject,
+    base.StaffelnObject,
+    base.StaffelnObjectDictCompat,
 ):
     VERSION = "1.0"
     # Version 1.0: Initial version
@@ -21,7 +26,9 @@ class ReportTimestamp(
 
     @base.remotable_classmethod
     def list(cls, context, filters=None):  # pylint: disable=E0213
-        db_report = cls.dbapi.get_report_timestamp_list(context, filters=filters)
+        db_report = cls.dbapi.get_report_timestamp_list(
+            context, filters=filters
+        )
         return [cls._from_db_object(cls(context), obj) for obj in db_report]
 
     @base.remotable

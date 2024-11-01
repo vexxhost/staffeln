@@ -1,17 +1,23 @@
+from __future__ import annotations
+
+from datetime import timedelta
+from datetime import timezone
 import threading
 import time
-from datetime import timedelta, timezone
 
 import cotyledon
-import staffeln.conf
 from futurist import periodics
 from oslo_log import log
 from oslo_utils import timeutils
-from staffeln import objects
-from staffeln.common import constants, context, lock
+
+from staffeln.common import constants
+from staffeln.common import context
+from staffeln.common import lock
 from staffeln.common import time as xtime
 from staffeln.conductor import backup as backup_controller
+import staffeln.conf
 from staffeln.i18n import _
+from staffeln import objects
 
 LOG = log.getLogger(__name__)
 CONF = staffeln.conf.CONF
@@ -58,7 +64,8 @@ class BackupManager(cotyledon.Service):
                 LOG.info(_("cycle timein"))
                 for queue in queues_started:
                     LOG.debug(
-                        f"try to get lock and run task for volume: {queue.volume_id}."
+                        "try to get lock and run task for volume: "
+                        f"{queue.volume_id}."
                     )
                     with lock.Lock(
                         self.lock_mgt, queue.volume_id, remove_lock=True
@@ -82,7 +89,8 @@ class BackupManager(cotyledon.Service):
             LOG.info(
                 _(
                     "Recycle timeout format is invalid. "
-                    "Follow <YEARS>y<MONTHS>m<WEEKS>w<DAYS>d<HOURS>h<MINUTES>min<SECONDS>s."
+                    "Follow <YEARS>y<MONTHS>m<WEEKS>w<DAYS>d<HOURS>h<MINUTES>"
+                    "min<SECONDS>s."
                 )
             )
             time_delta_dict = xtime.parse_timedelta_string(
@@ -117,7 +125,9 @@ class BackupManager(cotyledon.Service):
                 ) as t_lock:
                     if t_lock.acquired:
                         # Re-pulling status and make it's up-to-date
-                        task = self.controller.get_queue_task_by_id(task_id=task.id)
+                        task = self.controller.get_queue_task_by_id(
+                            task_id=task.id
+                        )
                         if task.backup_status == constants.BACKUP_PLANNED:
                             task.backup_status = constants.BACKUP_INIT
                             task.save()
@@ -136,9 +146,13 @@ class BackupManager(cotyledon.Service):
 
     def _report_backup_result(self):
         report_period = CONF.conductor.report_period
-        threshold_strtime = timeutils.utcnow() - timedelta(seconds=report_period)
+        threshold_strtime = timeutils.utcnow() - timedelta(
+            seconds=report_period
+        )
 
-        filters = {"created_at__gt": threshold_strtime.astimezone(timezone.utc)}
+        filters = {
+            "created_at__gt": threshold_strtime.astimezone(timezone.utc)
+        }
         report_tss = objects.ReportTimestamp.list(  # pylint: disable=E1120
             context=self.ctx, filters=filters
         )
@@ -152,9 +166,13 @@ class BackupManager(cotyledon.Service):
             threshold_strtime = timeutils.utcnow() - timedelta(
                 seconds=report_period * 10
             )
-            filters = {"created_at__lt": threshold_strtime.astimezone(timezone.utc)}
-            old_report_tss = objects.ReportTimestamp.list(  # pylint: disable=E1120
-                context=self.ctx, filters=filters
+            filters = {
+                "created_at__lt": threshold_strtime.astimezone(timezone.utc)
+            }
+            old_report_tss = (
+                objects.ReportTimestamp.list(  # pylint: disable=E1120
+                    context=self.ctx, filters=filters
+                )
             )
             for report_ts in old_report_tss:
                 report_ts.delete()
@@ -163,7 +181,9 @@ class BackupManager(cotyledon.Service):
         LOG.info("Backup manager started %s" % str(time.time()))
         LOG.info("%s periodics" % self.name)
 
-        @periodics.periodic(spacing=backup_service_period, run_immediately=True)
+        @periodics.periodic(
+            spacing=backup_service_period, run_immediately=True
+        )
         def backup_tasks():
             with self.lock_mgt:
                 with lock.Lock(self.lock_mgt, constants.PULLER) as puller:
@@ -230,14 +250,18 @@ class RotationManager(cotyledon.Service):
             if backup_age > retention_time:
                 # Backup remain longer than retention, need to purge it.
                 LOG.debug(
-                    f"Found potential volume backup for retention: Backup ID: {backup.backup_id} "
-                    f"with backup age: {backup_age} (Target retention time: {retention_time})."
+                    "Found potential volume backup for retention: Backup "
+                    f"ID: {backup.backup_id} "
+                    f"with backup age: {backup_age} (Target retention "
+                    f"time: {retention_time})."
                 )
                 return True
         elif now - self.threshold_strtime < backup_age:
             LOG.debug(
-                f"Found potential volume backup for retention: Backup ID: {backup.backup_id} "
-                f"with backup age: {backup_age} (Default retention time: {self.threshold_strtime})."
+                "Found potential volume backup for retention: "
+                f"Backup ID: {backup.backup_id} "
+                f"with backup age: {backup_age} (Default retention "
+                f"time: {self.threshold_strtime})."
             )
             return True
         return False
@@ -245,10 +269,14 @@ class RotationManager(cotyledon.Service):
     def rotation_engine(self, retention_service_period):
         LOG.info(f"{self.name} rotation_engine")
 
-        @periodics.periodic(spacing=retention_service_period, run_immediately=True)
+        @periodics.periodic(
+            spacing=retention_service_period, run_immediately=True
+        )
         def rotation_tasks():
             with self.lock_mgt:
-                with lock.Lock(self.lock_mgt, constants.RETENTION) as retention:
+                with lock.Lock(
+                    self.lock_mgt, constants.RETENTION
+                ) as retention:
                     if not retention.acquired:
                         return
 
@@ -264,8 +292,8 @@ class RotationManager(cotyledon.Service):
 
                     # No way to judge retention
                     if (
-                        self.threshold_strtime is None
-                        and not self.instance_retention_map
+                        self.threshold_strtime is None and (
+                            not self.instance_retention_map)
                     ):
                         return
                     backup_instance_map = {}
@@ -274,17 +302,21 @@ class RotationManager(cotyledon.Service):
                     self.controller.update_project_list()
 
                     for backup in self.get_backup_list():
-                        # Create backup instance map for later sorted by created_at.
-                        # This can be use as base of judgement on delete a backup.
-                        # The reason we need such list is because backup have
-                        # dependency with each other after we enable incremental backup.
+                        # Create backup instance map for later sorted by
+                        # created_at. This can be use as base of judgement
+                        # on delete a backup. The reason we need such list
+                        # is because backup have dependency with each other
+                        # after we enable incremental backup.
                         # So we need to have information to judge on.
                         if backup.instance_id in backup_instance_map:
-                            backup_instance_map[backup.instance_id].append(backup)
+                            backup_instance_map[backup.instance_id].append(
+                                backup
+                            )
                         else:
                             backup_instance_map[backup.instance_id] = [backup]
 
-                    # Sort backup instance map and use it to check backup create time and order.
+                    # Sort backup instance map and use it to check backup
+                    # create time and order.
                     for instance_id in backup_instance_map:
                         sorted_backup_list = sorted(
                             backup_instance_map[instance_id],
@@ -294,9 +326,11 @@ class RotationManager(cotyledon.Service):
                         for backup in sorted_backup_list:
                             if self.is_retention(backup):
                                 LOG.debug(
-                                    f"Retention: Try to remove volume backup {backup.backup_id}"
+                                    "Retention: Try to remove volume backup "
+                                    f"{backup.backup_id}"
                                 )
-                                # Try to delete and skip any incremental exist error.
+                                # Try to delete and skip any incremental
+                                # exist error.
                                 self.controller.hard_remove_volume_backup(
                                     backup, skip_inc_err=True
                                 )
@@ -319,7 +353,8 @@ class RotationManager(cotyledon.Service):
             LOG.info(
                 _(
                     "Retention time format is invalid. "
-                    "Follow <YEARS>y<MONTHS>m<WEEKS>w<DAYS>d<HOURS>h<MINUTES>min<SECONDS>s."
+                    "Follow <YEARS>y<MONTHS>m<WEEKS>w<DAYS>d<HOURS>h"
+                    "<MINUTES>min<SECONDS>s."
                 )
             )
             return None

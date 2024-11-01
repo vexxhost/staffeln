@@ -1,12 +1,15 @@
 # Email notification package
 # This should be upgraded by integrating with mail server to send batch
-import staffeln.conf
+from __future__ import annotations
+
 from oslo_log import log
 from oslo_utils import timeutils
-from staffeln import objects
-from staffeln.common import constants, email
+
+from staffeln.common import constants
+from staffeln.common import email
 from staffeln.common import time as xtime
-from staffeln.i18n import _
+import staffeln.conf
+from staffeln import objects
 
 CONF = staffeln.conf.CONF
 LOG = log.getLogger(__name__)
@@ -37,21 +40,23 @@ class BackupResult(object):
             receiver = CONF.notification.receiver
         elif not CONF.notification.project_receiver_domain:
             try:
-                receiver = self.backup_mgt.openstacksdk.get_project_member_emails(
-                    project_id
+                receiver = (
+                    self.backup_mgt.openstacksdk.get_project_member_emails(
+                        project_id
+                    )
                 )
                 if not receiver:
                     LOG.warn(
-                        f"No email can be found from members of project {project_id}. "
-                        "Skip report now and will try to report later."
-                    )
+                        "No email can be found from members of project "
+                        f"{project_id}. "
+                        "Skip report now and will try to report later.")
                     return False
             except Exception as ex:
                 LOG.warn(
-                    f"Failed to fetch emails from project members with exception: {str(ex)} "
+                    "Failed to fetch emails from project members with "
+                    f"exception: {str(ex)} "
                     "As also no receiver email or project receiver domain are "
-                    "configured. Will try to report later."
-                )
+                    "configured. Will try to report later.")
                 return False
         else:
             receiver_domain = CONF.notification.project_receiver_domain
@@ -119,41 +124,35 @@ class BackupResult(object):
         if success_tasks:
             success_volumes = "<br>".join(
                 [
-                    (
-                        f"Volume ID: {str(e.volume_id)}, Backup ID: {str(e.backup_id)}, "
-                        f"Backup mode: {'Incremental' if e.incremental else 'Full'}, "
-                        f"Created at: {str(e.created_at)}, Last updated at: "
-                        f"{str(e.updated_at)}"
-                    )
-                    for e in success_tasks
-                ]
-            )
+                    (f"Volume ID: {str(e.volume_id)}, "
+                     f"Backup ID: {str(e.backup_id)}, "
+                     "Backup mode: "
+                     f"{'Incremental' if e.incremental else 'Full'}, "
+                     f"Created at: {str(e.created_at)}, Last updated at: "
+                     f"{str(e.updated_at)}") for e in success_tasks])
         else:
             success_volumes = "<br>"
         if failed_tasks:
             failed_volumes = "<br>".join(
                 [
-                    (
-                        f"Volume ID: {str(e.volume_id)}, Reason: {str(e.reason)}, "
-                        f"Created at: {str(e.created_at)}, Last updated at: "
-                        f"{str(e.updated_at)}"
-                    )
-                    for e in failed_tasks
-                ]
-            )
+                    (f"Volume ID: {str(e.volume_id)}, "
+                     f"Reason: {str(e.reason)}, "
+                     f"Created at: {str(e.created_at)}, Last updated at: "
+                     f"{str(e.updated_at)}") for e in failed_tasks])
         else:
             failed_volumes = "<br>"
         html += (
             f"<h3>Project: {project_name} (ID: {project_id})</h3>"
             "<h3>Quota Usage (Backup Gigabytes)</h3>"
-            f"<FONT COLOR={quota_color}><h4>Limit: {str(quota['limit'])} GB, In Use: "
-            f"{str(quota['in_use'])} GB, Reserved: {str(quota['reserved'])} GB, Total "
+            f"<FONT COLOR={quota_color}><h4>Limit: {str(quota['limit'])} "
+            "GB, In Use: "
+            f"{str(quota['in_use'])} GB, Reserved: {str(quota['reserved'])} "
+            "GB, Total "
             f"rate: {str(quota_usage)}</h4></FONT>"
             "<h3>Success List</h3>"
             f"<FONT COLOR=GREEN><h4>{success_volumes}</h4></FONT><br>"
             "<h3>Failed List</h3>"
-            f"<FONT COLOR=RED><h4>{failed_volumes}</h4></FONT><br>"
-        )
+            f"<FONT COLOR=RED><h4>{failed_volumes}</h4></FONT><br>")
         self.content += html
         subject = f"Staffeln Backup result: {project_id}"
         reported = self.send_result_email(
@@ -163,5 +162,4 @@ class BackupResult(object):
             # Record success report
             self.create_report_record()
             return True
-        else:
-            return False
+        return False

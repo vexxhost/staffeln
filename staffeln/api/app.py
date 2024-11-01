@@ -1,7 +1,12 @@
-from flask import Flask, Response, request
+from __future__ import annotations
+
+from flask import Flask
+from flask import request
+from flask import Response
 from oslo_log import log
-from staffeln import objects
+
 from staffeln.common import context
+from staffeln import objects
 
 ctx = context.make_context()
 app = Flask(__name__)
@@ -22,8 +27,8 @@ def backup_id():
     backup = objects.Volume.get_backup_by_backup_id(  # pylint: disable=E1120
         context=ctx, backup_id=request.args["backup_id"]
     )
-    # backup_info is None when there is no entry of the backup id in backup_table.
-    # So the backup should not be the automated backup.
+    # backup_info is None when there is no entry of the backup id in
+    # backup_table. So the backup should not be the automated backup.
     if backup is None:
         return Response(
             "True",

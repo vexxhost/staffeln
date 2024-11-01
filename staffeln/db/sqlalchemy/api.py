@@ -1,5 +1,7 @@
 """SQLAlchemy storage backend."""
 
+from __future__ import annotations
+
 import datetime
 import operator
 
@@ -8,9 +10,12 @@ from oslo_db import exception as db_exc
 from oslo_db.sqlalchemy import session as db_session
 from oslo_db.sqlalchemy import utils as db_utils
 from oslo_log import log
-from oslo_utils import strutils, timeutils, uuidutils
+from oslo_utils import strutils
+from oslo_utils import timeutils
+from oslo_utils import uuidutils
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm import exc
+
 from staffeln.common import short_id
 from staffeln.db.sqlalchemy import models
 
@@ -54,6 +59,7 @@ def model_query(model, *args, **kwargs):
 
 def add_identity_filter(query, value):
     """Adds an identity filter to a query.
+
     Filters results by ID, if supplied value is a valid integer.
     Otherwise attempts to filter results by backup_id.
     :param query: Initial query to add filter to.
@@ -161,6 +167,7 @@ class Connection(object):
 
     def _add_filters(self, query, model, filters=None, plain_fields=None):
         """Add filters while listing the columns from database table"""
+
         # timestamp_mixin_fields = ["created_at", "updated_at"]
         filters = filters or {}
 
@@ -178,9 +185,8 @@ class Connection(object):
         field = getattr(model, fieldname)
 
         if (
-            fieldname != "deleted"
-            and value
-            and field.type.python_type is datetime.datetime
+            fieldname != "deleted" and value and (
+                field.type.python_type is datetime.datetime)
         ):
             if not isinstance(value, datetime.datetime):
                 value = timeutils.parse_isotime(value)
@@ -323,7 +329,10 @@ class Connection(object):
         try:
 
             return self._get(
-                context, model=models.Queue_data, fieldname=fieldname, value=value
+                context,
+                model=models.Queue_data,
+                fieldname=fieldname,
+                value=value,
             )
         except:  # noqa: E722
             LOG.error("Queue not found")
@@ -338,7 +347,9 @@ class Connection(object):
         """Get the column from the backup_data with matching backup_id"""
 
         try:
-            return self._get_backup(context, fieldname="backup_id", value=backup_id)
+            return self._get_backup(
+                context, fieldname="backup_id", value=backup_id
+            )
         except:  # noqa: E722
             LOG.error("Backup not found with backup_id %s." % backup_id)
 
@@ -347,7 +358,10 @@ class Connection(object):
 
         try:
             return self._get(
-                context, model=models.Backup_data, fieldname=fieldname, value=value
+                context,
+                model=models.Backup_data,
+                fieldname=fieldname,
+                value=value,
             )
         except:  # noqa: E722
             LOG.error("Backup resource not found.")
@@ -365,7 +379,9 @@ class Connection(object):
 
     def create_report_timestamp(self, values):
         try:
-            report_timestamp_data = self._create(models.Report_timestamp, values)
+            report_timestamp_data = self._create(
+                models.Report_timestamp, values
+            )
         except db_exc.DBDuplicateEntry:
             LOG.error("Report Timestamp ID already exists.")
         return report_timestamp_data

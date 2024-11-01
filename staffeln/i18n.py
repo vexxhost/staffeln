@@ -2,6 +2,8 @@
 See http://docs.openstack.org/developer/oslo.i18n/usage.html .
 """
 
+from __future__ import annotations
+
 import oslo_i18n
 
 DOMAIN = "staffeln"

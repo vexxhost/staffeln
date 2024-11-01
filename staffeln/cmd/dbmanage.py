@@ -2,11 +2,14 @@
 Run storage database migration.
 """
 
+from __future__ import annotations
+
 import sys
 
 from oslo_config import cfg
-from staffeln import conf
+
 from staffeln.common import service
+from staffeln import conf
 from staffeln.db import migration
 
 CONF = conf.CONF
@@ -25,17 +28,22 @@ class DBCommand(object):
 def add_command_parsers(subparsers):
 
     parser = subparsers.add_parser(
-        "create_schema", help="Create the database schema.")
+        "create_schema", help="Create the database schema."
+    )
     parser.set_defaults(func=DBCommand.create_schema)
 
     parser = subparsers.add_parser(
-        "upgrade", help="Upgrade the database schema.")
+        "upgrade", help="Upgrade the database schema."
+    )
     parser.add_argument("revision", nargs="?")
     parser.set_defaults(func=DBCommand.do_upgrade)
 
 
 command_opt = cfg.SubCommandOpt(
-    "command", title="Command", help="Available commands", handler=add_command_parsers
+    "command",
+    title="Command",
+    help="Available commands",
+    handler=add_command_parsers,
 )
 
 
