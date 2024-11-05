@@ -8,6 +8,15 @@ conductor_group = cfg.OptGroup(
     help=_("Options under this group are used " "to define Conductor's configuration."),
 )
 
+openstack_group = cfg.OptGroup(
+    "openstack",
+    title="OpenStack Options",
+    help=_(
+        "Options under this group are used "
+        "to define OpneStack related configuration."
+    ),
+)
+
 backup_opts = [
     cfg.IntOpt(
         "backup_workers",
@@ -39,11 +48,29 @@ backup_opts = [
         "backup_metadata_key",
         help=_("The key string of metadata the VM, which requres back up, has"),
     ),
+]
+
+openstack_opts = [
     cfg.IntOpt(
         "retry_timeout",
         default=300,
         min=1,
-        help=_("The timeout for retry, the unit is one second."),
+        help=_("The timeout for retry OpenStackSDK HTTP exceptions, "
+               "the unit is one second."),
+    ),
+    cfg.IntOpt(
+        "max_retry_interval",
+        default=30,
+        min=0,
+        help=_("Max time interval for retry OpenStackSDK HTTP exceptions, "
+               "the unit is one second."),
+    ),
+    cfg.StrOpt(
+        "skip_retry_codes",
+        default="404,",
+        help=_("A comma separated string that provides a list of HTTP codes "
+               "to skip retry on for OpenStackSDK HTTP "
+               "exception. Default only `404` is skipped."),
     ),
 ]
 
@@ -91,7 +118,12 @@ def register_opts(conf):
     conf.register_group(conductor_group)
     conf.register_opts(backup_opts, group=conductor_group)
     conf.register_opts(rotation_opts, group=conductor_group)
+    conf.register_opts(openstack_opts, group=openstack_group)
 
 
 def list_opts():
-    return {"DEFAULT": rotation_opts, conductor_group: backup_opts}
+    return {
+        "DEFAULT": rotation_opts,
+        conductor_group: backup_opts,
+        openstack_group: openstack_opts,
+    }

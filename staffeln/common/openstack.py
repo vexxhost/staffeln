@@ -16,10 +16,12 @@ class RetryHTTPError(tenacity.retry_if_exception):
 
     def __init__(self):
         def is_http_error(exception):
-            # Make sure we don't retry on 404, as not found could be an
-            # expected status.
+            # Make sure we don't retry on codes in skip list (default: 404),
+            # as not found could be an expected status.
+            skip_codes = CONF.openstack.skip_retry_codes.replace(
+                ' ', '').split(',')
             result = (isinstance(exception, exceptions.HttpException) and
-                      exception.status_code != 404)
+                      str(exception.status_code) not in skip_codes)
             if result:
                 LOG.debug(f"Getting HttpException {exception} (status "
                           f"code: {exception.status_code}), "
@@ -48,9 +50,9 @@ class OpenstackSDK:
     # user
     @tenacity.retry(
         retry=RetryHTTPError(),
-        wait=tenacity.wait_exponential(max=30),
+        wait=tenacity.wait_exponential(max=CONF.openstack.max_retry_interval),
         reraise=True,
-        stop=tenacity.stop_after_delay(CONF.conductor.retry_timeout))
+        stop=tenacity.stop_after_delay(CONF.openstack.retry_timeout))
     def get_user_id(self):
         user_name = self.conn.config.auth["username"]
         if "user_domain_id" in self.conn.config.auth:
@@ -65,17 +67,17 @@ class OpenstackSDK:
 
     @tenacity.retry(
         retry=RetryHTTPError(),
-        wait=tenacity.wait_exponential(max=30),
+        wait=tenacity.wait_exponential(max=CONF.openstack.max_retry_interval),
         reraise=True,
-        stop=tenacity.stop_after_delay(CONF.conductor.retry_timeout))
+        stop=tenacity.stop_after_delay(CONF.openstack.retry_timeout))
     def get_projects(self):
         return self.conn.list_projects()
 
     @tenacity.retry(
         retry=RetryHTTPError(),
-        wait=tenacity.wait_exponential(max=30),
+        wait=tenacity.wait_exponential(max=CONF.openstack.max_retry_interval),
         reraise=True,
-        stop=tenacity.stop_after_delay(CONF.conductor.retry_timeout))
+        stop=tenacity.stop_after_delay(CONF.openstack.retry_timeout))
     def get_servers(self, project_id=None, all_projects=True, details=True):
         if project_id is not None:
             return self.conn.compute.servers(
@@ -86,17 +88,17 @@ class OpenstackSDK:
 
     @tenacity.retry(
         retry=RetryHTTPError(),
-        wait=tenacity.wait_exponential(max=30),
+        wait=tenacity.wait_exponential(max=CONF.openstack.max_retry_interval),
         reraise=True,
-        stop=tenacity.stop_after_delay(CONF.conductor.retry_timeout))
+        stop=tenacity.stop_after_delay(CONF.openstack.retry_timeout))
     def get_volume(self, uuid, project_id):
         return self.conn.get_volume_by_id(uuid)
 
     @tenacity.retry(
         retry=RetryHTTPError(),
-        wait=tenacity.wait_exponential(max=30),
+        wait=tenacity.wait_exponential(max=CONF.openstack.max_retry_interval),
         reraise=True,
-        stop=tenacity.stop_after_delay(CONF.conductor.retry_timeout))
+        stop=tenacity.stop_after_delay(CONF.openstack.retry_timeout))
     def get_backup(self, uuid, project_id=None):
         # return conn.block_storage.get_backup(
         #     project_id=project_id, backup_id=uuid,
@@ -119,9 +121,9 @@ class OpenstackSDK:
 
     @tenacity.retry(
         retry=RetryHTTPError(),
-        wait=tenacity.wait_exponential(max=30),
+        wait=tenacity.wait_exponential(max=CONF.openstack.max_retry_interval),
         reraise=True,
-        stop=tenacity.stop_after_delay(CONF.conductor.retry_timeout))
+        stop=tenacity.stop_after_delay(CONF.openstack.retry_timeout))
     def delete_backup(self, uuid, project_id=None, force=False):
         # Note(Alex): v3 is not supporting force delete?
         # conn.block_storage.delete_backup(
@@ -135,9 +137,9 @@ class OpenstackSDK:
 
     @tenacity.retry(
         retry=RetryHTTPError(),
-        wait=tenacity.wait_exponential(max=30),
+        wait=tenacity.wait_exponential(max=CONF.openstack.max_retry_interval),
         reraise=True,
-        stop=tenacity.stop_after_delay(CONF.conductor.retry_timeout))
+        stop=tenacity.stop_after_delay(CONF.openstack.retry_timeout))
     def get_backup_quota(self, project_id):
         # quota = conn.get_volume_quotas(project_id)
         quota = self._get_volume_quotas(project_id)
