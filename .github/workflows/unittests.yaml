@@ -1,0 +1,28 @@
+name: unittests
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'stable/1.0'
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - 'stable/1.0'
+
+jobs:
+  unuttest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tox
+      - name: Run tox -e py3
+        run: tox -e py3
