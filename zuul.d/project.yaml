@@ -1,0 +1,5 @@
+- project:
+    check:
+      jobs:
+        - staffeln-linters
+        - staffeln-unit
