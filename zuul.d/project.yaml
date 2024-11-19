@@ -1,5 +1,12 @@
 - project:
     check:
       jobs:
-        - staffeln-linters
-        - staffeln-unit
+        - magnum-cluster-api-chart-vendor
+        - magnum-cluster-api-linters
+        - magnum-cluster-api-unit
+        - magnum-cluster-api-functional
+    templates:
+      - magnum-cluster-api-flatcar
+      - magnum-cluster-api-rockylinux-8
+      - magnum-cluster-api-rockylinux-9
+      - magnum-cluster-api-ubuntu-2204
