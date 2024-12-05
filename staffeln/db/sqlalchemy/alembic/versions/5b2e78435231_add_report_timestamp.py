@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import sqlalchemy as sa
 from alembic import op
 from oslo_log import log
-import sqlalchemy as sa
 
 """add report timestamp
 

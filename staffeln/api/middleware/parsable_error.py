@@ -80,10 +80,7 @@ class ParsableErrorMiddleware(object):
                 state["status_code"] = status_code
             except (ValueError, TypeError):  # pragma: nocover
                 raise Exception(
-                    _(
-                        "ErrorDocumentMiddleware received an invalid "
-                        "status %s"
-                    )
+                    _("ErrorDocumentMiddleware received an invalid " "status %s")
                     % status
                 )
             else:

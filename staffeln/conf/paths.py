@@ -9,9 +9,7 @@ from staffeln.i18n import _
 PATH_OPTS = [
     cfg.StrOpt(
         "pybasedir",
-        default=os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "../")
-        ),
+        default=os.path.abspath(os.path.join(os.path.dirname(__file__), "../")),
         help=_("Directory where the staffeln python module is installed."),
     ),
     cfg.StrOpt(

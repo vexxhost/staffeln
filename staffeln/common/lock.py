@@ -5,15 +5,14 @@ import glob
 import os
 import re
 import sys
-from typing import Optional  # noqa: H301
 import uuid
+from typing import Optional  # noqa: H301
 
-from oslo_log import log
 import sherlock
+from oslo_log import log
 from tooz import coordination
 
-from staffeln import conf
-from staffeln import exception
+from staffeln import conf, exception
 
 CONF = conf.CONF
 LOG = log.getLogger(__name__)

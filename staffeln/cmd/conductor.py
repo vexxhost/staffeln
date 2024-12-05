@@ -5,9 +5,9 @@ from __future__ import annotations
 import cotyledon
 from cotyledon import oslo_config_glue
 
+import staffeln.conf
 from staffeln.common import service
 from staffeln.conductor import manager
-import staffeln.conf
 
 CONF = staffeln.conf.CONF
 

@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-from flask import Flask
-from flask import request
-from flask import Response
+from flask import Flask, Response, request
 from oslo_log import log
 
-from staffeln.common import context
 from staffeln import objects
+from staffeln.common import context
 
 ctx = context.make_context()
 app = Flask(__name__)

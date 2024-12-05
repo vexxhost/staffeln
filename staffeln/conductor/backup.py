@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import collections
-from datetime import timedelta
-from datetime import timezone
+from datetime import timedelta, timezone
 
 from openstack.exceptions import HttpException as OpenstackHttpException
 from openstack.exceptions import ResourceNotFound as OpenstackResourceNotFound
@@ -10,14 +9,12 @@ from openstack.exceptions import SDKException as OpenstackSDKException
 from oslo_log import log
 from oslo_utils import timeutils
 
-from staffeln.common import constants
-from staffeln.common import context
-from staffeln.common import openstack
+import staffeln.conf
+from staffeln import objects
+from staffeln.common import constants, context, openstack
 from staffeln.common import time as xtime
 from staffeln.conductor import result
-import staffeln.conf
 from staffeln.i18n import _
-from staffeln import objects
 
 CONF = staffeln.conf.CONF
 LOG = log.getLogger(__name__)
@@ -148,8 +145,8 @@ class Backup(object):
                 return False
 
             return (
-                metadata[CONF.conductor.backup_metadata_key].lower(
-                ) == constants.BACKUP_ENABLED_KEY
+                metadata[CONF.conductor.backup_metadata_key].lower()
+                == constants.BACKUP_ENABLED_KEY
             )
         else:
             return True
@@ -164,8 +161,8 @@ class Backup(object):
             if not res:
                 reason = _(
                     "Volume %s is not triger new backup task because "
-                    "it is in %s status" %
-                    (volume_id, volume["status"]))
+                    "it is in %s status" % (volume_id, volume["status"])
+                )
                 LOG.info(reason)
                 return reason
             return res
@@ -279,9 +276,7 @@ class Backup(object):
                 )
 
         except OpenstackSDKException as e:
-            LOG.warn(
-                f"Backup {backup_object.backup_id} deletion failed. {str(e)}"
-            )
+            LOG.warn(f"Backup {backup_object.backup_id} deletion failed. {str(e)}")
             # We don't delete backup object if any exception occured
             # backup_object.delete_backup()
             return False
@@ -296,7 +291,8 @@ class Backup(object):
                     f"{backup_object.backup_id} is not existing in "
                     "Openstack. Please check your access right to this "
                     "project. "
-                    "Skip this backup from remove now and will retry later.")
+                    "Skip this backup from remove now and will retry later."
+                )
                 # Don't remove backup object, keep it and retry on next
                 # periodic task backup_object.delete_backup()
                 return
@@ -309,17 +305,15 @@ class Backup(object):
                 LOG.info(
                     f"Backup {backup_object.backup_id} is removed from "
                     "Openstack or cinder-backup is not existing in the "
-                    "cloud. Start removing backup object from Staffeln.")
+                    "cloud. Start removing backup object from Staffeln."
+                )
                 return backup_object.delete_backup()
 
             self.openstacksdk.delete_backup(uuid=backup_object.backup_id)
             # Don't remove backup until it's officially removed from Cinder
             # backup_object.delete_backup()
         except Exception as e:
-            if (
-                skip_inc_err and (
-                    "Incremental backups exist for this backup" in str(e))
-            ):
+            if skip_inc_err and ("Incremental backups exist for this backup" in str(e)):
                 LOG.debug(str(e))
             else:
                 LOG.info(
@@ -355,15 +349,11 @@ class Backup(object):
                 # Ignore backup interval
                 return True
             interval = CONF.conductor.backup_min_interval
-            threshold_strtime = timeutils.utcnow() - timedelta(
-                seconds=interval
-            )
+            threshold_strtime = timeutils.utcnow() - timedelta(seconds=interval)
             backups = self.get_backups(
                 filters={
                     "volume_id__eq": volume_id,
-                    "created_at__gt": threshold_strtime.astimezone(
-                        timezone.utc
-                    ),
+                    "created_at__gt": threshold_strtime.astimezone(timezone.utc),
                 }
             )
             if backups:
@@ -407,8 +397,7 @@ class Backup(object):
                     return True
         except Exception as e:
             LOG.debug(
-                "Failed to get backup history to decide backup "
-                f"method. Reason: {e}"
+                "Failed to get backup history to decide backup " f"method. Reason: {e}"
             )
         return False
 
@@ -513,14 +502,16 @@ class Backup(object):
                     LOG.debug(
                         f"Found retention time ({server_retention_time}) "
                         f"defined for server {server.id}, "
-                        "Adding it retention reference map.")
+                        "Adding it retention reference map."
+                    )
                     retention_map[server.id] = server_retention_time
                 else:
                     LOG.info(
                         f"Server retention time for instance {server.id} is "
                         "incorrect. Please follow "
                         "'<YEARS>y<MONTHS>m<WEEKS>w<DAYS>d<HOURS>"
-                        "h<MINUTES>min<SECONDS>s' format.")
+                        "h<MINUTES>min<SECONDS>s' format."
+                    )
         return retention_map
 
     def _volume_queue(self, task):
@@ -575,10 +566,7 @@ class Backup(object):
                 # NOTE(Alex): no need to wait because we have a cycle time out
                 if project_id not in self.project_list:
                     LOG.warn(
-                        _(
-                            "Project ID %s is not existing in project list"
-                            % project_id
-                        )
+                        _("Project ID %s is not existing in project list" % project_id)
                     )
                     self.process_non_existing_backup(task)
                     return
@@ -586,10 +574,7 @@ class Backup(object):
                 backup_method = "Incremental" if task.incremental else "Full"
                 LOG.info(
                     _(
-                        (
-                            "%s Backup (name: %s) for volume %s creating "
-                            "in project %s"
-                        )
+                        ("%s Backup (name: %s) for volume %s creating " "in project %s")
                         % (
                             backup_method,
                             backup_name,
@@ -608,26 +593,23 @@ class Backup(object):
                 task.backup_status = constants.BACKUP_WIP
                 task.save()
             except OpenstackSDKException as error:
-                inc_err_msg = (
-                    "No backups available to do an incremental backup"
-                )
+                inc_err_msg = "No backups available to do an incremental backup"
                 if inc_err_msg in str(error):
                     LOG.info(
                         "Retry to create full backup for volume %s instead of "
-                        "incremental." %
-                        task.volume_id)
+                        "incremental." % task.volume_id
+                    )
                     task.incremental = False
                     task.save()
                 else:
                     reason = _(
                         "Backup (name: %s) creation for the volume %s "
-                        "failled. %s" %
-                        (backup_name, task.volume_id, str(error)[
-                            :64]))
+                        "failled. %s" % (backup_name, task.volume_id, str(error)[:64])
+                    )
                     LOG.warn(
                         "Backup (name: %s) creation for the volume %s "
-                        "failled. %s" %
-                        (backup_name, task.volume_id, str(error)))
+                        "failled. %s" % (backup_name, task.volume_id, str(error))
+                    )
                     task.reason = reason
                     task.backup_status = constants.BACKUP_FAILED
                     task.save()
@@ -654,8 +636,7 @@ class Backup(object):
     def process_pre_failed_backup(self, task):
         # 1.notify via email
         reason = _(
-            "The backup creation for the volume %s was prefailed."
-            % task.volume_id
+            "The backup creation for the volume %s was prefailed." % task.volume_id
         )
         LOG.warn(reason)
         task.reason = reason
@@ -664,9 +645,7 @@ class Backup(object):
 
     def process_failed_backup(self, task):
         # 1. notify via email
-        reason = (
-            f"The status of backup for the volume {task.volume_id} is error."
-        )
+        reason = f"The status of backup for the volume {task.volume_id} is error."
         LOG.warn(reason)
         # 2. delete backup generator
         try:
@@ -729,10 +708,7 @@ class Backup(object):
         if backup_gen is None:
             # TODO(Alex): need to check when it is none
             LOG.info(
-                _(
-                    "[Beta] Backup status of %s is returning none."
-                    % (queue.backup_id)
-                )
+                _("[Beta] Backup status of %s is returning none." % (queue.backup_id))
             )
             self.process_non_existing_backup(queue)
             return
@@ -741,9 +717,7 @@ class Backup(object):
         elif backup_gen.status == "available":
             self.process_available_backup(queue)
         elif backup_gen.status == "creating":
-            LOG.info(
-                "Waiting for backup of %s to be completed" % queue.volume_id
-            )
+            LOG.info("Waiting for backup of %s to be completed" % queue.volume_id)
         else:  # "deleting", "restoring", "error_restoring" status
             self.process_using_backup(queue)
 

@@ -15,9 +15,9 @@ from __future__ import annotations
 
 from oslo_log import log as logging
 
-from staffeln.common import config
 import staffeln.conf
 from staffeln import objects
+from staffeln.common import config
 
 CONF = staffeln.conf.CONF
 

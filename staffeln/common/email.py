@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+import smtplib
+from email import utils
 from email.header import Header
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email import utils
-import smtplib
 
 from oslo_log import log
 

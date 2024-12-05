@@ -10,9 +10,7 @@ from oslo_db import exception as db_exc
 from oslo_db.sqlalchemy import session as db_session
 from oslo_db.sqlalchemy import utils as db_utils
 from oslo_log import log
-from oslo_utils import strutils
-from oslo_utils import timeutils
-from oslo_utils import uuidutils
+from oslo_utils import strutils, timeutils, uuidutils
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm import exc
 
@@ -185,8 +183,9 @@ class Connection(object):
         field = getattr(model, fieldname)
 
         if (
-            fieldname != "deleted" and value and (
-                field.type.python_type is datetime.datetime)
+            fieldname != "deleted"
+            and value
+            and (field.type.python_type is datetime.datetime)
         ):
             if not isinstance(value, datetime.datetime):
                 value = timeutils.parse_isotime(value)
@@ -347,9 +346,7 @@ class Connection(object):
         """Get the column from the backup_data with matching backup_id"""
 
         try:
-            return self._get_backup(
-                context, fieldname="backup_id", value=backup_id
-            )
+            return self._get_backup(context, fieldname="backup_id", value=backup_id)
         except Exception:  # noqa: E722
             LOG.error("Backup not found with backup_id %s." % backup_id)
 
@@ -379,9 +376,7 @@ class Connection(object):
 
     def create_report_timestamp(self, values):
         try:
-            report_timestamp_data = self._create(
-                models.Report_timestamp, values
-            )
+            report_timestamp_data = self._create(models.Report_timestamp, values)
         except db_exc.DBDuplicateEntry:
             LOG.error("Report Timestamp ID already exists.")
         return report_timestamp_data

@@ -8,10 +8,7 @@ from staffeln.i18n import _
 conductor_group = cfg.OptGroup(
     "conductor",
     title="Conductor Options",
-    help=_(
-        "Options under this group are used "
-        "to define Conductor's configuration."
-    ),
+    help=_("Options under this group are used " "to define Conductor's configuration."),
 )
 
 backup_opts = [
@@ -60,9 +57,7 @@ backup_opts = [
     ),
     cfg.StrOpt(
         "backup_metadata_key",
-        help=_(
-            "The key string of metadata the VM, which requres back up, has"
-        ),
+        help=_("The key string of metadata the VM, which requres back up, has"),
     ),
     cfg.StrOpt(
         "retention_metadata_key",
@@ -122,8 +117,7 @@ coordination_group = cfg.OptGroup(
     "coordination",
     title="Coordination Options",
     help=_(
-        "Options under this group are used to define Coordination's"
-        "configuration."
+        "Options under this group are used to define Coordination's" "configuration."
     ),
 )
 

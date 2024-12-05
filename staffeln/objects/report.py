@@ -26,9 +26,7 @@ class ReportTimestamp(
 
     @base.remotable_classmethod
     def list(cls, context, filters=None):  # pylint: disable=E0213
-        db_report = cls.dbapi.get_report_timestamp_list(
-            context, filters=filters
-        )
+        db_report = cls.dbapi.get_report_timestamp_list(context, filters=filters)
         return [cls._from_db_object(cls(context), obj) for obj in db_report]
 
     @base.remotable

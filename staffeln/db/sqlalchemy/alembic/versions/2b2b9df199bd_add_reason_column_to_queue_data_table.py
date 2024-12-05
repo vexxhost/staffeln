@@ -12,8 +12,8 @@ from __future__ import annotations
 revision = "2b2b9df199bd"
 down_revision = "ebdbed01e9a7"
 
-from alembic import op  # noqa: E402
 import sqlalchemy as sa  # noqa: E402
+from alembic import op  # noqa: E402
 
 
 def upgrade():

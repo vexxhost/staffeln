@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from openstack import exceptions
-from openstack import proxy
+from openstack import exceptions, proxy
 from oslo_log import log
 
 from staffeln.common import auth
@@ -20,9 +19,7 @@ class OpenstackSDK:
         project_id = project.get("id")
 
         if project_id not in self.conn_list:
-            LOG.debug(
-                _("Initiate connection for project %s" % project.get("name"))
-            )
+            LOG.debug(_("Initiate connection for project %s" % project.get("name")))
             conn = self.conn.connect_as_project(project)
             self.conn_list[project_id] = conn
         LOG.debug(_("Connect as project %s" % project.get("name")))
@@ -33,14 +30,10 @@ class OpenstackSDK:
         user_name = self.conn.config.auth["username"]
         if "user_domain_id" in self.conn.config.auth:
             domain_id = self.conn.config.auth["user_domain_id"]
-            user = self.conn.get_user(
-                name_or_id=user_name, domain_id=domain_id
-            )
+            user = self.conn.get_user(name_or_id=user_name, domain_id=domain_id)
         elif "user_domain_name" in self.conn.config.auth:
             domain_name = self.conn.config.auth["user_domain_name"]
-            user = self.conn.get_user(
-                name_or_id=user_name, domain_id=domain_name
-            )
+            user = self.conn.get_user(name_or_id=user_name, domain_id=domain_name)
         else:
             user = self.conn.get_user(name_or_id=user_name)
         return user.id
@@ -81,9 +74,7 @@ class OpenstackSDK:
                 project_id=project_id,
             )
         else:
-            return self.conn.compute.servers(
-                details=details, all_projects=all_projects
-            )
+            return self.conn.compute.servers(details=details, all_projects=all_projects)
 
     def get_volume(self, uuid, project_id):
         return self.conn.get_volume_by_id(uuid)
@@ -149,15 +140,11 @@ class OpenstackSDK:
 
         if usage:
             resp = self.conn.block_storage.get(
-                "/os-quota-sets/{project_id}?usage=True".format(
-                    project_id=project_id
-                )
+                "/os-quota-sets/{project_id}?usage=True".format(project_id=project_id)
             )
         else:
             resp = self.conn.block_storage.get(
                 "/os-quota-sets/{project_id}".format(project_id=project_id)
             )
-        data = proxy._json_response(
-            resp, error_message="cinder client call failed"
-        )
+        data = proxy._json_response(resp, error_message="cinder client call failed")
         return self.conn._get_and_munchify("quota_set", data)
