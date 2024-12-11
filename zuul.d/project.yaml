@@ -3,3 +3,7 @@
       jobs:
         - staffeln-linters
         - staffeln-unit
+    gate:
+      jobs:
+        - staffeln-linters
+        - staffeln-unit
