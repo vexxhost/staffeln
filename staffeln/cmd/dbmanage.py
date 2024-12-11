@@ -2,9 +2,12 @@
 Run storage database migration.
 """
 
+from __future__ import annotations
+
 import sys
 
 from oslo_config import cfg
+
 from staffeln import conf
 from staffeln.common import service
 from staffeln.db import migration
@@ -33,7 +36,10 @@ def add_command_parsers(subparsers):
 
 
 command_opt = cfg.SubCommandOpt(
-    "command", title="Command", help="Available commands", handler=add_command_parsers
+    "command",
+    title="Command",
+    help="Available commands",
+    handler=add_command_parsers,
 )
 
 

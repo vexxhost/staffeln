@@ -17,8 +17,10 @@ response with one formatted so the client can parse it.
 
 Based on pecan.middleware.errordocument
 """
+from __future__ import annotations
 
 from oslo_serialization import jsonutils
+
 from staffeln.i18n import _
 
 

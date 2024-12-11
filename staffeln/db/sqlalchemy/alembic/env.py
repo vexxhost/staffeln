@@ -9,10 +9,12 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+from __future__ import annotations
 
 from logging import config as log_config
 
 from alembic import context
+
 from staffeln.db.sqlalchemy import api as sqla_api
 from staffeln.db.sqlalchemy import models
 

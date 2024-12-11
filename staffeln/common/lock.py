@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import errno
 import glob
 import os
@@ -8,8 +10,9 @@ from typing import Optional  # noqa: H301
 
 import sherlock
 from oslo_log import log
-from staffeln import conf, exception
 from tooz import coordination
+
+from staffeln import conf, exception
 
 CONF = conf.CONF
 LOG = log.getLogger(__name__)
@@ -146,7 +149,10 @@ class K8sCoordinator(object):
     """
 
     def __init__(
-        self, expire: int = 3600, timeout: int = 10, namespace: str = "openstack"
+        self,
+        expire: int = 3600,
+        timeout: int = 10,
+        namespace: str = "openstack",
     ):
         self.timeout = timeout
         self.expire = expire

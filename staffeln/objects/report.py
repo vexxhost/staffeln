@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from oslo_versionedobjects import fields as ovoo_fields
+
 from staffeln.db import api as db_api
 from staffeln.objects import base
 from staffeln.objects import fields as sfeild
@@ -6,7 +9,9 @@ from staffeln.objects import fields as sfeild
 
 @base.StaffelnObjectRegistry.register
 class ReportTimestamp(
-    base.StaffelnPersistentObject, base.StaffelnObject, base.StaffelnObjectDictCompat
+    base.StaffelnPersistentObject,
+    base.StaffelnObject,
+    base.StaffelnObjectDictCompat,
 ):
     VERSION = "1.0"
     # Version 1.0: Initial version

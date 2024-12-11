@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sqlalchemy as sa
 from alembic import op
 from oslo_log import log
@@ -21,7 +23,11 @@ def upgrade():
     op.create_table(
         "report_timestamp",
         sa.Column(
-            "id", sa.String(36), primary_key=True, nullable=False, autoincrement=True
+            "id",
+            sa.String(36),
+            primary_key=True,
+            nullable=False,
+            autoincrement=True,
         ),
         sa.Column("created_at", sa.DateTime),
         sa.Column("updated_at", sa.DateTime),

@@ -36,7 +36,7 @@ SWIFT_HASH=66a3d6b56c1f479c8b4e70ab5c2000f5
 SWIFT_REPLICAS=1
 enable_plugin neutron https://opendev.org/openstack/neutron
 #swift
-enable_service s-proxy s-object s-container s-account 
+enable_service s-proxy s-object s-container s-account
 # Cinder
 enable_service c-bak
 [[post-config|/etc/neutron/neutron.conf]]

@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from oslo_config import cfg
+
 from staffeln.common import constants
 from staffeln.i18n import _
 
@@ -43,7 +46,8 @@ backup_opts = [
         "backup_cycle_timout",
         regex=(
             r"((?P<years>\d+?)y)?((?P<months>\d+?)mon)?((?P<weeks>\d+?)w)?"
-            r"((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)min)?((?P<seconds>\d+?)s)?"
+            r"((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)min)?"
+            r"((?P<seconds>\d+?)s)?"
         ),
         default=constants.DEFAULT_BACKUP_CYCLE_TIMEOUT,
         help=_(
@@ -58,7 +62,8 @@ backup_opts = [
     cfg.StrOpt(
         "retention_metadata_key",
         help=_(
-            "The key string of metadata the VM, which use as backup retention period."
+            "The key string of metadata the VM, which use as backup retention "
+            "period."
         ),
     ),
     cfg.IntOpt(
@@ -96,7 +101,8 @@ rotation_opts = [
         "retention_time",
         regex=(
             r"((?P<years>\d+?)y)?((?P<months>\d+?)mon)?((?P<weeks>\d+?)w)?"
-            r"((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)min)?((?P<seconds>\d+?)s)?"
+            r"((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)min)?"
+            r"((?P<seconds>\d+?)s)?"
         ),
         default="2w3d",
         help=_(
@@ -110,13 +116,17 @@ rotation_opts = [
 coordination_group = cfg.OptGroup(
     "coordination",
     title="Coordination Options",
-    help=_("Options under this group are used to define Coordination's configuration."),
+    help=_(
+        "Options under this group are used to define Coordination's" "configuration."
+    ),
 )
 
 
 coordination_opts = [
     cfg.StrOpt(
-        "backend_url", default="", help=_("lock coordination connection backend URL.")
+        "backend_url",
+        default="",
+        help=_("lock coordination connection backend URL."),
     ),
 ]
 

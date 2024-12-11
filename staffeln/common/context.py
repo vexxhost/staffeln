@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from oslo_context import context
 from oslo_log import log
 
@@ -5,7 +7,11 @@ LOG = log.getLogger(__name__)
 
 
 class RequestContext(context.RequestContext):
-    """Added security context with request parameters from openstack common library"""
+    """Added security context
+
+    Added security context with request
+    parameters from openstack common library
+    """
 
     def __init__(
         self,
@@ -14,7 +20,7 @@ class RequestContext(context.RequestContext):
         instance_id=None,
         executed_at=None,
         backup_status=None,
-        **kwargs
+        **kwargs,
     ):
         self.backup_id = backup_id
         self.volume_id = volume_id

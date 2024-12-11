@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from oslo_versionedobjects import fields as ovoo_fields
+
 from staffeln.db import api as db_api
 from staffeln.objects import base
 from staffeln.objects import fields as sfeild
@@ -6,7 +9,9 @@ from staffeln.objects import fields as sfeild
 
 @base.StaffelnObjectRegistry.register
 class Queue(
-    base.StaffelnPersistentObject, base.StaffelnObject, base.StaffelnObjectDictCompat
+    base.StaffelnPersistentObject,
+    base.StaffelnObject,
+    base.StaffelnObjectDictCompat,
 ):
     VERSION = "1.2"
     # Version 1.0: Initial version
@@ -37,6 +42,7 @@ class Queue(
     @base.remotable_classmethod
     def get_by_id(cls, context, id):  # pylint: disable=E0213
         """Find a queue task based on id
+
         :param context: Security context. NOTE: This should only
                         be used internally by the indirection_api.
                         Unfortunately, RPC requires context as the first
@@ -46,6 +52,7 @@ class Queue(
         :param backup_id: the backup id of volume in queue.
         :returns: a :class:`Queue` object.
         """
+
         db_queue = cls.dbapi.get_queue_by_id(context, id)
         queue = cls._from_db_object(cls(context), db_queue)
         return queue
@@ -53,6 +60,7 @@ class Queue(
     @base.remotable
     def create(self):
         """Create a :class:`Backup_data` record in the DB"""
+
         values = self.obj_get_changes()
         db_queue = self.dbapi.create_queue(values)
         return self._from_db_object(self, db_queue)
@@ -73,4 +81,5 @@ class Queue(
     @base.remotable
     def delete_queue(self):
         """Soft Delete the :class:`Queue_data` from the DB"""
+
         self.dbapi.soft_delete_queue(self.id)

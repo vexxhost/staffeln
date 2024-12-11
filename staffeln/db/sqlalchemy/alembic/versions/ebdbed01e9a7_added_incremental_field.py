@@ -7,6 +7,8 @@ Create Date: 2022-11-02 01:06:46.021902
 """
 
 # revision identifiers, used by Alembic.
+from __future__ import annotations
+
 revision = "ebdbed01e9a7"
 down_revision = "041d9a0f1159"
 

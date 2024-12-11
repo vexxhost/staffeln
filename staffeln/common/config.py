@@ -1,4 +1,6 @@
 # from staffeln.common import rpc
+from __future__ import annotations
+
 import staffeln.conf
 from staffeln import version
 

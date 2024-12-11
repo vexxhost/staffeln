@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pbr.version
 
 version_info = pbr.version.VersionInfo("staffeln")

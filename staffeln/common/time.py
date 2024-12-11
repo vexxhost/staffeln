@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import re
 
 from dateutil.relativedelta import relativedelta
@@ -6,8 +8,10 @@ from oslo_utils import timeutils
 DEFAULT_TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 regex = re.compile(
-    r"((?P<years>\d+?)y)?((?P<months>\d+?)mon)?((?P<weeks>\d+?)w)?((?P<days>\d+?)d)?"
-    r"((?P<hours>\d+?)h)?((?P<minutes>\d+?)min)?((?P<seconds>\d+?)s)?"
+    r"((?P<years>\d+?)y)?((?P<months>\d+?)mon)?"
+    r"((?P<weeks>\d+?)w)?((?P<days>\d+?)d)?"
+    r"((?P<hours>\d+?)h)?((?P<minutes>\d+?)min)?"
+    r"((?P<seconds>\d+?)s)?"
 )
 
 
@@ -31,7 +35,7 @@ def parse_timedelta_string(time_str):
         if empty_flag:
             return None
         return time_params
-    except:  # noqa: E722
+    except Exception:  # noqa: E722
         return None
 
 
@@ -45,7 +49,14 @@ def get_current_strtime():
 
 
 def timeago(
-    years=0, months=0, weeks=0, days=0, hours=0, minutes=0, seconds=0, from_date=None
+    years=0,
+    months=0,
+    weeks=0,
+    days=0,
+    hours=0,
+    minutes=0,
+    seconds=0,
+    from_date=None,
 ):
     if from_date is None:
         from_date = timeutils.utcnow()

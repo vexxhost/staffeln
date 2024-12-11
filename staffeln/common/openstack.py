@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 from openstack import exceptions, proxy
 from oslo_log import log
+
 from staffeln.common import auth
 from staffeln.i18n import _
 
@@ -66,7 +69,9 @@ class OpenstackSDK:
     def get_servers(self, project_id=None, all_projects=True, details=True):
         if project_id is not None:
             return self.conn.compute.servers(
-                details=details, all_projects=all_projects, project_id=project_id
+                details=details,
+                all_projects=all_projects,
+                project_id=project_id,
             )
         else:
             return self.conn.compute.servers(details=details, all_projects=all_projects)
@@ -75,10 +80,6 @@ class OpenstackSDK:
         return self.conn.get_volume_by_id(uuid)
 
     def get_backup(self, uuid, project_id=None):
-        # return conn.block_storage.get_backup(
-        #     project_id=project_id, backup_id=uuid,
-        # )
-        # conn.block_storage.backups(volume_id=uuid,project_id=project_id)
         try:
             return self.conn.get_volume_backup(uuid)
         except exceptions.ResourceNotFound:
@@ -93,9 +94,6 @@ class OpenstackSDK:
         name=None,
         incremental=False,
     ):
-        # return conn.block_storage.create_backup(
-        #     volume_id=queue.volume_id, force=True, project_id=queue.project_id, name="name"
-        # )
         return self.conn.create_volume_backup(
             volume_id=volume_id,
             force=force,
@@ -112,7 +110,8 @@ class OpenstackSDK:
         LOG.debug(f"Start deleting backup {uuid} in OpenStack.")
         try:
             self.conn.delete_volume_backup(uuid, force=force)
-            # TODO(Alex): After delete the backup generator, need to set the volume status again
+            # TODO(Alex): After delete the backup generator,
+            # need to set the volume status again
         except exceptions.ResourceNotFound:
             return None
 
@@ -128,7 +127,8 @@ class OpenstackSDK:
 
     # rewrite openstasdk._block_storage.get_volume_quotas
     # added usage flag
-    # ref: https://docs.openstack.org/api-ref/block-storage/v3/?expanded=#show-quota-usage-for-a-project
+    # ref: https://docs.openstack.org/api-ref/block-storage/v3/?
+    # expanded=#show-quota-usage-for-a-project
     def _get_volume_quotas(self, project_id, usage=True):
         """Get volume quotas for a project
 

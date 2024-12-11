@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 import os
 
-import staffeln.conf
 from oslo_db.sqlalchemy.migration_cli import manager
+
+import staffeln.conf
 from staffeln.db.sqlalchemy import api as sqla_api
 from staffeln.db.sqlalchemy import models
 
