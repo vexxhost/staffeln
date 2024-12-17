@@ -1,4 +1,5 @@
 """Utility method for objects"""
+
 from oslo_serialization import jsonutils
 from oslo_versionedobjects import fields
 

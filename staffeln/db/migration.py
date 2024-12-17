@@ -1,6 +1,8 @@
 """Database setup command"""
-import staffeln.conf
+
 from stevedore import driver
+
+import staffeln.conf
 
 CONF = staffeln.conf.CONF
 

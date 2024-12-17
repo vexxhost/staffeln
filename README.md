@@ -2,7 +2,7 @@
 
 ## Project Description
 
-This solution is a volume-level scheduled backup to implement a non-intrusive automatic backup for Openstack VMs.  
+This solution is a volume-level scheduled backup to implement a non-intrusive automatic backup for Openstack VMs.
 
 All volumes attached to the specified VMs are backed up periodically.
 

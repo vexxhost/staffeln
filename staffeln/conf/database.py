@@ -1,5 +1,6 @@
 from oslo_config import cfg
 from oslo_db import options as oslo_db_options
+
 from staffeln.conf import paths
 from staffeln.i18n import _
 
