@@ -635,9 +635,7 @@ class Backup(object):
     # backup gen was not created
     def process_pre_failed_backup(self, task):
         # 1.notify via email
-        reason = _(
-            "The backup creation for the volume %s was prefailed." % task.volume_id
-        )
+        reason = f"The backup creation for the volume {task.volume_id} was prefailed."
         LOG.warn(reason)
         task.reason = reason
         task.backup_status = constants.BACKUP_FAILED
@@ -653,10 +651,7 @@ class Backup(object):
             self.create_failed_backup_obj(task)
         except OpenstackHttpException as ex:
             LOG.warn(
-                _(
-                    "Failed to delete volume backup %s. %s. Need "
-                    "to delete manually." % (task.backup_id, str(ex))
-                )
+                f"Failed to delete volume backup {task.backup_id}. {str(ex)}. Need to delete manually."
             )
         task.reason = reason
         task.backup_status = constants.BACKUP_FAILED
