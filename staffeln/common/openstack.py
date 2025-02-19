@@ -1,9 +1,38 @@
+import tenacity
 from openstack import exceptions, proxy
 from oslo_log import log
+
+from staffeln import conf
 from staffeln.common import auth
 from staffeln.i18n import _
 
+CONF = conf.CONF
 LOG = log.getLogger(__name__)
+
+
+class RetryHTTPError(tenacity.retry_if_exception):
+    """Retry strategy that retries if the exception is an ``HTTPError`` with
+    a abnormal status code.
+    """
+
+    def __init__(self):
+        def is_http_error(exception):
+            # Make sure we don't retry on codes in skip list (default: [404]),
+            # as not found could be an expected status.
+            skip_codes = CONF.openstack.skip_retry_codes
+            result = (
+                isinstance(exception, exceptions.HttpException)
+                and str(exception.status_code) not in skip_codes
+            )
+            if result:
+                LOG.debug(
+                    f"Getting HttpException {exception} (status "
+                    f"code: {exception.status_code}), "
+                    "retry till timeout..."
+                )
+            return result
+
+        super().__init__(predicate=is_http_error)
 
 
 class OpenstackSDK:
@@ -23,6 +52,12 @@ class OpenstackSDK:
         self.conn = self.conn_list[project_id]
 
     # user
+    @tenacity.retry(
+        retry=RetryHTTPError(),
+        wait=tenacity.wait_exponential(max=CONF.openstack.max_retry_interval),
+        reraise=True,
+        stop=tenacity.stop_after_delay(CONF.openstack.retry_timeout),
+    )
     def get_user_id(self):
         user_name = self.conn.config.auth["username"]
         if "user_domain_id" in self.conn.config.auth:
@@ -35,17 +70,41 @@ class OpenstackSDK:
             user = self.conn.get_user(name_or_id=user_name)
         return user.id
 
+    @tenacity.retry(
+        retry=RetryHTTPError(),
+        wait=tenacity.wait_exponential(max=CONF.openstack.max_retry_interval),
+        reraise=True,
+        stop=tenacity.stop_after_delay(CONF.openstack.retry_timeout),
+    )
     def get_projects(self):
         return self.conn.list_projects()
 
+    @tenacity.retry(
+        retry=RetryHTTPError(),
+        wait=tenacity.wait_exponential(max=CONF.openstack.max_retry_interval),
+        reraise=True,
+        stop=tenacity.stop_after_delay(CONF.openstack.retry_timeout),
+    )
     def get_servers(self, project_id, all_projects=True, details=True):
         return self.conn.compute.servers(
             details=details, all_projects=all_projects, project_id=project_id
         )
 
+    @tenacity.retry(
+        retry=RetryHTTPError(),
+        wait=tenacity.wait_exponential(max=CONF.openstack.max_retry_interval),
+        reraise=True,
+        stop=tenacity.stop_after_delay(CONF.openstack.retry_timeout),
+    )
     def get_volume(self, uuid, project_id):
         return self.conn.get_volume_by_id(uuid)
 
+    @tenacity.retry(
+        retry=RetryHTTPError(),
+        wait=tenacity.wait_exponential(max=CONF.openstack.max_retry_interval),
+        reraise=True,
+        stop=tenacity.stop_after_delay(CONF.openstack.retry_timeout),
+    )
     def get_backup(self, uuid, project_id=None):
         # return conn.block_storage.get_backup(
         #     project_id=project_id, backup_id=uuid,
@@ -66,6 +125,12 @@ class OpenstackSDK:
             wait=wait,
         )
 
+    @tenacity.retry(
+        retry=RetryHTTPError(),
+        wait=tenacity.wait_exponential(max=CONF.openstack.max_retry_interval),
+        reraise=True,
+        stop=tenacity.stop_after_delay(CONF.openstack.retry_timeout),
+    )
     def delete_backup(self, uuid, project_id=None, force=False):
         # Note(Alex): v3 is not supporting force delete?
         # conn.block_storage.delete_backup(
@@ -77,6 +142,12 @@ class OpenstackSDK:
         except exceptions.ResourceNotFound:
             return None
 
+    @tenacity.retry(
+        retry=RetryHTTPError(),
+        wait=tenacity.wait_exponential(max=CONF.openstack.max_retry_interval),
+        reraise=True,
+        stop=tenacity.stop_after_delay(CONF.openstack.retry_timeout),
+    )
     def get_backup_quota(self, project_id):
         # quota = conn.get_volume_quotas(project_id)
         quota = self._get_volume_quotas(project_id)
