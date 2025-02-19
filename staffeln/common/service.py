@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import staffeln.conf
 from oslo_log import log as logging
+
+import staffeln.conf
 from staffeln import objects
 from staffeln.common import config
 

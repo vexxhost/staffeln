@@ -1,11 +1,13 @@
 """
 SQLAlchemy models for staffeln service
 """
+
 import urllib.parse as urlparse
 
 from oslo_db.sqlalchemy import models
 from sqlalchemy import Column, Integer, String, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
+
 from staffeln import conf
 
 CONF = conf.CONF

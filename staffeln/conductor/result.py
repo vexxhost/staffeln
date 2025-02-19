@@ -1,7 +1,8 @@
 # Email notification package
 # This should be upgraded by integrating with mail server to send batch
-import staffeln.conf
 from oslo_log import log
+
+import staffeln.conf
 from staffeln.common import email
 from staffeln.common import time as xtime
 from staffeln.conductor import backup

@@ -1,4 +1,5 @@
 """Base classes for storage engines"""
+
 from oslo_config import cfg
 from oslo_db import api as db_api
 

@@ -1,11 +1,12 @@
 import collections
 
 import parse
-import staffeln.conf
 from openstack.exceptions import HttpException as OpenstackHttpException
 from openstack.exceptions import ResourceNotFound as OpenstackResourceNotFound
 from openstack.exceptions import SDKException as OpenstackSDKException
 from oslo_log import log
+
+import staffeln.conf
 from staffeln import objects
 from staffeln.common import constants, context, openstack
 from staffeln.conductor import result
