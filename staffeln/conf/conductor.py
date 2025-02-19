@@ -129,4 +129,8 @@ def register_opts(conf):
 
 
 def list_opts():
-    return {"DEFAULT": rotation_opts, conductor_group: backup_opts, openstack_group: openstack_opts,}
+    return {
+        "DEFAULT": rotation_opts,
+        conductor_group: backup_opts,
+        openstack_group: openstack_opts,
+    }
