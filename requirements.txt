@@ -14,5 +14,6 @@ oslo_versionedobjects
 openstacksdk>0.28.0
 pymysql
 parse
+tenacity
 # email
 # smtplib
