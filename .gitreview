@@ -1,4 +1,5 @@
 [gerrit]
-host=review.opendev.org
+host=review.vexxhost.dev
 port=29418
-project=openstack/staffeln.git
+project=staffeln.git
+defaultbranch=main
