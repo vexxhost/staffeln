@@ -1,5 +1,6 @@
 from flask import Flask, Response, request
 from oslo_log import log
+
 from staffeln import objects
 from staffeln.common import context
 

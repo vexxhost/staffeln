@@ -5,6 +5,7 @@ Run storage database migration.
 import sys
 
 from oslo_config import cfg
+
 from staffeln import conf
 from staffeln.common import service
 from staffeln.db import migration

@@ -2,9 +2,10 @@ import threading
 import time
 
 import cotyledon
-import staffeln.conf
 from futurist import periodics
 from oslo_log import log
+
+import staffeln.conf
 from staffeln.common import constants, context
 from staffeln.common import time as xtime
 from staffeln.conductor import backup

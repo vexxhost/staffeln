@@ -1,4 +1,5 @@
 from oslo_config import cfg
+
 from staffeln.common import constants
 from staffeln.i18n import _
 

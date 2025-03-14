@@ -11,6 +11,7 @@ from oslo_log import log
 from oslo_utils import strutils, timeutils, uuidutils
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm import exc
+
 from staffeln.common import short_id
 from staffeln.db.sqlalchemy import models
 

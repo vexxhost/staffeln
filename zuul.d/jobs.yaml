@@ -1,0 +1,9 @@
+- job:
+    name: staffeln-linters
+    parent: tox-linters
+
+- job:
+    name: staffeln-unit
+    parent: tox
+    vars:
+      tox_envlist: py3

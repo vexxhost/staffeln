@@ -6,6 +6,7 @@ import base64
 import uuid
 
 import six
+
 from staffeln.i18n import _
 
 

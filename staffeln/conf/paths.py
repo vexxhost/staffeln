@@ -1,6 +1,7 @@
 import os
 
 from oslo_config import cfg
+
 from staffeln.i18n import _
 
 PATH_OPTS = [

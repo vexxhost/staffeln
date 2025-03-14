@@ -1,5 +1,6 @@
 from openstack import exceptions, proxy
 from oslo_log import log
+
 from staffeln.common import auth
 from staffeln.i18n import _
 
