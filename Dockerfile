@@ -1,12 +1,18 @@
-# syntax=docker/dockerfile:1.5
+# SPDX-FileCopyrightText: © 2025 VEXXHOST, Inc.
+# SPDX-License-Identifier: GPL-3.0-or-later
 
-FROM python:3.10 AS builder
-RUN python3 -m venv /venv
-ENV PATH=/venv/bin:$PATH
-ADD . /src
-RUN --mount=type=cache,target=/root/.cache \
-  pip install /src
+FROM ghcr.io/vexxhost/openstack-venv-builder:main AS build
+RUN --mount=type=bind,target=/src/staffeln,readwrite <<EOF bash -xe
+uv pip install \
+    --constraint /upper-constraints.txt \
+        /src/staffeln
+EOF
 
-FROM python:3.10-slim AS runtime
-ENV PATH=/venv/bin:$PATH
-COPY --from=builder /venv /venv
+FROM ghcr.io/vexxhost/python-base:main
+RUN <<EOF bash -xe
+groupadd -g 42424 staffeln
+useradd -u 42424 -g 42424 -M -d /var/lib/staffeln -s /usr/sbin/nologin -c "Staffeln User" staffeln
+mkdir -p /etc/staffeln /var/log/staffeln /var/lib/staffeln /var/cache/staffeln
+chown -Rv staffeln:staffeln /etc/staffeln /var/log/staffeln /var/lib/staffeln /var/cache/staffeln
+EOF
+COPY --from=build --link /var/lib/openstack /var/lib/openstack
