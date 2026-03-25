@@ -7,7 +7,7 @@ import operator
 
 from oslo_config import cfg
 from oslo_db import exception as db_exc
-from oslo_db.sqlalchemy import session as db_session
+from oslo_db.sqlalchemy import enginefacade
 from oslo_db.sqlalchemy import utils as db_utils
 from oslo_log import log
 from oslo_utils import strutils, timeutils, uuidutils
@@ -21,27 +21,25 @@ LOG = log.getLogger(__name__)
 
 CONF = cfg.CONF
 
-_FACADE = None
+_CONTEXT_MANAGER = None
 
 is_uuid_like = uuidutils.is_uuid_like
 is_int_like = strutils.is_int_like
 
 
-def _create_facade_lazily():
-    global _FACADE
-    if _FACADE is None:
-        _FACADE = db_session.EngineFacade.from_config(CONF)
-    return _FACADE
+def _get_context_manager():
+    global _CONTEXT_MANAGER
+    if _CONTEXT_MANAGER is None:
+        _CONTEXT_MANAGER = enginefacade.transaction_context()
+    return _CONTEXT_MANAGER
 
 
 def get_engine():
-    facade = _create_facade_lazily()
-    return facade.get_engine()
+    return _get_context_manager().get_engine()
 
 
 def get_session(**kwargs):
-    facade = _create_facade_lazily()
-    return facade.get_session(**kwargs)
+    return _get_context_manager().get_sessionmaker()()
 
 
 def get_backend():
