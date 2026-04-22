@@ -35,11 +35,11 @@ def _get_context_manager():
 
 
 def get_engine():
-    return _get_context_manager().get_engine()
+    return _get_context_manager().writer.get_engine()
 
 
 def get_session(**kwargs):
-    return _get_context_manager().get_sessionmaker()()
+    return _get_context_manager().writer.get_sessionmaker()()
 
 
 def get_backend():
