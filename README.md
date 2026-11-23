@@ -163,6 +163,12 @@ configurations under `staffeln/conf/*`
 And defined them in `/etc/staffeln/staffeln.conf` before restart
 staffeln-conductor service.
 
+## Container image
+
+The `ghcr.io/vexxhost/staffeln:master` image that Atmosphere deploys is built
+from this repository's `main` branch in
+[vexxhost/images](https://github.com/vexxhost/images).
+
 ## User Interface
 
 Users can get the list of backup volumes on the Horizon cinder-backup panel.
